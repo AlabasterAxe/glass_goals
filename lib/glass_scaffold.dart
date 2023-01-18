@@ -1,6 +1,13 @@
-import 'dart:developer';
+import 'package:flutter/widgets.dart'
+    show
+        StatelessWidget,
+        Widget,
+        BuildContext,
+        GestureDetector,
+        HitTestBehavior,
+        Navigator;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Scaffold, Colors;
 
 class GlassScaffold extends StatelessWidget {
   final Widget child;
@@ -14,7 +21,6 @@ class GlassScaffold extends StatelessWidget {
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onVerticalDragEnd: (details) {
-          log('vertical drag end');
           if (details.primaryVelocity != null &&
               details.primaryVelocity! > 10) {
             Navigator.pop(context);

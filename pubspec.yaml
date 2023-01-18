@@ -12,6 +12,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  speech_to_text: ^6.1.1
+  rxdart: ^0.27.7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

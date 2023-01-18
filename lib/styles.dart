@@ -1,3 +1,5 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart' show Colors;
+import 'package:flutter/widgets.dart' show FontWeight, TextStyle;
 
-const mainTextStyle = TextStyle(fontSize: 48);
+const mainTextStyle =
+    TextStyle(fontSize: 48, color: Colors.white, fontWeight: FontWeight.w100);

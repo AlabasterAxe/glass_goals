@@ -6,4 +6,8 @@ class Goal {
   Goal({required this.text, required this.id, subGoals}) {
     this.subGoals = subGoals ?? [];
   }
+
+  addSubGoal(Goal goal) {
+    subGoals.add(goal);
+  }
 }
