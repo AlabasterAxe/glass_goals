@@ -12,7 +12,10 @@ dependencies:
   flutter:
     sdk: flutter
 
-  speech_to_text: ^6.1.1
+  speech_to_text: 
+    path: /Users/matt/documents/speech_to_text/speech_to_text
+  # speech_to_text: ^6.1.1
+
   rxdart: ^0.27.7
 
 dev_dependencies:

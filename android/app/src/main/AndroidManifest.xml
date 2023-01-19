@@ -1,9 +1,10 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.glass_goals">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="co.thkp.glass_goals">
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <uses-permission android:name="com.google.android.libraries.assistant.soda.recognitionservice.USE_SPEECH"/>
     <queries>
         <intent>
             <action android:name="android.speech.RecognitionService" />

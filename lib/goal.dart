@@ -52,7 +52,7 @@ class AddSubGoalCard extends StatefulWidget {
 }
 
 class _AddSubGoalCardState extends State<AddSubGoalCard> {
-  bool recording = false;
+  Stream<String>? recordingStream;
 
   @override
   Widget build(BuildContext context) {
@@ -74,18 +74,35 @@ class _AddSubGoalCardState extends State<AddSubGoalCard> {
                     onTap: () async {
                       await stt.init();
                     },
-                    child: Center(
+                    child: const Center(
                         child:
                             Text('tap to initialize', style: mainTextStyle)));
               case SttState.ready:
                 return GestureDetector(
-                    onTap: () async {},
-                    child: Center(
-                        child: Text('initialized!', style: mainTextStyle)));
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () async {
+                      setState(() {
+                        recordingStream = stt.detectSpeech();
+                      });
+                    },
+                    child: const Center(
+                        child: Text('tap to record!', style: mainTextStyle)));
               case SttState.listening:
-                return Container(
-                  color: Colors.red,
-                  child: const Center(child: Text('Recording')),
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    stt.stop();
+                    recordingStream = null;
+                  },
+                  child: Center(
+                      child: StreamBuilder<String>(
+                          stream: recordingStream,
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              return Text(snapshot.data!);
+                            }
+                            return const Text('Listening...');
+                          })),
                 );
               case SttState.initializing:
               case null:
