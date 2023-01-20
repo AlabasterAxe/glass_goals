@@ -1,4 +1,4 @@
-import 'dart:async' show StreamController;
+import 'dart:async' show Completer;
 
 import 'package:rxdart/subjects.dart' show BehaviorSubject, Subject;
 import 'package:speech_to_text/speech_to_text.dart' show SpeechToText;
@@ -8,8 +8,8 @@ enum SttState {
   initializing,
   ready,
   listening,
-  stopping,
   unavailable,
+  error,
 }
 
 class SttService {
@@ -18,49 +18,38 @@ class SttService {
   Subject<SttState> stateSubject =
       BehaviorSubject.seeded(SttState.uninitialized);
 
-  Future<void> init() async {
-    final available = await _speechToText.initialize();
-    if (available) {
+  Future<void> _init() async {
+    _setState(SttState.initializing);
+    if (await _speechToText.initialize()) {
       _setState(SttState.ready);
     } else {
       _setState(SttState.unavailable);
     }
   }
 
-  Stream<String> detectSpeech() {
+  Future<String> detectSpeech() async {
     switch (_state) {
       case SttState.ready:
         break;
       case SttState.uninitialized:
-        throw Exception('stt not initialized');
+        await _init();
+        break;
       case SttState.unavailable:
         throw Exception('stt not available');
       case SttState.listening:
         throw Exception('stt already listening');
       case SttState.initializing:
         throw Exception('stt initializing');
-      case SttState.stopping:
-        throw Exception('stt stopping');
       default: // null
         throw Exception("invalid state $_state");
     }
 
-    final controller = StreamController<String>();
+    final result = Completer<String>();
     _setState(SttState.listening);
-    controller.onListen = () {
-      _speechToText.listen(
-          onResult: (result) => controller.add(result.recognizedWords));
-    };
-    return controller.stream;
-  }
-
-  Future<void> stop() async {
-    if (_state != SttState.listening) {
-      return;
-    }
-    _setState(SttState.stopping);
-    await _speechToText.stop();
+    _speechToText.listen(onResult: (r) => result.complete(r.recognizedWords));
+    final resultText = await result.future;
     _setState(SttState.ready);
+    return resultText;
   }
 
   _setState(state) {
