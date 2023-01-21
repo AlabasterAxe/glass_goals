@@ -25,8 +25,6 @@ class GlassGoals extends StatefulWidget {
 }
 
 class _GlassGoalsState extends State<GlassGoals> {
-  double x = 0;
-  double y = 0;
   SttService sttService = SttService();
 
   @override

@@ -113,8 +113,8 @@ class _GoalWidgetState extends State<GoalWidget> {
                         widget.goal.addSubGoal(
                             Goal(text: text, id: const Uuid().v4()));
                       });
-                    }, onError: (_) {
-                      log('Error adding subgoal');
+                    }, onError: (e) {
+                      log(e.toString());
                     }),
                   ],
                 )
