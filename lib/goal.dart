@@ -22,6 +22,7 @@ import 'package:flutter/widgets.dart'
         TextStyle,
         ValueKey,
         Widget;
+import 'package:glass_goals/sync/ops.dart' show GoalDelta;
 import 'package:uuid/uuid.dart' show Uuid;
 
 import 'app_context.dart' show AppContext;
@@ -100,28 +101,24 @@ class _GoalWidgetState extends State<GoalWidget> {
               child: GoalTitle(widget.goal),
             ))),
         Positioned.fill(
-          child: widget.goal.subGoals.isNotEmpty
-              ? PageView(
-                  children: [
-                    ...widget.goal.subGoals
-                        .map((e) => Hero(
-                            tag: e.id,
-                            child: GoalTitle(e, key: ValueKey(e.id))))
-                        .toList(),
-                    AddSubGoalCard(onGoalText: (text) {
-                      setState(() {
-                        widget.goal.addSubGoal(
-                            Goal(text: text, id: const Uuid().v4()));
-                      });
-                    }, onError: (e) {
-                      log(e.toString());
-                    }),
-                  ],
-                )
-              : const Center(
-                  child: Text('Nothin\' to it but to do it.'),
-                ),
-        ),
+            child: PageView(
+          children: [
+            ...widget.goal.subGoals
+                .map((e) =>
+                    Hero(tag: e.id, child: GoalTitle(e, key: ValueKey(e.id))))
+                .toList(),
+            AddSubGoalCard(onGoalText: (text) {
+              setState(() {
+                AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                    id: const Uuid().v4(),
+                    text: text,
+                    parentId: widget.goal.id));
+              });
+            }, onError: (e) {
+              log(e.toString());
+            }),
+          ],
+        )),
       ],
     );
   }
