@@ -4,19 +4,14 @@ import 'package:glass_goals/styles.dart';
 
 import 'app_context.dart' show AppContext;
 import 'glass_scaffold.dart';
-import 'goal.dart' show GoalWidget, GoalTitle;
+import 'goal.dart' show GoalsWidget, GoalTitle;
 import 'model.dart' show Goal;
 import 'stt_service.dart' show SttService;
-import 'sync/sync_client.dart' show SyncClient;
+import 'sync/sync_client.dart' show SyncClient, rootGoal;
 
 void main() {
   runApp(const GlassGoals());
 }
-
-final rootGoal = Goal(id: '0', text: 'Live a fulfilling life', subGoals: [
-  Goal(id: '1', text: 'Succeed Professionally'),
-  Goal(id: '2', text: 'Create things'),
-]);
 
 class GlassGoals extends StatefulWidget {
   const GlassGoals({super.key});
@@ -75,38 +70,40 @@ class GoalsHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: StreamBuilder<List<Goal>>(
-          stream: AppContext.of(context).syncClient.stateSubject,
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const Center(
-                  child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator()));
-            }
-            return GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onVerticalDragEnd: (details) {
-                  if (details.primaryVelocity != null &&
-                      details.primaryVelocity! > 20) {
-                    SystemNavigator.pop();
-                  }
-                },
-                onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => GlassScaffold(
-                              child: GoalWidget(snapshot.requireData[0]))));
-                },
-                child: Center(
-                    child: Hero(
-                        tag: rootGoal.id,
-                        child: GoalTitle(snapshot.requireData[0],
-                            key: ValueKey(snapshot.requireData[0].id)))));
-          }),
-    );
+        backgroundColor: Colors.black,
+        body: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onVerticalDragEnd: (details) {
+              if (details.primaryVelocity != null &&
+                  details.primaryVelocity! > 20) {
+                SystemNavigator.pop();
+              }
+            },
+            onTap: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => StreamBuilder<Map<String, Goal>>(
+                          stream:
+                              AppContext.of(context).syncClient.stateSubject,
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return const Center(
+                                  child: SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator()));
+                            }
+                            return GlassScaffold(
+                                child: GoalsWidget(snapshot.requireData,
+                                    rootGoalId: rootGoal.id));
+                          })));
+            },
+            child: Center(
+                child: Hero(
+                    tag: rootGoal.id,
+                    child: GoalTitle(
+                      rootGoal,
+                    )))));
   }
 }

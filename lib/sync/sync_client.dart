@@ -7,10 +7,15 @@ import '../model.dart' show Goal;
 import 'ops.dart' show GoalDelta, Op;
 import 'persistence_service.dart' show PersistenceService;
 
-final rootGoal = Goal(id: '0', text: 'Live a fulfilling life');
+final rootGoal = Goal(id: 'root', text: 'Live a fulfilling life');
+final archiveGoal = Goal(id: 'archive', text: 'Archive');
+
+Map<String, Goal> initialGoalState() =>
+    {'root': rootGoal, 'archive': archiveGoal};
 
 class SyncClient {
-  Subject<List<Goal>> stateSubject = BehaviorSubject.seeded([rootGoal]);
+  Subject<Map<String, Goal>> stateSubject =
+      BehaviorSubject.seeded(initialGoalState());
   HLC? hlc;
   String? clientId;
   Box? appBox;
@@ -37,10 +42,38 @@ class SyncClient {
     sync();
   }
 
-  void _computeState() {
-    Map<String, Goal> goals = {
-      '0': rootGoal,
-    };
+  applyOp(Map<String, Goal> goalMap, Op op) {
+    Goal? goal = goalMap[op.delta.id];
+    if (goal == null) {
+      goalMap[op.delta.id] = goal = Goal(
+          id: op.delta.id,
+          text: op.delta.text ?? 'Untitled',
+          parentId: op.delta.parentId);
+    }
+
+    if (op.delta.text != null && goal.text != op.delta.text) {
+      goal.text = op.delta.text!;
+    }
+
+    if (op.delta.parentId != null && goal.parentId != op.delta.parentId) {
+      goalMap[goal.parentId!]?.removeSubGoal(goal.id);
+      goal.parentId = op.delta.parentId;
+    }
+
+    if (goal.parentId != null) {
+      goalMap[goal.parentId!]?.addOrReplaceSubGoal(goal);
+    }
+  }
+
+  applyOps(Map<String, Goal> goalMap, List<Op> ops) {
+    ops.sort((a, b) => a.hlcTimestamp.compareTo(b.hlcTimestamp));
+
+    for (Op op in ops) {
+      applyOp(goalMap, op);
+    }
+  }
+
+  _computeState() {
     List<Op> ops = (appBox!.get('ops', defaultValue: []) as List<dynamic>)
         .map(Op.fromJson)
         .toList();
@@ -49,29 +82,11 @@ class SyncClient {
         .map(Op.fromJson)
         .toList());
 
-    ops.sort((a, b) => a.hlcTimestamp.compareTo(b.hlcTimestamp));
-    for (final op in ops) {
-      Goal? goal = goals[op.delta.id] ??
-          Goal(
-              id: op.delta.id,
-              text: op.delta.text ?? 'Untitled',
-              parentId: op.delta.parentId);
+    Map<String, Goal> goals = initialGoalState();
 
-      if (op.delta.text != null && goal.text != op.delta.text) {
-        goal.text = op.delta.text!;
-      }
+    applyOps(goals, ops);
 
-      if (op.delta.parentId != null && goal.parentId != op.delta.parentId) {
-        goals[goal.parentId!]?.removeSubGoal(goal.id);
-        goal.parentId = op.delta.parentId;
-      }
-
-      if (goal.parentId != null) {
-        goals[goal.parentId!]?.addOrReplaceSubGoal(goal);
-      }
-    }
-
-    return stateSubject.add([goals['0']!]);
+    return stateSubject.add(goals);
   }
 
   Future<void> sync() async {

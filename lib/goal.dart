@@ -1,7 +1,7 @@
 import 'dart:developer' show log;
 
 import 'package:flutter/material.dart'
-    show CircularProgressIndicator, Colors, Theme;
+    show Colors, MaterialPageRoute, Navigator, Theme;
 import 'package:flutter/widgets.dart'
     show
         BuildContext,
@@ -12,12 +12,10 @@ import 'package:flutter/widgets.dart'
         HitTestBehavior,
         PageView,
         Positioned,
-        SizedBox,
         Stack,
         State,
         StatefulWidget,
         StatelessWidget,
-        StreamBuilder,
         Text,
         TextStyle,
         ValueKey,
@@ -26,8 +24,8 @@ import 'package:glass_goals/sync/ops.dart' show GoalDelta;
 import 'package:uuid/uuid.dart' show Uuid;
 
 import 'app_context.dart' show AppContext;
+import 'glass_scaffold.dart';
 import 'model.dart' show Goal;
-import 'stt_service.dart' show SttState;
 import 'styles.dart' show mainTextStyle;
 
 class GoalTitle extends StatelessWidget {
@@ -76,18 +74,47 @@ class _AddSubGoalCardState extends State<AddSubGoalCard> {
   }
 }
 
-class GoalWidget extends StatefulWidget {
-  final Goal goal;
+class GoalMenu extends StatelessWidget {
+  final void Function() onArchive;
+  const GoalMenu({super.key, required this.onArchive});
 
-  const GoalWidget(this.goal, {super.key});
-
-  @override
-  State<GoalWidget> createState() => _GoalWidgetState();
-}
-
-class _GoalWidgetState extends State<GoalWidget> {
   @override
   Widget build(BuildContext context) {
+    return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          onArchive();
+          Navigator.pop(context);
+        },
+        child: Container(
+            color: Colors.black.withOpacity(0.5),
+            child: const Center(child: Text('Archive', style: mainTextStyle))));
+  }
+}
+
+class GoalsWidget extends StatefulWidget {
+  final Map<String, Goal> goalState;
+  final String rootGoalId;
+
+  const GoalsWidget(this.goalState, {super.key, required this.rootGoalId});
+
+  @override
+  State<GoalsWidget> createState() => _GoalsWidgetState();
+}
+
+class _GoalsWidgetState extends State<GoalsWidget> {
+  late String activeGoalId;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    activeGoalId = widget.rootGoalId;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final activeGoal = widget.goalState[activeGoalId]!;
     return Stack(
       children: [
         Positioned(
@@ -97,22 +124,56 @@ class _GoalWidgetState extends State<GoalWidget> {
             height: 100,
             child: Center(
                 child: Hero(
-              tag: widget.goal.id,
-              child: GoalTitle(widget.goal),
+              tag: activeGoal.id,
+              child: GoalTitle(activeGoal),
             ))),
         Positioned.fill(
             child: PageView(
           children: [
-            ...widget.goal.subGoals
-                .map((e) =>
-                    Hero(tag: e.id, child: GoalTitle(e, key: ValueKey(e.id))))
+            ...activeGoal.subGoals
+                .map((subGoal) => GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onVerticalDragEnd: (details) {
+                      if (details.primaryVelocity != null &&
+                          details.primaryVelocity! > 10) {
+                        if (activeGoal.parentId != null) {
+                          setState(() {
+                            activeGoalId = activeGoal.parentId!;
+                          });
+                        } else {
+                          Navigator.pop(context);
+                        }
+                      }
+                      if (details.primaryVelocity != null &&
+                          details.primaryVelocity! < -10) {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => GlassScaffold(
+                                        child: GoalMenu(onArchive: () {
+                                      setState(() {
+                                        AppContext.of(context)
+                                            .syncClient
+                                            .modifyGoal(GoalDelta(
+                                                id: subGoal.id,
+                                                parentId: 'archive'));
+                                      });
+                                    }))));
+                      }
+                    },
+                    onTap: () {
+                      setState(() {
+                        activeGoalId = subGoal.id;
+                      });
+                    },
+                    child: Hero(tag: subGoal.id, child: GoalTitle(subGoal))))
                 .toList(),
             AddSubGoalCard(onGoalText: (text) {
               setState(() {
                 AppContext.of(context).syncClient.modifyGoal(GoalDelta(
                     id: const Uuid().v4(),
                     text: text,
-                    parentId: widget.goal.id));
+                    parentId: activeGoal.id));
               });
             }, onError: (e) {
               log(e.toString());

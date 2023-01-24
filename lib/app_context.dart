@@ -1,5 +1,4 @@
-import 'package:flutter/widgets.dart'
-    show InheritedWidget, Widget, BuildContext;
+import 'package:flutter/widgets.dart' show InheritedWidget, BuildContext;
 import 'package:glass_goals/sync/sync_client.dart' show SyncClient;
 
 import 'stt_service.dart' show SttService;
