@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:glass_goals/styles.dart';
+import 'package:glass_goals/sync/persistence_service.dart';
 
 import 'app_context.dart' show AppContext;
 import 'glass_scaffold.dart';
@@ -22,7 +23,8 @@ class GlassGoals extends StatefulWidget {
 
 class _GlassGoalsState extends State<GlassGoals> {
   SttService sttService = SttService();
-  SyncClient syncClient = SyncClient();
+  SyncClient syncClient =
+      SyncClient(persistenceService: GoogleSheetsPersistenceService());
 
   Future<void> appInit() async {
     await syncClient.init();

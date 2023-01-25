@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:hive_flutter/hive_flutter.dart' show Box, Hive, HiveX;
 import 'package:hlc/hlc.dart';
 import 'package:rxdart/rxdart.dart' show BehaviorSubject, Subject;
@@ -16,9 +18,9 @@ Map<String, Goal> initialGoalState() =>
 class SyncClient {
   Subject<Map<String, Goal>> stateSubject =
       BehaviorSubject.seeded(initialGoalState());
-  HLC? hlc;
+  late HLC hlc;
   String? clientId;
-  Box? appBox;
+  late Box appBox;
   final PersistenceService? persistenceService;
 
   SyncClient({this.persistenceService});
@@ -26,18 +28,19 @@ class SyncClient {
   init() async {
     await Hive.initFlutter();
     appBox = await Hive.openBox('glass_goals');
-    clientId = appBox!.get('clientId', defaultValue: const Uuid().v4());
+    clientId = appBox.get('clientId', defaultValue: const Uuid().v4());
     hlc = HLC.now(clientId!);
     _computeState();
+    sync();
   }
 
   modifyGoal(GoalDelta delta) {
-    hlc = hlc!.increment();
-    List<dynamic> unsyncedOps = appBox!.get('unsyncedOps', defaultValue: []);
+    hlc = hlc.increment();
+    List<dynamic> unsyncedOps = appBox.get('unsyncedOps', defaultValue: []);
 
-    final op = Op(hlcTimestamp: hlc!.pack(), delta: delta);
+    final op = Op(hlcTimestamp: hlc.pack(), delta: delta);
     unsyncedOps.add(Op.toJson(op));
-    appBox!.put('unsyncedOps', unsyncedOps);
+    appBox.put('unsyncedOps', unsyncedOps);
     _computeState();
     sync();
   }
@@ -74,11 +77,11 @@ class SyncClient {
   }
 
   _computeState() {
-    List<Op> ops = (appBox!.get('ops', defaultValue: []) as List<dynamic>)
+    List<Op> ops = (appBox.get('ops', defaultValue: []) as List<dynamic>)
         .map(Op.fromJson)
         .toList();
 
-    ops.addAll((appBox!.get('unsyncedOps', defaultValue: []) as List<dynamic>)
+    ops.addAll((appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
         .map(Op.fromJson)
         .toList());
 
@@ -93,8 +96,30 @@ class SyncClient {
     if (persistenceService == null) {
       return;
     }
-    await persistenceService!
-        .save(appBox!.get('unsyncedOps', defaultValue: []).map(Op.fromJson));
-    await appBox!.put('unsyncedOps', []);
+    final cursor = appBox.get('syncCursor', defaultValue: 0);
+    final List<dynamic> ops = appBox.get('ops', defaultValue: []);
+    final Set<String> localOps = Set.from(
+        (appBox.get('ops', defaultValue: []) as List<dynamic>)
+            .map(Op.fromJson)
+            .map((op) => op.hlcTimestamp));
+
+    try {
+      final result = await persistenceService!.load(cursor);
+      appBox.put('syncCursor', result.cursor);
+      for (Op op in result.ops) {
+        if (!localOps.contains(op.hlcTimestamp)) {
+          ops.add(Op.toJson(op));
+        }
+      }
+    } catch (e) {
+      log('Fetch failed', error: e);
+    }
+    final List<dynamic> unsyncedOps =
+        appBox.get('unsyncedOps', defaultValue: []);
+    if (unsyncedOps.isNotEmpty) {
+      await persistenceService!.save(unsyncedOps.map(Op.fromJson).toList());
+      await appBox.put('ops', ops + unsyncedOps);
+      await appBox.put('unsyncedOps', []);
+    }
   }
 }
