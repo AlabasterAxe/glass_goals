@@ -1,10 +1,14 @@
+import 'dart:async';
+
+import 'package:async/async.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:glass_goals/styles.dart';
 import 'package:glass_goals/sync/persistence_service.dart';
+import 'package:screen_brightness/screen_brightness.dart' show ScreenBrightness;
 
 import 'app_context.dart' show AppContext;
-import 'glass_scaffold.dart';
+import 'util/glass_scaffold.dart';
 import 'goal.dart' show GoalsWidget, GoalTitle;
 import 'model.dart' show Goal;
 import 'stt_service.dart' show SttService;
@@ -25,9 +29,17 @@ class _GlassGoalsState extends State<GlassGoals> {
   SttService sttService = SttService();
   SyncClient syncClient =
       SyncClient(persistenceService: GoogleSheetsPersistenceService());
+  RestartableTimer screenOffTimer =
+      RestartableTimer(const Duration(seconds: 10), () {
+    ScreenBrightness().setScreenBrightness(0.0);
+  });
 
   Future<void> appInit() async {
     await syncClient.init();
+    Timer.periodic(const Duration(minutes: 1), (S) {
+      ScreenBrightness().setScreenBrightness(1.0);
+      screenOffTimer.reset();
+    });
   }
 
   @override
@@ -48,6 +60,7 @@ class _GlassGoalsState extends State<GlassGoals> {
           return AppContext(
               sttService: sttService,
               syncClient: syncClient,
+              screenTimeoutTimer: screenOffTimer,
               child: MaterialApp(
                 title: 'Glass Goals',
                 theme: ThemeData(

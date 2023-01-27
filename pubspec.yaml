@@ -21,12 +21,20 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   gsheets: ^0.4.2
+  screen_brightness: ^0.2.2
+  async: ^2.9.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   
   flutter_lints: ^2.0.0
+  flutter_launcher_icons: "^0.11.0"
+
+flutter_icons:
+  android: true
+  image_path: "assets/icon/icon.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
 
 flutter:
   uses-material-design: true

@@ -7,9 +7,7 @@ import 'package:flutter/widgets.dart'
         BuildContext,
         Center,
         Container,
-        GestureDetector,
         Hero,
-        HitTestBehavior,
         PageView,
         Positioned,
         Stack,
@@ -18,13 +16,13 @@ import 'package:flutter/widgets.dart'
         StatelessWidget,
         Text,
         TextStyle,
-        ValueKey,
         Widget;
 import 'package:glass_goals/sync/ops.dart' show GoalDelta;
+import 'package:glass_goals/util/glass_gesture_detector.dart';
 import 'package:uuid/uuid.dart' show Uuid;
 
 import 'app_context.dart' show AppContext;
-import 'glass_scaffold.dart';
+import 'util/glass_scaffold.dart';
 import 'model.dart' show Goal;
 import 'styles.dart' show mainTextStyle;
 
@@ -59,8 +57,7 @@ class _AddSubGoalCardState extends State<AddSubGoalCard> {
   Widget build(BuildContext context) {
     final stt = AppContext.of(context).sttService;
 
-    return GestureDetector(
-        behavior: HitTestBehavior.opaque,
+    return GlassGestureDetector(
         onTap: () async {
           try {
             widget.onGoalText(await stt.detectSpeech());
@@ -80,8 +77,7 @@ class GoalMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-        behavior: HitTestBehavior.opaque,
+    return GlassGestureDetector(
         onTap: () {
           onArchive();
           Navigator.pop(context);
@@ -131,8 +127,7 @@ class _GoalsWidgetState extends State<GoalsWidget> {
             child: PageView(
           children: [
             ...activeGoal.subGoals
-                .map((subGoal) => GestureDetector(
-                    behavior: HitTestBehavior.opaque,
+                .map((subGoal) => GlassGestureDetector(
                     onVerticalDragEnd: (details) {
                       if (details.primaryVelocity != null &&
                           details.primaryVelocity! > 10) {

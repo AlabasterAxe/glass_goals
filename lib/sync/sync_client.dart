@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:hive_flutter/hive_flutter.dart' show Box, Hive, HiveX;
 import 'package:hlc/hlc.dart';
 import 'package:rxdart/rxdart.dart' show BehaviorSubject, Subject;
+import 'package:screen_brightness/screen_brightness.dart' show ScreenBrightness;
 import 'package:uuid/uuid.dart';
 
 import '../model.dart' show Goal;
@@ -22,6 +24,7 @@ class SyncClient {
   String? clientId;
   late Box appBox;
   final PersistenceService? persistenceService;
+  late Timer _syncTimer;
 
   SyncClient({this.persistenceService});
 
@@ -32,6 +35,10 @@ class SyncClient {
     hlc = HLC.now(clientId!);
     _computeState();
     sync();
+    _syncTimer = Timer.periodic(const Duration(minutes: 1), (_) async {
+      await sync();
+      _computeState();
+    });
   }
 
   modifyGoal(GoalDelta delta) {

@@ -10,7 +10,7 @@
             <action android:name="android.speech.RecognitionService" />
         </intent>
     </queries>
-    <application android:label="glass_goals" android:name="${applicationName}" android:icon="@mipmap/ic_launcher">
+    <application android:label="Glass Goals" android:name="${applicationName}" android:icon="@mipmap/ic_launcher">
 
         <meta-data android:name="com.google.android.glass.TouchEnabledApplication" android:value="true" />
 
