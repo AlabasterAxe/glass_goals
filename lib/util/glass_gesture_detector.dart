@@ -23,15 +23,13 @@ class GlassGestureDetector extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap != null
           ? () {
-              ScreenBrightness().setScreenBrightness(1.0);
-              AppContext.of(context).screenTimeoutTimer.reset();
+              AppContext.of(context).interactionSubject.add(null);
               onTap?.call();
             }
           : null,
       onVerticalDragEnd: onVerticalDragEnd != null
           ? (details) {
-              ScreenBrightness().setScreenBrightness(1.0);
-              AppContext.of(context).screenTimeoutTimer.reset();
+              AppContext.of(context).interactionSubject.add(null);
               onVerticalDragEnd?.call(details);
             }
           : null,

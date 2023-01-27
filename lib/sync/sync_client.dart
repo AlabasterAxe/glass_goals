@@ -30,13 +30,12 @@ class SyncClient {
 
   init() async {
     await Hive.initFlutter();
-    appBox = await Hive.openBox('glass_goals');
+    appBox = await Hive.openBox('glass_goals.sync');
     clientId = appBox.get('clientId', defaultValue: const Uuid().v4());
     hlc = HLC.now(clientId!);
     _computeState();
     sync();
     _syncTimer = Timer.periodic(const Duration(minutes: 1), (_) async {
-      await sync();
       _computeState();
     });
   }

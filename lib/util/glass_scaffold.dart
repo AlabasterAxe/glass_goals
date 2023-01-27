@@ -1,4 +1,6 @@
-import 'package:flutter/src/widgets/basic.dart';
+import 'dart:ui';
+
+import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:flutter/widgets.dart'
     show
         AnimatedBuilder,
@@ -14,7 +16,7 @@ import 'package:flutter/material.dart' show Scaffold, Colors;
 import '../app_context.dart';
 
 class GlassScaffold extends StatelessWidget {
-  final Widget child;
+  final Widget? child;
 
   const GlassScaffold({super.key, required this.child});
 
@@ -27,9 +29,14 @@ class GlassScaffold extends StatelessWidget {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onVerticalDragEnd: (details) {
+            AppContext.of(context).interactionSubject.add(null);
             if (details.primaryVelocity != null &&
                 details.primaryVelocity! > 10) {
-              Navigator.pop(context);
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                SystemNavigator.pop();
+              }
             }
           },
           child: child,

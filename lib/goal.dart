@@ -22,7 +22,8 @@ import 'package:glass_goals/util/glass_gesture_detector.dart';
 import 'package:uuid/uuid.dart' show Uuid;
 
 import 'app_context.dart' show AppContext;
-import 'util/glass_scaffold.dart';
+import 'util/glass_page_view.dart' show GlassPageView;
+import 'util/glass_scaffold.dart' show GlassScaffold;
 import 'model.dart' show Goal;
 import 'styles.dart' show mainTextStyle;
 
@@ -124,7 +125,7 @@ class _GoalsWidgetState extends State<GoalsWidget> {
               child: GoalTitle(activeGoal),
             ))),
         Positioned.fill(
-            child: PageView(
+            child: GlassPageView(
           children: [
             ...activeGoal.subGoals
                 .map((subGoal) => GlassGestureDetector(

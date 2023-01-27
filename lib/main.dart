@@ -6,9 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:glass_goals/styles.dart';
 import 'package:glass_goals/sync/persistence_service.dart';
+import 'package:hive/hive.dart';
+import 'package:rxdart/rxdart.dart' show PublishSubject, Subject;
 import 'package:screen_brightness/screen_brightness.dart' show ScreenBrightness;
 
 import 'app_context.dart' show AppContext;
+import 'settings/settings_widget.dart';
+import 'util/glass_gesture_detector.dart';
+import 'util/glass_page_view.dart' show GlassPageView;
 import 'util/glass_scaffold.dart';
 import 'goal.dart' show GoalsWidget, GoalTitle;
 import 'model.dart' show Goal;
@@ -37,19 +42,31 @@ class _GlassGoalsState extends State<GlassGoals>
   });
   late AnimationController backgroundColorAnimationController =
       AnimationController(vsync: this);
+  Subject interactionSubject = PublishSubject<void>();
 
   Future<void> appInit() async {
     await syncClient.init();
     Timer.periodic(const Duration(minutes: 10), (_) {
-      log('timer tick');
-      ScreenBrightness().setScreenBrightness(1.0);
-      screenOffTimer.reset();
-      backgroundColorAnimationController.forward().then((_) {
-        backgroundColorAnimationController.reverse();
-      });
+      final hintingEnabled = Hive.box('glass_goals.settings')
+          .get('enableHinting', defaultValue: true);
+      if (hintingEnabled) {
+        ScreenBrightness().setScreenBrightness(1.0);
+        screenOffTimer.reset();
+        backgroundColorAnimationController.forward().then((_) {
+          backgroundColorAnimationController.reverse();
+        });
+      }
     });
     backgroundColorAnimationController.value = 0.0;
     backgroundColorAnimationController.duration = const Duration(seconds: 10);
+    interactionSubject.listen((_) {
+      log("interaction detected");
+      ScreenBrightness().setScreenBrightness(1.0);
+      screenOffTimer.reset();
+      backgroundColorAnimationController.animateBack(0.0,
+          duration: const Duration(milliseconds: 300));
+    });
+    await Hive.openBox('glass_goals.settings');
   }
 
   @override
@@ -73,6 +90,7 @@ class _GlassGoalsState extends State<GlassGoals>
               screenTimeoutTimer: screenOffTimer,
               backgroundColorAnimationController:
                   backgroundColorAnimationController,
+              interactionSubject: interactionSubject,
               child: MaterialApp(
                 title: 'Glass Goals',
                 theme: ThemeData(
@@ -99,46 +117,49 @@ class GoalsHome extends StatelessWidget {
     final bgAnimation =
         AppContext.of(context).backgroundColorAnimationController;
     return AnimatedBuilder(
-        animation: bgAnimation,
-        child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onVerticalDragEnd: (details) {
-              if (details.primaryVelocity != null &&
-                  details.primaryVelocity! > 20) {
-                SystemNavigator.pop();
-              }
-            },
-            onTap: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => StreamBuilder<Map<String, Goal>>(
-                          stream:
-                              AppContext.of(context).syncClient.stateSubject,
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const Center(
-                                  child: SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator()));
-                            }
-                            return GlassScaffold(
-                                child: GoalsWidget(snapshot.requireData,
-                                    rootGoalId: rootGoal.id));
-                          })));
-            },
-            child: Center(
-                child: Hero(
-                    tag: rootGoal.id,
-                    child: GoalTitle(
-                      rootGoal,
-                    )))),
-        builder: (context, child) {
-          return Scaffold(
-              backgroundColor:
-                  Color.lerp(Colors.black, Colors.white, bgAnimation.value),
-              body: child);
-        });
+      animation: bgAnimation,
+      builder: (context, child) {
+        return GlassScaffold(child: child);
+      },
+      child: GlassPageView(
+        children: [
+          GlassGestureDetector(
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => StreamBuilder<Map<String, Goal>>(
+                            stream:
+                                AppContext.of(context).syncClient.stateSubject,
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return const Center(
+                                    child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator()));
+                              }
+                              return GlassScaffold(
+                                  child: GoalsWidget(snapshot.requireData,
+                                      rootGoalId: rootGoal.id));
+                            })));
+              },
+              child: Center(
+                  child: Text("Goals",
+                      style: Theme.of(context).textTheme.headline1))),
+          GlassGestureDetector(
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            const GlassScaffold(child: SettingsWidget())));
+              },
+              child: Center(
+                  child: Text("Settings",
+                      style: Theme.of(context).textTheme.headline1)))
+        ],
+      ),
+    );
   }
 }
