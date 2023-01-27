@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:async/async.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +26,8 @@ class GlassGoals extends StatefulWidget {
   State<GlassGoals> createState() => _GlassGoalsState();
 }
 
-class _GlassGoalsState extends State<GlassGoals> {
+class _GlassGoalsState extends State<GlassGoals>
+    with SingleTickerProviderStateMixin {
   SttService sttService = SttService();
   SyncClient syncClient =
       SyncClient(persistenceService: GoogleSheetsPersistenceService());
@@ -33,13 +35,21 @@ class _GlassGoalsState extends State<GlassGoals> {
       RestartableTimer(const Duration(seconds: 10), () {
     ScreenBrightness().setScreenBrightness(0.0);
   });
+  late AnimationController backgroundColorAnimationController =
+      AnimationController(vsync: this);
 
   Future<void> appInit() async {
     await syncClient.init();
-    Timer.periodic(const Duration(minutes: 1), (S) {
+    Timer.periodic(const Duration(minutes: 10), (_) {
+      log('timer tick');
       ScreenBrightness().setScreenBrightness(1.0);
       screenOffTimer.reset();
+      backgroundColorAnimationController.forward().then((_) {
+        backgroundColorAnimationController.reverse();
+      });
     });
+    backgroundColorAnimationController.value = 0.0;
+    backgroundColorAnimationController.duration = const Duration(seconds: 10);
   }
 
   @override
@@ -61,6 +71,8 @@ class _GlassGoalsState extends State<GlassGoals> {
               sttService: sttService,
               syncClient: syncClient,
               screenTimeoutTimer: screenOffTimer,
+              backgroundColorAnimationController:
+                  backgroundColorAnimationController,
               child: MaterialApp(
                 title: 'Glass Goals',
                 theme: ThemeData(
@@ -84,9 +96,11 @@ class GoalsHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        backgroundColor: Colors.black,
-        body: GestureDetector(
+    final bgAnimation =
+        AppContext.of(context).backgroundColorAnimationController;
+    return AnimatedBuilder(
+        animation: bgAnimation,
+        child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onVerticalDragEnd: (details) {
               if (details.primaryVelocity != null &&
@@ -119,6 +133,12 @@ class GoalsHome extends StatelessWidget {
                     tag: rootGoal.id,
                     child: GoalTitle(
                       rootGoal,
-                    )))));
+                    )))),
+        builder: (context, child) {
+          return Scaffold(
+              backgroundColor:
+                  Color.lerp(Colors.black, Colors.white, bgAnimation.value),
+              body: child);
+        });
   }
 }
