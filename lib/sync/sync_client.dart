@@ -124,8 +124,10 @@ class SyncClient {
         appBox.get('unsyncedOps', defaultValue: []);
     if (unsyncedOps.isNotEmpty) {
       await persistenceService!.save(unsyncedOps.map(Op.fromJson).toList());
-      await appBox.put('ops', ops + unsyncedOps);
+      ops.addAll(unsyncedOps);
       await appBox.put('unsyncedOps', []);
     }
+    await appBox.put('ops', ops);
+    _computeState();
   }
 }
