@@ -60,7 +60,6 @@ class _GlassGoalsState extends State<GlassGoals>
     backgroundColorAnimationController.value = 0.0;
     backgroundColorAnimationController.duration = const Duration(seconds: 10);
     interactionSubject.listen((_) {
-      log("interaction detected");
       ScreenBrightness().setScreenBrightness(1.0);
       screenOffTimer.reset();
       backgroundColorAnimationController.animateBack(0.0,

@@ -102,7 +102,7 @@ class SyncClient {
     if (persistenceService == null) {
       return;
     }
-    final cursor = appBox.get('syncCursor', defaultValue: 0);
+    final int? cursor = appBox.get('syncCursor');
     final List<dynamic> ops = appBox.get('ops', defaultValue: []);
     final Set<String> localOps = Set.from(
         (appBox.get('ops', defaultValue: []) as List<dynamic>)
@@ -110,7 +110,7 @@ class SyncClient {
             .map((op) => op.hlcTimestamp));
 
     try {
-      final result = await persistenceService!.load(cursor);
+      final result = await persistenceService!.load(cursor: cursor);
       appBox.put('syncCursor', result.cursor);
       for (Op op in result.ops) {
         if (!localOps.contains(op.hlcTimestamp)) {
@@ -128,6 +128,7 @@ class SyncClient {
       await appBox.put('unsyncedOps', []);
     }
     await appBox.put('ops', ops);
+    await appBox.put('lastSyncDateTime', DateTime.now().toIso8601String());
     _computeState();
   }
 }

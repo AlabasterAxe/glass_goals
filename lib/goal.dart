@@ -8,7 +8,6 @@ import 'package:flutter/widgets.dart'
         Center,
         Container,
         Hero,
-        PageView,
         Positioned,
         Stack,
         State,
@@ -164,16 +163,30 @@ class _GoalsWidgetState extends State<GoalsWidget> {
                     },
                     child: Hero(tag: subGoal.id, child: GoalTitle(subGoal))))
                 .toList(),
-            AddSubGoalCard(onGoalText: (text) {
-              setState(() {
-                AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                    id: const Uuid().v4(),
-                    text: text,
-                    parentId: activeGoal.id));
-              });
-            }, onError: (e) {
-              log(e.toString());
-            }),
+            GlassGestureDetector(
+              onVerticalDragEnd: (details) {
+                if (details.primaryVelocity != null &&
+                    details.primaryVelocity! > 10) {
+                  if (activeGoal.parentId != null) {
+                    setState(() {
+                      activeGoalId = activeGoal.parentId!;
+                    });
+                  } else {
+                    Navigator.pop(context);
+                  }
+                }
+              },
+              child: AddSubGoalCard(onGoalText: (text) {
+                setState(() {
+                  AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                      id: const Uuid().v4(),
+                      text: text,
+                      parentId: activeGoal.id));
+                });
+              }, onError: (e) {
+                log(e.toString());
+              }),
+            ),
           ],
         )),
       ],

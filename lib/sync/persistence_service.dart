@@ -20,7 +20,7 @@ class LoadOpsResp {
 abstract class PersistenceService {
   Future<void> init();
   Future<void> save(List<Op> ops);
-  Future<LoadOpsResp> load(int cursor);
+  Future<LoadOpsResp> load({int? cursor});
 }
 
 class GoogleSheetsPersistenceService implements PersistenceService {
@@ -44,29 +44,25 @@ class GoogleSheetsPersistenceService implements PersistenceService {
   }
 
   @override
-  Future<LoadOpsResp> load(int cursor) async {
+  Future<LoadOpsResp> load({int? cursor}) async {
     if (!initted) {
       await init();
     }
+    cursor ??= 2;
 
-    List<Cell> row = [];
-    int newCursor = cursor;
-    List<Op> ops = [];
-    do {
-      if (newCursor < 1) {
-        newCursor = 1;
-      }
-      row = await opsSheet.cells.row(newCursor + 1);
-      if (row.isEmpty) {
-        break;
-      }
-      newCursor++;
-      final delta = GoalDelta.fromJson(row[0].value);
-      final hlc = row[1].value;
-      ops.add(Op(hlcTimestamp: hlc, delta: delta));
-    } while (row.isNotEmpty);
+    List<Op> newOps = [];
+    final List<List<String>> newRows =
+        await opsSheet.values.allRows(fromRow: cursor);
 
-    return LoadOpsResp(ops, newCursor);
+    for (final row in newRows) {
+      final delta = GoalDelta.fromJson(row[0]);
+      final hlcTimestamp = row[1];
+      newOps.add(Op(hlcTimestamp: hlcTimestamp, delta: delta));
+    }
+
+    final newCursor = cursor + newRows.length;
+
+    return LoadOpsResp(newOps, newCursor);
   }
 
   @override
@@ -74,24 +70,13 @@ class GoogleSheetsPersistenceService implements PersistenceService {
     if (!initted) {
       await init();
     }
-    final numRows = opsSheet.rowCount;
-    final success = await opsSheet.add(rows: ops.length);
+
+    final success = await opsSheet.values.appendRows([
+      for (var op in ops) [GoalDelta.toJson(op.delta), op.hlcTimestamp]
+    ]);
+
     if (!success) {
       throw Exception("Failed to save ops");
-    }
-    for (var i = 0; i < ops.length; i++) {
-      final op = ops[i];
-      final row = await Future.wait([
-        opsSheet.cells.cell(row: numRows + i + 1, column: 1),
-        opsSheet.cells.cell(row: numRows + i + 1, column: 2),
-      ]);
-      final deltaCell = row[0];
-      final hlcCell = row[1];
-
-      await Future.wait([
-        deltaCell.post(GoalDelta.toJson(op.delta)),
-        hlcCell.post(op.hlcTimestamp),
-      ]);
     }
   }
 }
