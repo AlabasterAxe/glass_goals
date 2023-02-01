@@ -1,17 +1,21 @@
-import 'package:flutter/src/widgets/basic.dart';
-import 'package:flutter/src/widgets/framework.dart';
+import 'package:flutter/rendering.dart' show CrossAxisAlignment;
 import 'package:flutter/widgets.dart'
     show
         BuildContext,
+        Column,
         Container,
         GestureDetector,
+        Row,
         SingleChildScrollView,
+        SizedBox,
         Spacer,
+        State,
+        StatefulWidget,
         StatelessWidget,
         Text,
         Widget;
 import 'package:goals_core/model.dart' show Goal;
-import 'package:goals_web/goal_item.dart';
+import 'goal_item.dart' show GoalItemWidget;
 
 class GoalTreeWidget extends StatefulWidget {
   final Map<String, Goal> goalMap;
