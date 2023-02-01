@@ -8,7 +8,7 @@
             "name": "goals_glass",
             "request": "launch",
             "type": "dart",
-            "program": "goals_glass/lib/main.dart",
+            "program": "goals_glass/lib/main.dart"
         },
         {
             "name": "goals_glass (profile mode)",
