@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:gsheets/gsheets.dart'
     show Cell, GSheets, Spreadsheet, Worksheet;
 import 'package:hive/hive.dart';
@@ -7,6 +8,9 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'dart:convert' show jsonDecode;
 
 Future<Map<String, dynamic>> loadSheetsSpec() async {
+  if (kIsWeb) {
+    return jsonDecode(await rootBundle.loadString('local/sheet_creds.json'));
+  }
   return jsonDecode(
       await rootBundle.loadString('assets/local/sheet_creds.json'));
 }
