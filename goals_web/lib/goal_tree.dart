@@ -17,13 +17,19 @@ class GoalTreeWidget extends StatefulWidget {
   final Map<String, Goal> goalMap;
   final String rootGoalId;
   final Set<String> selectedGoals;
+  final Set<String> expandedGoals;
   final Function(String goalId) onSelected;
+  final Function(String goalId) onExpanded;
+  final int? depthLimit;
   const GoalTreeWidget({
     super.key,
     required this.goalMap,
     required this.rootGoalId,
     required this.selectedGoals,
     required this.onSelected,
+    required this.expandedGoals,
+    required this.onExpanded,
+    this.depthLimit,
   });
 
   @override
@@ -31,12 +37,11 @@ class GoalTreeWidget extends StatefulWidget {
 }
 
 class _GoalTreeWidgetState extends State<GoalTreeWidget> {
-  bool _expanded = false;
   @override
   Widget build(BuildContext context) {
     final Goal rootGoal = widget.goalMap[widget.rootGoalId]!;
     return GestureDetector(
-      onTap: () => setState(() => _expanded = !_expanded),
+      onTap: () => widget.onExpanded(rootGoal.id),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -46,7 +51,8 @@ class _GoalTreeWidgetState extends State<GoalTreeWidget> {
               onSelected: (value) {
                 widget.onSelected(rootGoal.id);
               }),
-          _expanded
+          widget.expandedGoals.contains(rootGoal.id) &&
+                  (widget.depthLimit == null || widget.depthLimit! > 0)
               ? Row(children: [
                   const SizedBox(width: 20),
                   Column(
@@ -58,6 +64,11 @@ class _GoalTreeWidgetState extends State<GoalTreeWidget> {
                             rootGoalId: subGoal.id,
                             onSelected: widget.onSelected,
                             selectedGoals: widget.selectedGoals,
+                            expandedGoals: widget.expandedGoals,
+                            onExpanded: widget.onExpanded,
+                            depthLimit: widget.depthLimit == null
+                                ? null
+                                : widget.depthLimit! - 1,
                           ),
                       ])
                 ])

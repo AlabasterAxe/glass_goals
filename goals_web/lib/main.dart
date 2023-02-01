@@ -73,6 +73,7 @@ class GoalViewer extends StatefulWidget {
 class _GoalViewerState extends State<GoalViewer> {
   final List<bool> _displayMode = <bool>[true, false];
   final Set<String> selectedGoals = {};
+  final Set<String> expandedGoals = {};
 
   onSelected(String goalId) {
     setState(() {
@@ -80,6 +81,16 @@ class _GoalViewerState extends State<GoalViewer> {
         selectedGoals.remove(goalId);
       } else {
         selectedGoals.add(goalId);
+      }
+    });
+  }
+
+  onExpanded(String goalId) {
+    setState(() {
+      if (expandedGoals.contains(goalId)) {
+        expandedGoals.remove(goalId);
+      } else {
+        expandedGoals.add(goalId);
       }
     });
   }
@@ -95,11 +106,15 @@ class _GoalViewerState extends State<GoalViewer> {
                   rootGoalId: widget.rootGoalId,
                   selectedGoals: selectedGoals,
                   onSelected: onSelected,
+                  expandedGoals: expandedGoals,
+                  onExpanded: onExpanded,
                 )
               : GoalListWidget(
                   goalMap: widget.goalMap,
                   selectedGoals: selectedGoals,
                   onSelected: onSelected,
+                  expandedGoals: expandedGoals,
+                  onExpanded: onExpanded,
                 ),
         ),
       ),
