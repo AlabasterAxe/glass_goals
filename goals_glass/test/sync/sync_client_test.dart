@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glass_goals/model.dart' show Goal;
-import 'package:glass_goals/sync/ops.dart' show Op, GoalDelta;
-import 'package:glass_goals/sync/sync_client.dart' show SyncClient;
+import 'package:goals_glass/model.dart' show Goal;
+import 'package:goals_glass/sync/ops.dart' show Op, GoalDelta;
+import 'package:goals_glass/sync/sync_client.dart' show SyncClient;
 
 final subGoal = Goal(
   id: '2',

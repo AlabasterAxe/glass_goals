@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:async/async.dart' show RestartableTimer;
 import 'package:flutter/widgets.dart'
     show AnimationController, BuildContext, InheritedWidget;
-import 'package:glass_goals/sync/sync_client.dart' show SyncClient;
+import 'package:goals_glass/sync/sync_client.dart' show SyncClient;
 import 'package:rxdart/subjects.dart' show PublishSubject, Subject;
 
 import 'stt_service.dart' show SttService;

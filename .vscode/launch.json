@@ -5,20 +5,23 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "glass_goals",
-            "request": "launch",
-            "type": "dart"
-        },
-        {
-            "name": "glass_goals (profile mode)",
+            "name": "goals_glass",
             "request": "launch",
             "type": "dart",
+            "program": "goals_glass/lib/main.dart",
+        },
+        {
+            "name": "goals_glass (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "program": "goals_glass/lib/main.dart",
             "flutterMode": "profile"
         },
         {
-            "name": "glass_goals (release mode)",
+            "name": "goals_glass (release mode)",
             "request": "launch",
             "type": "dart",
+            "program": "goals_glass/lib/main.dart",
             "flutterMode": "release"
         }
     ]

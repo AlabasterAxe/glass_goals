@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart' show MaterialPageRoute;
-import 'package:flutter/rendering.dart';
-import 'package:flutter/src/widgets/async.dart';
+import 'package:flutter/rendering.dart' show MainAxisAlignment;
 import 'package:flutter/widgets.dart'
     show
         BuildContext,
@@ -11,7 +10,7 @@ import 'package:flutter/widgets.dart'
         Text,
         ValueListenableBuilder,
         Widget;
-import 'package:glass_goals/util/glass_page_view.dart' show GlassPageView;
+import '../util/glass_page_view.dart' show GlassPageView;
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../app_context.dart' show AppContext;

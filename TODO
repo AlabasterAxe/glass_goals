@@ -1,4 +1,13 @@
+
+TODO:
+
  - Implement a true wakelock
  - Create a settings service
  - fix syncing
- - fix bugs with swiping back
+ - correctly set page when paging back up through goal hierarchy
+ - web app
+ - set active goal
+ - mark goals done
+
+DONE:
+  - fix bugs with swiping back

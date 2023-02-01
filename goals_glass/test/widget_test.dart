@@ -9,7 +9,7 @@ import 'package:flutter/material.dart' show Icons;
 import 'package:flutter_test/flutter_test.dart'
     show WidgetTester, expect, find, findsNothing, findsOneWidget, testWidgets;
 
-import 'package:glass_goals/main.dart' show GlassGoals;
+import 'package:goals_glass/main.dart' show GlassGoals;
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
