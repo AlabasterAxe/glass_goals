@@ -135,6 +135,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  goals_core:
+    dependency: "direct main"
+    description:
+      path: "../goals_core"
+      relative: true
+    source: path
+    version: "1.0.0"
   googleapis:
     dependency: transitive
     description:

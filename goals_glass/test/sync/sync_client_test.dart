@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:goals_glass/model.dart' show Goal;
+import 'package:goals_core/goals_core.dart' show Goal;
 import 'package:goals_glass/sync/ops.dart' show Op, GoalDelta;
 import 'package:goals_glass/sync/sync_client.dart' show SyncClient;
 

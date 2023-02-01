@@ -16,7 +16,7 @@ import 'util/glass_gesture_detector.dart';
 import 'util/glass_page_view.dart' show GlassPageView;
 import 'util/glass_scaffold.dart';
 import 'goal.dart' show GoalsWidget, GoalTitle;
-import '../../model.dart' show Goal;
+import 'package:goals_core/goals_core.dart' show Goal;
 import 'stt_service.dart' show SttService;
 import '../../sync/sync_client.dart' show SyncClient, rootGoal;
 

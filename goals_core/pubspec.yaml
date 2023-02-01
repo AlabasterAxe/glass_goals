@@ -1,5 +1,5 @@
 name: goals_core
-description: A starting point for Dart libraries or applications.
+description: Core Library that would be shared by any app for displaying goals
 version: 1.0.0
 # homepage: https://www.example.com
 

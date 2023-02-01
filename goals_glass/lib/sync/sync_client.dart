@@ -4,10 +4,9 @@ import 'dart:developer';
 import 'package:hive_flutter/hive_flutter.dart' show Box, Hive, HiveX;
 import 'package:hlc/hlc.dart';
 import 'package:rxdart/rxdart.dart' show BehaviorSubject, Subject;
-import 'package:screen_brightness/screen_brightness.dart' show ScreenBrightness;
 import 'package:uuid/uuid.dart';
 
-import '../model.dart' show Goal;
+import 'package:goals_core/goals_core.dart' show Goal;
 import 'ops.dart' show GoalDelta, Op;
 import 'persistence_service.dart' show PersistenceService;
 
