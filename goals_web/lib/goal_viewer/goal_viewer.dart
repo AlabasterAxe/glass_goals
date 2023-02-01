@@ -1,9 +1,54 @@
-import 'package:flutter/material.dart' show ToggleButtons;
+import 'package:flutter/material.dart'
+    show Colors, IconButton, Icons, ToggleButtons;
 import 'package:flutter/widgets.dart';
 import 'package:goals_core/model.dart' show Goal;
+import 'package:goals_core/sync.dart' show GoalDelta, archiveGoal, rootGoal;
+import 'package:goals_web/app_context.dart';
 
 import 'goal_list.dart' show GoalListWidget;
 import 'goal_tree.dart' show GoalTreeWidget;
+
+class HoverToolbarWidget extends StatelessWidget {
+  final Function() onMerge;
+  final Function() onUnarchive;
+  const HoverToolbarWidget({
+    super.key,
+    required this.onMerge,
+    required this.onUnarchive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+        height: double.infinity,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.5),
+              spreadRadius: 5,
+              blurRadius: 7,
+              offset: const Offset(0, 3), // changes position of shadow
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.merge),
+              onPressed: onMerge,
+            ),
+            IconButton(
+              icon: const Icon(Icons.unarchive),
+              onPressed: onUnarchive,
+            ),
+          ],
+        ));
+  }
+}
 
 class GoalViewer extends StatefulWidget {
   final Map<String, Goal> goalMap;
@@ -40,44 +85,100 @@ class _GoalViewerState extends State<GoalViewer> {
     });
   }
 
+  onMerge() {
+    final winningGoalId = selectedGoals.first;
+    final syncClient = AppContext.of(context).syncClient;
+    final List<GoalDelta> goalDeltas = [];
+    for (final String goalId in selectedGoals) {
+      if (goalId == winningGoalId) {
+        continue;
+      }
+
+      goalDeltas.add(GoalDelta(
+        id: goalId,
+        parentId: archiveGoal.id,
+      ));
+      final goal = widget.goalMap[goalId];
+      if (goal != null) {
+        for (final Goal childGoal in goal.subGoals) {
+          goalDeltas.add(GoalDelta(
+            id: childGoal.id,
+            parentId: winningGoalId,
+          ));
+        }
+      }
+    }
+
+    syncClient.modifyGoals(goalDeltas);
+    selectedGoals.clear();
+  }
+
+  onUnarchive() {
+    final List<GoalDelta> goalDeltas = [];
+    for (final String goalId in selectedGoals) {
+      goalDeltas.add(GoalDelta(
+        id: goalId,
+        parentId: rootGoal.id,
+      ));
+    }
+
+    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
+    selectedGoals.clear();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Expanded(
-        child: SingleChildScrollView(
-          child: _displayMode[0]
-              ? GoalTreeWidget(
-                  goalMap: widget.goalMap,
-                  rootGoalId: widget.rootGoalId,
-                  selectedGoals: selectedGoals,
-                  onSelected: onSelected,
-                  expandedGoals: expandedGoals,
-                  onExpanded: onExpanded,
-                )
-              : GoalListWidget(
-                  goalMap: widget.goalMap,
-                  selectedGoals: selectedGoals,
-                  onSelected: onSelected,
-                  expandedGoals: expandedGoals,
-                  onExpanded: onExpanded,
-                ),
-        ),
-      ),
-      ToggleButtons(
-        direction: Axis.horizontal,
-        onPressed: (index) {
-          setState(() {
-            for (int i = 0; i < _displayMode.length; i++) {
-              _displayMode[i] = i == index;
-            }
-          });
-        },
-        isSelected: _displayMode,
-        children: const [
-          Text('Tree'),
-          Text('List'),
-        ],
-      ),
-    ]);
+    return Stack(
+      alignment: Alignment.center,
+      fit: StackFit.expand,
+      children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: _displayMode[0]
+                  ? GoalTreeWidget(
+                      goalMap: widget.goalMap,
+                      rootGoalId: widget.rootGoalId,
+                      selectedGoals: selectedGoals,
+                      onSelected: onSelected,
+                      expandedGoals: expandedGoals,
+                      onExpanded: onExpanded,
+                    )
+                  : GoalListWidget(
+                      goalMap: widget.goalMap,
+                      selectedGoals: selectedGoals,
+                      onSelected: onSelected,
+                      expandedGoals: expandedGoals,
+                      onExpanded: onExpanded,
+                    ),
+            ),
+          ),
+          ToggleButtons(
+            direction: Axis.horizontal,
+            onPressed: (index) {
+              setState(() {
+                for (int i = 0; i < _displayMode.length; i++) {
+                  _displayMode[i] = i == index;
+                }
+              });
+            },
+            isSelected: _displayMode,
+            children: const [
+              Text('Tree'),
+              Text('List'),
+            ],
+          ),
+        ]),
+        selectedGoals.isNotEmpty
+            ? Positioned(
+                top: 50,
+                width: 200,
+                height: 50,
+                child: HoverToolbarWidget(
+                    onMerge: onMerge, onUnarchive: onUnarchive),
+              )
+            : Container(),
+      ],
+    );
   }
 }

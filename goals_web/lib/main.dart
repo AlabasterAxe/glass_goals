@@ -77,10 +77,8 @@ class GoalsHome extends StatelessWidget {
                       height: 20,
                       child: CircularProgressIndicator()));
             }
-            return SingleChildScrollView(
-              child: GoalViewer(
-                  goalMap: snapshot.requireData, rootGoalId: rootGoal.id),
-            );
+            return GoalViewer(
+                goalMap: snapshot.requireData, rootGoalId: rootGoal.id);
           }),
     );
   }

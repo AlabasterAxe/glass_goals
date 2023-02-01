@@ -50,6 +50,20 @@ class SyncClient {
     sync();
   }
 
+  modifyGoals(List<GoalDelta> deltas) {
+    List<dynamic> unsyncedOps = appBox.get('unsyncedOps', defaultValue: []);
+
+    for (final delta in deltas) {
+      hlc = hlc.increment();
+      final op = Op(hlcTimestamp: hlc.pack(), delta: delta);
+      unsyncedOps.add(Op.toJson(op));
+    }
+
+    appBox.put('unsyncedOps', unsyncedOps);
+    _computeState();
+    sync();
+  }
+
   applyOp(Map<String, Goal> goalMap, Op op) {
     Goal? goal = goalMap[op.delta.id];
     if (goal == null) {

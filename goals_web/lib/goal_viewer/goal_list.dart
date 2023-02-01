@@ -21,9 +21,12 @@ class GoalListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sortedGoals = goalMap.values.toList(growable: false);
+    sortedGoals
+        .sort((a, b) => a.text.toLowerCase().compareTo(b.text.toLowerCase()));
     return Column(
       children: [
-        for (final goal in goalMap.values)
+        for (final goal in sortedGoals)
           GoalTreeWidget(
             goalMap: goalMap,
             rootGoalId: goal.id,
