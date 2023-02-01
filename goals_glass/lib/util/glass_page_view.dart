@@ -8,7 +8,7 @@ import 'package:flutter/widgets.dart'
         StatefulWidget,
         Widget;
 
-import '../app_context.dart' show AppContext;
+import 'app_context.dart' show AppContext;
 
 class GlassPageView extends StatefulWidget {
   final List<Widget> children;

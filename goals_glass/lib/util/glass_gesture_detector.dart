@@ -8,7 +8,7 @@ import 'package:flutter/widgets.dart'
         Widget;
 import 'package:screen_brightness/screen_brightness.dart';
 
-import '../app_context.dart' show AppContext;
+import 'app_context.dart' show AppContext;
 
 class GlassGestureDetector extends StatelessWidget {
   final Widget child;

@@ -17,10 +17,8 @@ dependencies:
 
   rxdart: ^0.27.7
   uuid: ^3.0.7
-  hlc: ^1.0.3
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  gsheets: ^0.4.2
   screen_brightness: ^0.2.2
   async: ^2.9.0
   goals_core:

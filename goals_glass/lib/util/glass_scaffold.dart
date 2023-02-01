@@ -13,7 +13,7 @@ import 'package:flutter/widgets.dart'
 
 import 'package:flutter/material.dart' show Scaffold, Colors;
 
-import '../app_context.dart';
+import 'app_context.dart';
 
 class GlassScaffold extends StatelessWidget {
   final Widget? child;

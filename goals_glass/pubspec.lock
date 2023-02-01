@@ -157,7 +157,7 @@ packages:
     source: hosted
     version: "1.3.1"
   gsheets:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: gsheets
       url: "https://pub.dartlang.org"
@@ -178,7 +178,7 @@ packages:
     source: hosted
     version: "1.1.0"
   hlc:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: hlc
       url: "https://pub.dartlang.org"

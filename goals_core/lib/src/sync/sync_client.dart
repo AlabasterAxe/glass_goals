@@ -6,7 +6,7 @@ import 'package:hlc/hlc.dart';
 import 'package:rxdart/rxdart.dart' show BehaviorSubject, Subject;
 import 'package:uuid/uuid.dart';
 
-import 'package:goals_core/goals_core.dart' show Goal;
+import 'package:goals_core/model.dart' show Goal;
 import 'ops.dart' show GoalDelta, Op;
 import 'persistence_service.dart' show PersistenceService;
 

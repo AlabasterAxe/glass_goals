@@ -1,24 +1,22 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:async/async.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:goals_glass/sync/persistence_service.dart';
 import 'package:hive/hive.dart';
 import 'package:rxdart/rxdart.dart' show PublishSubject, Subject;
 import 'package:screen_brightness/screen_brightness.dart' show ScreenBrightness;
 
-import 'app_context.dart' show AppContext;
+import 'util/app_context.dart' show AppContext;
 import 'settings/settings_widget.dart';
 import 'styles.dart' show mainTextStyle;
 import 'util/glass_gesture_detector.dart';
 import 'util/glass_page_view.dart' show GlassPageView;
 import 'util/glass_scaffold.dart';
-import 'goal.dart' show GoalsWidget, GoalTitle;
-import 'package:goals_core/goals_core.dart' show Goal;
+import 'goal.dart' show GoalsWidget;
+import 'package:goals_core/model.dart' show Goal;
 import 'stt_service.dart' show SttService;
-import '../../sync/sync_client.dart' show SyncClient, rootGoal;
+import 'package:goals_core/sync.dart'
+    show SyncClient, rootGoal, GoogleSheetsPersistenceService;
 
 void main() {
   runApp(const GlassGoals());

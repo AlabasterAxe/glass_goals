@@ -13,7 +13,7 @@ import 'package:flutter/widgets.dart'
 import '../util/glass_page_view.dart' show GlassPageView;
 import 'package:hive_flutter/hive_flutter.dart';
 
-import '../app_context.dart' show AppContext;
+import '../util/app_context.dart' show AppContext;
 import '../styles.dart' show mainTextStyle, subTitleStyle;
 import '../util/glass_gesture_detector.dart' show GlassGestureDetector;
 import '../util/glass_scaffold.dart' show GlassScaffold;

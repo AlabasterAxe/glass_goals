@@ -1,4 +1,4 @@
-import 'package:goals_core/goals_core.dart';
+import 'package:goals_core/model.dart';
 import 'package:test/test.dart';
 
 void main() {}
