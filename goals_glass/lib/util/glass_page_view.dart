@@ -12,22 +12,34 @@ import 'app_context.dart' show AppContext;
 
 class GlassPageView extends StatefulWidget {
   final List<Widget> children;
-  const GlassPageView({super.key, required this.children});
+  final PageController? controller;
+  const GlassPageView({super.key, required this.children, this.controller});
 
   @override
   State<GlassPageView> createState() => _GlassPageViewState();
 }
 
 class _GlassPageViewState extends State<GlassPageView> {
-  final _pageController = PageController();
+  late final _pageController = widget.controller ?? PageController();
+
+  pageListener() {
+    AppContext.of(context).interactionSubject.add(null);
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    _pageController.addListener(() {
-      AppContext.of(context).interactionSubject.add(null);
-    });
+    _pageController.addListener(pageListener);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    if (widget.controller != null) {
+      widget.controller!.removeListener(pageListener);
+    }
   }
 
   @override

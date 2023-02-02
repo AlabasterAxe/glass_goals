@@ -1,8 +1,5 @@
-/// Support for doing something awesome.
-///
-/// More dartdocs go here.
+/// Shared utilities for all the goals apps.
 library goals_core;
 
 export 'src/model.dart';
-
-// TODO: Export any libraries intended for clients of this package.
+export 'src/queries.dart';

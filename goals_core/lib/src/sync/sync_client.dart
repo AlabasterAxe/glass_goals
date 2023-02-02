@@ -77,6 +77,11 @@ class SyncClient {
       goal.text = op.delta.text!;
     }
 
+    if (op.delta.activeUntil != null &&
+        goal.activeUntil != op.delta.activeUntil) {
+      goal.activeUntil = op.delta.activeUntil!;
+    }
+
     if (op.delta.parentId != null && goal.parentId != op.delta.parentId) {
       goalMap[goal.parentId!]?.removeSubGoal(goal.id);
       goal.parentId = op.delta.parentId;

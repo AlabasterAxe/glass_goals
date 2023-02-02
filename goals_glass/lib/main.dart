@@ -13,7 +13,8 @@ import 'util/glass_gesture_detector.dart';
 import 'util/glass_page_view.dart' show GlassPageView;
 import 'util/glass_scaffold.dart';
 import 'goal.dart' show GoalsWidget;
-import 'package:goals_core/model.dart' show Goal;
+import 'package:goals_core/model.dart'
+    show Goal, getActiveGoalExpiringSoonest, getTransitiveSubGoals;
 import 'stt_service.dart' show SttService;
 import 'package:goals_core/sync.dart'
     show SyncClient, rootGoal, GoogleSheetsPersistenceService;
@@ -41,16 +42,18 @@ class _GlassGoalsState extends State<GlassGoals>
   late AnimationController backgroundColorAnimationController =
       AnimationController(vsync: this);
   Subject interactionSubject = PublishSubject<void>();
+  PageController rootPageController = PageController();
 
   Future<void> appInit() async {
     await syncClient.init();
-    Timer.periodic(const Duration(minutes: 10), (_) {
+    Timer.periodic(const Duration(minutes: 1), (_) {
       final hintingEnabled = Hive.box('glass_goals.settings')
           .get('enableHinting', defaultValue: true);
       if (hintingEnabled) {
         ScreenBrightness().setScreenBrightness(1.0);
         screenOffTimer.reset();
         backgroundColorAnimationController.forward().then((_) {
+          rootPageController.jumpTo(0.0);
           backgroundColorAnimationController.reverse();
         });
       }
@@ -88,6 +91,7 @@ class _GlassGoalsState extends State<GlassGoals>
               backgroundColorAnimationController:
                   backgroundColorAnimationController,
               interactionSubject: interactionSubject,
+              rootViewPageController: rootPageController,
               child: MaterialApp(
                 title: 'Glass Goals',
                 theme: ThemeData(
@@ -104,10 +108,42 @@ class _GlassGoalsState extends State<GlassGoals>
   }
 }
 
-class GoalsHome extends StatelessWidget {
+class GoalsHome extends StatefulWidget {
   const GoalsHome({
     Key? key,
   }) : super(key: key);
+
+  @override
+  State<GoalsHome> createState() => _GoalsHomeState();
+}
+
+class _GoalsHomeState extends State<GoalsHome> {
+  bool isInitted = false;
+
+  handleHinting(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      Navigator.popUntil(context, (route) => route.isFirst);
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!isInitted) {
+      isInitted = true;
+      AppContext.of(context)
+          .backgroundColorAnimationController
+          .addStatusListener(handleHinting);
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    AppContext.of(context)
+        .backgroundColorAnimationController
+        .removeStatusListener(handleHinting);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +155,26 @@ class GoalsHome extends StatelessWidget {
         return GlassScaffold(child: child);
       },
       child: GlassPageView(
+        controller: AppContext.of(context).rootViewPageController,
         children: [
+          StreamBuilder<Map<String, Goal>>(
+              stream: AppContext.of(context).syncClient.stateSubject,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return Center(
+                      child: Text("Loading Active Goal",
+                          style: Theme.of(context).textTheme.headline1));
+                }
+
+                final unarchivedGoals =
+                    getTransitiveSubGoals(snapshot.requireData, rootGoal.id);
+                final activeGoal =
+                    getActiveGoalExpiringSoonest(unarchivedGoals);
+                return Center(
+                    child: Text(
+                        activeGoal != null ? activeGoal.text : "No Active Goal",
+                        style: Theme.of(context).textTheme.headline1));
+              }),
           GlassGestureDetector(
               onTap: () {
                 Navigator.push(

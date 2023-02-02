@@ -2,10 +2,12 @@ import 'dart:developer' show log;
 
 import 'package:flutter/material.dart'
     show Colors, MaterialPageRoute, Navigator, Theme;
+import 'package:flutter/rendering.dart' show MainAxisAlignment;
 import 'package:flutter/widgets.dart'
     show
         BuildContext,
         Center,
+        Column,
         Container,
         Hero,
         Positioned,
@@ -23,7 +25,7 @@ import './util/glass_gesture_detector.dart';
 import 'util/app_context.dart' show AppContext;
 import 'util/glass_page_view.dart' show GlassPageView;
 import 'util/glass_scaffold.dart' show GlassScaffold;
-import 'package:goals_core/model.dart' show Goal;
+import 'package:goals_core/model.dart' show Goal, isGoalActive;
 import 'styles.dart' show mainTextStyle;
 
 class GoalTitle extends StatelessWidget {
@@ -73,18 +75,42 @@ class _AddSubGoalCardState extends State<AddSubGoalCard> {
 
 class GoalMenu extends StatelessWidget {
   final void Function() onArchive;
-  const GoalMenu({super.key, required this.onArchive});
+  final void Function() onSetActive;
+  final Goal goal;
+  const GoalMenu({
+    super.key,
+    required this.onArchive,
+    required this.onSetActive,
+    required this.goal,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GlassGestureDetector(
-        onTap: () {
-          onArchive();
-          Navigator.pop(context);
-        },
-        child: Container(
-            color: Colors.black.withOpacity(0.5),
-            child: const Center(child: Text('Archive', style: mainTextStyle))));
+    return GlassPageView(
+      children: [
+        GlassGestureDetector(
+          onTap: () {
+            onSetActive();
+            Navigator.pop(context);
+          },
+          child: Container(
+              color: Colors.black.withOpacity(0.5),
+              child: Center(
+                  child: Text(isGoalActive(goal) ? 'Deactivate' : 'Activate',
+                      style: mainTextStyle))),
+        ),
+        GlassGestureDetector(
+          onTap: () {
+            onArchive();
+            Navigator.pop(context);
+          },
+          child: Container(
+              color: Colors.black.withOpacity(0.5),
+              child:
+                  const Center(child: Text('Archive', style: mainTextStyle))),
+        ),
+      ],
+    );
   }
 }
 
@@ -145,15 +171,32 @@ class _GoalsWidgetState extends State<GoalsWidget> {
                             context,
                             MaterialPageRoute(
                                 builder: (context) => GlassScaffold(
-                                        child: GoalMenu(onArchive: () {
-                                      setState(() {
+                                        child: GoalMenu(
+                                      goal: subGoal,
+                                      onArchive: () {
+                                        setState(() {
+                                          AppContext.of(context)
+                                              .syncClient
+                                              .modifyGoal(GoalDelta(
+                                                  id: subGoal.id,
+                                                  parentId: 'archive'));
+                                        });
+                                      },
+                                      onSetActive: () {
                                         AppContext.of(context)
                                             .syncClient
                                             .modifyGoal(GoalDelta(
                                                 id: subGoal.id,
-                                                parentId: 'archive'));
-                                      });
-                                    }))));
+                                                activeUntil: isGoalActive(
+                                                        subGoal)
+                                                    ? DateTime.now()
+                                                        .toIso8601String()
+                                                    : DateTime.now()
+                                                        .add(const Duration(
+                                                            days: 1))
+                                                        .toIso8601String()));
+                                      },
+                                    ))));
                       }
                     },
                     onTap: () {
@@ -161,7 +204,12 @@ class _GoalsWidgetState extends State<GoalsWidget> {
                         activeGoalId = subGoal.id;
                       });
                     },
-                    child: Hero(tag: subGoal.id, child: GoalTitle(subGoal))))
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Hero(tag: subGoal.id, child: GoalTitle(subGoal)),
+                          isGoalActive(subGoal) ? Text('Active') : Container()
+                        ])))
                 .toList(),
             GlassGestureDetector(
               onVerticalDragEnd: (details) {

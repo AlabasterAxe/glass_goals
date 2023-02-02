@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:async/async.dart' show RestartableTimer;
 import 'package:flutter/widgets.dart'
-    show AnimationController, BuildContext, InheritedWidget;
+    show AnimationController, BuildContext, InheritedWidget, PageController;
 import 'package:goals_core/sync.dart' show SyncClient;
 import 'package:rxdart/subjects.dart' show Subject;
 
@@ -13,6 +13,9 @@ class AppContext extends InheritedWidget {
   final SyncClient syncClient;
   final RestartableTimer screenTimeoutTimer;
   final AnimationController backgroundColorAnimationController;
+
+  // This is used to return to the active goal when a goal hint happens
+  final PageController rootViewPageController;
   final Subject<void> interactionSubject;
 
   const AppContext({
@@ -23,6 +26,7 @@ class AppContext extends InheritedWidget {
     required this.screenTimeoutTimer,
     required this.backgroundColorAnimationController,
     required this.interactionSubject,
+    required this.rootViewPageController,
   });
 
   static AppContext of(BuildContext context) {
