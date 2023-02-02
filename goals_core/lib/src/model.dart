@@ -1,12 +1,22 @@
 import 'package:collection/collection.dart';
 
 class Goal {
-  String id;
+  final String id;
+
+  // These fields are intentionally not final to allow references to stay valid
   String text;
   late List<Goal> subGoals;
   String? parentId;
 
-  Goal({required this.text, required this.id, subGoals, this.parentId}) {
+  /// Iso8601 string
+  String? activeUntil;
+
+  Goal(
+      {required this.text,
+      required this.id,
+      subGoals,
+      this.parentId,
+      this.activeUntil}) {
     this.subGoals = subGoals ?? [];
   }
 

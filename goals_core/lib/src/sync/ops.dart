@@ -4,20 +4,34 @@ class GoalDelta {
   final String id;
   final String? text;
   final String? parentId;
-  const GoalDelta({required this.id, this.text, this.parentId});
+  final String? activeUntil;
+  const GoalDelta(
+      {required this.id, this.text, this.parentId, this.activeUntil});
 
   static GoalDelta fromJson(dynamic jsonString) {
     final json = jsonDecode(jsonString);
     return GoalDelta(
-        id: json['id'], text: json['text'], parentId: json['parentId']);
+      id: json['id'],
+      text: json['text'],
+      parentId: json['parentId'],
+      activeUntil: json['activeUntil'],
+    );
   }
 
   static String toJson(GoalDelta delta) {
-    return jsonEncode({
+    final json = {
       'id': delta.id,
-      'text': delta.text,
-      'parentId': delta.parentId,
-    });
+    };
+    if (delta.text != null) {
+      json['text'] = delta.text!;
+    }
+    if (delta.parentId != null) {
+      json['parentId'] = delta.parentId!;
+    }
+    if (delta.activeUntil != null) {
+      json['activeUntil'] = delta.activeUntil!;
+    }
+    return jsonEncode(json);
   }
 }
 
