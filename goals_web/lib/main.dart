@@ -24,8 +24,6 @@ class _GlassGoalsState extends State<GlassGoals>
     with SingleTickerProviderStateMixin {
   SyncClient syncClient =
       SyncClient(persistenceService: GoogleSheetsPersistenceService());
-  late AnimationController backgroundColorAnimationController =
-      AnimationController(vsync: this);
 
   Future<void> appInit() async {
     await syncClient.init();

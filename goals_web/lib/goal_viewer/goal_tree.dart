@@ -1,20 +1,20 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Colors;
+import 'package:flutter/painting.dart' show TextDecoration, TextStyle;
 import 'package:flutter/rendering.dart'
-    show BoxDecoration, CrossAxisAlignment, EdgeInsets;
+    show BoxDecoration, BoxShape, CrossAxisAlignment, EdgeInsets;
 import 'package:flutter/widgets.dart'
     show
         BuildContext,
         Column,
         Container,
+        DragTarget,
         Draggable,
         GestureDetector,
+        Padding,
         Row,
-        SingleChildScrollView,
         SizedBox,
-        Spacer,
         State,
         StatefulWidget,
-        StatelessWidget,
         Text,
         Widget;
 import 'package:goals_core/model.dart' show Goal;

@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart' show GoalDelta, archiveGoal, rootGoal;
 import 'package:goals_web/app_context.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import 'goal_list.dart' show GoalListWidget;
 import 'goal_tree.dart' show GoalTreeWidget;
@@ -64,6 +65,8 @@ class _GoalViewerState extends State<GoalViewer> {
   final List<bool> _displayMode = <bool>[true, false];
   final Set<String> selectedGoals = {};
   final Set<String> expandedGoals = {};
+  Future<void>? openBoxFuture;
+  bool isInitted = false;
 
   onSelected(String goalId) {
     setState(() {
@@ -72,6 +75,7 @@ class _GoalViewerState extends State<GoalViewer> {
       } else {
         selectedGoals.add(goalId);
       }
+      Hive.box('goals_web.ui').put('selectedGoals', selectedGoals.toList());
     });
   }
 
@@ -82,6 +86,7 @@ class _GoalViewerState extends State<GoalViewer> {
       } else {
         expandedGoals.add(goalId);
       }
+      Hive.box('goals_web.ui').put('expandedGoals', expandedGoals.toList());
     });
   }
 
@@ -127,7 +132,29 @@ class _GoalViewerState extends State<GoalViewer> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!isInitted) {
+      setState(() {
+        openBoxFuture = Hive.openBox('goals_web.ui').then((box) {
+          selectedGoals.addAll(
+              (box.get('selectedGoals', defaultValue: <String>[])
+                      as List<dynamic>)
+                  .cast<String>());
+          expandedGoals.addAll(
+              (box.get('expandedGoals', defaultValue: <String>[])
+                      as List<dynamic>)
+                  .cast<String>());
+        });
+        isInitted = true;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // my name is matt
     return Stack(
       alignment: Alignment.center,
       fit: StackFit.expand,
@@ -135,23 +162,29 @@ class _GoalViewerState extends State<GoalViewer> {
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(
             child: SingleChildScrollView(
-              child: _displayMode[0]
-                  ? GoalTreeWidget(
-                      goalMap: widget.goalMap,
-                      rootGoalId: widget.rootGoalId,
-                      selectedGoals: selectedGoals,
-                      onSelected: onSelected,
-                      expandedGoals: expandedGoals,
-                      onExpanded: onExpanded,
-                    )
-                  : GoalListWidget(
-                      goalMap: widget.goalMap,
-                      selectedGoals: selectedGoals,
-                      onSelected: onSelected,
-                      expandedGoals: expandedGoals,
-                      onExpanded: onExpanded,
-                    ),
-            ),
+                child: FutureBuilder<void>(
+                    future: openBoxFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return const Text('Loading...');
+                      }
+                      return _displayMode[0]
+                          ? GoalTreeWidget(
+                              goalMap: widget.goalMap,
+                              rootGoalId: widget.rootGoalId,
+                              selectedGoals: selectedGoals,
+                              onSelected: onSelected,
+                              expandedGoals: expandedGoals,
+                              onExpanded: onExpanded,
+                            )
+                          : GoalListWidget(
+                              goalMap: widget.goalMap,
+                              selectedGoals: selectedGoals,
+                              onSelected: onSelected,
+                              expandedGoals: expandedGoals,
+                              onExpanded: onExpanded,
+                            );
+                    })),
           ),
           ToggleButtons(
             direction: Axis.horizontal,
