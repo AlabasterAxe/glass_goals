@@ -46,7 +46,7 @@ class _GlassGoalsState extends State<GlassGoals>
 
   Future<void> appInit() async {
     await syncClient.init();
-    Timer.periodic(const Duration(minutes: 1), (_) {
+    Timer.periodic(const Duration(minutes: 10), (_) {
       final hintingEnabled = Hive.box('glass_goals.settings')
           .get('enableHinting', defaultValue: true);
       if (hintingEnabled) {
