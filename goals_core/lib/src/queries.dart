@@ -19,11 +19,11 @@ Goal? getActiveGoalExpiringSoonest(Map<String, Goal> goalMap) {
       continue;
     }
 
-    final activeUntil = DateTime.parse(goal.activeUntil!);
-    if (activeUntil.isBefore(DateTime.now())) {
+    if (!isGoalActive(goal)) {
       continue;
     }
 
+    final activeUntil = DateTime.parse(goal.activeUntil!);
     if (result == null ||
         activeUntil.isBefore(DateTime.parse(result.activeUntil!))) {
       result = goal;

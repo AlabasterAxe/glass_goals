@@ -44,6 +44,10 @@ class GoalTitle extends StatelessWidget {
   }
 }
 
+DateTime endOfDay(DateTime date) {
+  return DateTime(date.year, date.month, date.day, 23, 59, 59);
+}
+
 class AddSubGoalCard extends StatefulWidget {
   final Function(String) onGoalText;
   final Function(Object) onError;
@@ -191,9 +195,7 @@ class _GoalsWidgetState extends State<GoalsWidget> {
                                                         subGoal)
                                                     ? DateTime.now()
                                                         .toIso8601String()
-                                                    : DateTime.now()
-                                                        .add(const Duration(
-                                                            days: 1))
+                                                    : endOfDay(DateTime.now())
                                                         .toIso8601String()));
                                       },
                                     ))));

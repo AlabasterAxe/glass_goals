@@ -119,6 +119,7 @@ class GoalsHome extends StatefulWidget {
 
 class _GoalsHomeState extends State<GoalsHome> {
   bool isInitted = false;
+  Function? cleanup;
 
   handleHinting(AnimationStatus status) {
     if (status == AnimationStatus.completed) {
@@ -131,18 +132,20 @@ class _GoalsHomeState extends State<GoalsHome> {
     super.didChangeDependencies();
     if (!isInitted) {
       isInitted = true;
-      AppContext.of(context)
-          .backgroundColorAnimationController
-          .addStatusListener(handleHinting);
+      final hintAnimationController =
+          AppContext.of(context).backgroundColorAnimationController;
+      hintAnimationController.addStatusListener(handleHinting);
+
+      cleanup = () {
+        hintAnimationController.removeStatusListener(handleHinting);
+      };
     }
   }
 
   @override
   void dispose() {
     super.dispose();
-    AppContext.of(context)
-        .backgroundColorAnimationController
-        .removeStatusListener(handleHinting);
+    cleanup?.call();
   }
 
   @override
