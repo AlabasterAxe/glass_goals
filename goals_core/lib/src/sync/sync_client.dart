@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:hive_flutter/hive_flutter.dart' show Box, Hive, HiveX;
+import 'package:hive/hive.dart' show Box, Hive;
 import 'package:hlc/hlc.dart';
 import 'package:rxdart/rxdart.dart' show BehaviorSubject, Subject;
 import 'package:uuid/uuid.dart';
@@ -28,7 +28,6 @@ class SyncClient {
   SyncClient({this.persistenceService});
 
   init() async {
-    await Hive.initFlutter();
     appBox = await Hive.openBox('glass_goals.sync');
     clientId = appBox.get('clientId', defaultValue: const Uuid().v4());
     hlc = HLC.now(clientId!);

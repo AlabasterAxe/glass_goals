@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:async/async.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart' show Hive, HiveX;
 import 'package:rxdart/rxdart.dart' show PublishSubject, Subject;
 import 'package:screen_brightness/screen_brightness.dart' show ScreenBrightness;
 
@@ -45,6 +45,7 @@ class _GlassGoalsState extends State<GlassGoals>
   PageController rootPageController = PageController();
 
   Future<void> appInit() async {
+    await Hive.initFlutter();
     await syncClient.init();
     Timer.periodic(const Duration(minutes: 10), (_) {
       final hintingEnabled = Hive.box('glass_goals.settings')

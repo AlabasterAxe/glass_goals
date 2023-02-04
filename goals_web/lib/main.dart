@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'package:hive_flutter/hive_flutter.dart' show Hive, HiveX;
 import 'app_context.dart' show AppContext;
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart'
@@ -10,22 +11,23 @@ import 'package:goals_core/sync.dart'
 import 'goal_viewer/goal_viewer.dart';
 
 void main() {
-  runApp(const GlassGoals());
+  runApp(const WebGoals());
 }
 
-class GlassGoals extends StatefulWidget {
-  const GlassGoals({super.key});
+class WebGoals extends StatefulWidget {
+  const WebGoals({super.key});
 
   @override
-  State<GlassGoals> createState() => _GlassGoalsState();
+  State<WebGoals> createState() => _WebGoalsState();
 }
 
-class _GlassGoalsState extends State<GlassGoals>
+class _WebGoalsState extends State<WebGoals>
     with SingleTickerProviderStateMixin {
   SyncClient syncClient =
       SyncClient(persistenceService: GoogleSheetsPersistenceService());
 
   Future<void> appInit() async {
+    await Hive.initFlutter();
     await syncClient.init();
   }
 
