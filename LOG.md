@@ -1,3 +1,14 @@
+# 2023.02.07
+  - I chatted with Jon a few days ago about the goals modelling task and he said he would probably model this with a dsl and some sort of a goal "program"
+  - One thing that was very interesting to me that he described was the idea of a world context.
+    - The Goal hierarchy is stateless and declarative. It says what goals should be active given a particular circumstance
+    - Another interesting idea is that you record the time series of states that the user experienced so you could replay back what would have been the active task 
+  - Another question I have is what the levels of salience are for tasks.
+    - I feel like for the top level of salience there should only ever be one goal
+      - Visible: this is the most direct goal that you're trying to accomplish right now
+      - But at larger time scales there may truly be more than one goal
+        - e.g. I have work goals and I have fitness goals, how do we convey 
+  -  
 # 2023.02.04
   - brainstorming about how statuses can work
   - what status can a goal be in?

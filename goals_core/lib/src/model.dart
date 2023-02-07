@@ -1,5 +1,3 @@
-import 'package:collection/collection.dart';
-
 class Goal {
   final String id;
 

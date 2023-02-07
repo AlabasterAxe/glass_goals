@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goals_core/model.dart' show Goal;
-import 'package:goals_core/src/sync/ops.dart' show Op, GoalDelta;
+import 'package:goals_types/goals_types.dart' show Op, GoalDelta;
 import 'package:goals_core/src/sync/sync_client.dart' show SyncClient;
 
 final subGoal = Goal(

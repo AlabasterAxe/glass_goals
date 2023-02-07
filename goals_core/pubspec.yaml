@@ -8,14 +8,14 @@ environment:
   sdk: ">=2.18.6 <3.0.0"
 
 dependencies:
-  flutter:
-    sdk: flutter
-
   gsheets: ^0.4.2
   hive: ^2.2.3
   hlc: ^1.0.3
   rxdart: ^0.27.7
   uuid: ^3.0.7
+  goals_types: 
+    path:
+      ../goals_types
 
 dev_dependencies:
   flutter_test:

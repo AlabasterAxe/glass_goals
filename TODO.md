@@ -6,7 +6,9 @@ TODO:
   - correctly set page when paging back up through goal hierarchy
   - add validation e.g. forbid cycles in the graph
   - debug random crashes
-  - easily add a subgoal
+  - easily add a subgoal to the active goal
+  - implement the goal status log
+  - implement an op rewriter
 
 DONE:
   - set active goal

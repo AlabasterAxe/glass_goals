@@ -7,7 +7,7 @@ import 'package:rxdart/rxdart.dart' show BehaviorSubject, Subject;
 import 'package:uuid/uuid.dart';
 
 import 'package:goals_core/model.dart' show Goal;
-import 'ops.dart' show GoalDelta, Op;
+import 'package:goals_types/goals_types.dart' show GoalDelta, Op;
 import 'persistence_service.dart' show PersistenceService;
 
 final rootGoal = Goal(id: 'root', text: 'Live a fulfilling life');

@@ -159,6 +159,13 @@ packages:
       relative: true
     source: path
     version: "1.0.0"
+  goals_types:
+    dependency: transitive
+    description:
+      path: "../goals_types"
+      relative: true
+    source: path
+    version: "1.0.0"
   googleapis:
     dependency: transitive
     description:

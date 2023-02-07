@@ -18,7 +18,6 @@ import 'package:flutter/widgets.dart'
         Text,
         TextStyle,
         Widget;
-import 'package:goals_core/sync.dart' show GoalDelta;
 import 'package:uuid/uuid.dart' show Uuid;
 
 import './util/glass_gesture_detector.dart';
@@ -27,6 +26,7 @@ import 'util/glass_page_view.dart' show GlassPageView;
 import 'util/glass_scaffold.dart' show GlassScaffold;
 import 'package:goals_core/model.dart' show Goal, isGoalActive;
 import 'styles.dart' show mainTextStyle;
+import 'package:goals_core/sync.dart' show GoalDelta;
 
 class GoalTitle extends StatelessWidget {
   final Goal goal;

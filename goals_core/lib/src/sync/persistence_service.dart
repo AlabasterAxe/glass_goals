@@ -1,9 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:gsheets/gsheets.dart'
-    show Cell, GSheets, Spreadsheet, Worksheet;
-import 'package:hive/hive.dart';
+import 'package:gsheets/gsheets.dart' show GSheets, Worksheet;
 
-import 'ops.dart' show GoalDelta, Op;
+import 'package:goals_types/goals_types.dart' show GoalDelta, Op;
 import 'package:flutter/services.dart' show rootBundle;
 import 'dart:convert' show jsonDecode;
 
