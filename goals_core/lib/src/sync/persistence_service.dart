@@ -57,8 +57,8 @@ class GoogleSheetsPersistenceService implements PersistenceService {
         await opsSheet.values.allRows(fromRow: cursor);
 
     for (final row in newRows) {
-      final delta = GoalDelta.fromJson(row[0]);
-      final hlcTimestamp = row[1];
+      final delta = GoalDelta.fromJson(row[1], int.parse(row[0]));
+      final hlcTimestamp = row[2];
       newOps.add(Op(hlcTimestamp: hlcTimestamp, delta: delta));
     }
 
@@ -74,7 +74,8 @@ class GoogleSheetsPersistenceService implements PersistenceService {
     }
 
     final success = await opsSheet.values.appendRows([
-      for (var op in ops) [GoalDelta.toJson(op.delta), op.hlcTimestamp]
+      for (var op in ops)
+        [op.version, GoalDelta.toJson(op.delta), op.hlcTimestamp]
     ]);
 
     if (!success) {

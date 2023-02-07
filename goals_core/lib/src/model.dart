@@ -1,21 +1,18 @@
+import 'package:goals_types/goals_types.dart' show StatusLogEntry;
+
 class Goal {
   final String id;
 
   // These fields are intentionally not final to allow references to stay valid
   String text;
-  late List<Goal> subGoals;
+  final List<Goal> subGoals = [];
   String? parentId;
+  final List<StatusLogEntry> statusLog = [];
 
-  /// Iso8601 string
-  String? activeUntil;
-
-  Goal(
-      {required this.text,
-      required this.id,
-      subGoals,
-      this.parentId,
-      this.activeUntil}) {
-    this.subGoals = subGoals ?? [];
+  Goal({required this.text, required this.id, subGoals, this.parentId}) {
+    if (subGoals != null) {
+      this.subGoals.addAll(subGoals);
+    }
   }
 
   /// Modifies the subgoal list of this goal to update the goal with the given id.

@@ -49,14 +49,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
-  characters:
-    dependency: transitive
-    description:
-      name: characters
-      sha256: e6a326c8af69605aec75ed6c187d06b349707a27fbff8222ca9cc2cff167975c
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.2.1"
   collection:
     dependency: transitive
     description:
@@ -97,11 +89,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.4"
-  flutter:
-    dependency: transitive
-    description: flutter
-    source: sdk
-    version: "0.0.0"
   frontend_server_client:
     dependency: transitive
     description:
@@ -126,11 +113,19 @@ packages:
     source: path
     version: "1.0.0"
   goals_types:
-    dependency: transitive
+    dependency: "direct main"
     description:
       path: "../goals_types"
       relative: true
     source: path
+    version: "2.0.0"
+  goals_types_01:
+    dependency: "direct main"
+    description:
+      name: goals_types_01
+      sha256: "487f98d2d8730efb476475c8f47666fe850391032b8fb8d9c82cbc8517f5b41b"
+      url: "https://pub.dev"
+    source: hosted
     version: "1.0.0"
   googleapis:
     dependency: transitive
@@ -236,14 +231,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.12.14"
-  material_color_utilities:
-    dependency: transitive
-    description:
-      name: material_color_utilities
-      sha256: d92141dc6fe1dad30722f9aa826c7fbc896d021d792f80678280601aff8cf724
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.0"
   meta:
     dependency: transitive
     description:
@@ -340,11 +327,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.3"
-  sky_engine:
-    dependency: transitive
-    description: flutter
-    source: sdk
-    version: "0.0.99"
   source_map_stack_trace:
     dependency: transitive
     description:
@@ -441,14 +423,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.7"
-  vector_math:
-    dependency: transitive
-    description:
-      name: vector_math
-      sha256: "80b3257d1492ce4d091729e3a67a60407d227c27241d6927be0130c98e741803"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.4"
   vm_service:
     dependency: transitive
     description:

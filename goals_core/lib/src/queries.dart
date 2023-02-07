@@ -1,3 +1,5 @@
+import 'package:goals_types/goals_types.dart';
+
 import '../model.dart' show Goal;
 
 Map<String, Goal> getTransitiveSubGoals(
@@ -14,26 +16,55 @@ Map<String, Goal> getTransitiveSubGoals(
 
 Goal? getActiveGoalExpiringSoonest(Map<String, Goal> goalMap) {
   Goal? result;
+  StatusLogEntry? resultActiveStatus;
   for (final goal in goalMap.values) {
-    if (goal.activeUntil == null) {
+    final activeStatus = isGoalActive(goal);
+    if (activeStatus == null) {
       continue;
     }
 
-    if (!isGoalActive(goal)) {
-      continue;
-    }
-
-    final activeUntil = DateTime.parse(goal.activeUntil!);
-    if (result == null ||
-        activeUntil.isBefore(DateTime.parse(result.activeUntil!))) {
+    if ((result == null && resultActiveStatus == null) ||
+        activeStatus.endTime != null &&
+            (resultActiveStatus!.endTime == null ||
+                activeStatus.endTime!.isBefore(resultActiveStatus.endTime!))) {
       result = goal;
+      resultActiveStatus = activeStatus;
     }
   }
 
   return result;
 }
 
-bool isGoalActive(Goal goal) {
-  return goal.activeUntil != null &&
-      DateTime.parse(goal.activeUntil!).isAfter(DateTime.now());
+StatusLogEntry getGoalStatus(Goal goal) {
+  final now = DateTime.now();
+  final possibleStatuses = goal.statusLog
+      .where((s) =>
+          (s.startTime == null || s.startTime!.isBefore(now)) &&
+          (s.endTime == null || s.endTime!.isAfter(now)))
+      .toList();
+  if (possibleStatuses.isEmpty) {
+    return StatusLogEntry(status: GoalStatus.pending);
+  }
+  possibleStatuses.sort((a, b) {
+    if (b.startTime == null && a.startTime == null) {
+      return 0;
+    }
+
+    if (b.startTime == null) {
+      return -1;
+    }
+    if (a.startTime == null) {
+      return 1;
+    }
+    return b.startTime!.compareTo(a.startTime!);
+  });
+  return possibleStatuses.first;
+}
+
+StatusLogEntry? isGoalActive(Goal goal) {
+  final statusLogEntry = getGoalStatus(goal);
+  if (statusLogEntry.status == GoalStatus.active) {
+    return statusLogEntry;
+  }
+  return null;
 }

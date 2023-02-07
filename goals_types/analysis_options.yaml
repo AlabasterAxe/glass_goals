@@ -18,6 +18,9 @@ include: package:lints/recommended.yaml
 # linter:
 #   rules:
 #     - camel_case_types
+linter:
+  rules:
+    constant_identifier_names: false
 
 # analyzer:
 #   exclude:

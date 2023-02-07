@@ -13,6 +13,12 @@ dependencies:
   goals_core:
     path: "../goals_core"
 
+  goals_types_01: 1.0.0
+
+  goals_types:
+    path: 
+      ../goals_types
+
 dev_dependencies:
   lints: ^2.0.0
   test: ^1.21.0

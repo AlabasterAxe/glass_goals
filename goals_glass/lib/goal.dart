@@ -26,7 +26,8 @@ import 'util/glass_page_view.dart' show GlassPageView;
 import 'util/glass_scaffold.dart' show GlassScaffold;
 import 'package:goals_core/model.dart' show Goal, isGoalActive;
 import 'styles.dart' show mainTextStyle;
-import 'package:goals_core/sync.dart' show GoalDelta;
+import 'package:goals_core/sync.dart'
+    show GoalDelta, GoalStatus, StatusLogEntry;
 
 class GoalTitle extends StatelessWidget {
   final Goal goal;
@@ -100,7 +101,8 @@ class GoalMenu extends StatelessWidget {
           child: Container(
               color: Colors.black.withOpacity(0.5),
               child: Center(
-                  child: Text(isGoalActive(goal) ? 'Deactivate' : 'Activate',
+                  child: Text(
+                      isGoalActive(goal) != null ? 'Deactivate' : 'Activate',
                       style: mainTextStyle))),
         ),
         GlassGestureDetector(
@@ -191,12 +193,15 @@ class _GoalsWidgetState extends State<GoalsWidget> {
                                             .syncClient
                                             .modifyGoal(GoalDelta(
                                                 id: subGoal.id,
-                                                activeUntil: isGoalActive(
-                                                        subGoal)
-                                                    ? DateTime.now()
-                                                        .toIso8601String()
-                                                    : endOfDay(DateTime.now())
-                                                        .toIso8601String()));
+                                                statusLogEntry: StatusLogEntry(
+                                                    status: GoalStatus.active,
+                                                    startTime: DateTime.now(),
+                                                    endTime: isGoalActive(
+                                                                subGoal) !=
+                                                            null
+                                                        ? DateTime.now()
+                                                        : endOfDay(
+                                                            DateTime.now()))));
                                       },
                                     ))));
                       }
@@ -210,7 +215,9 @@ class _GoalsWidgetState extends State<GoalsWidget> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Hero(tag: subGoal.id, child: GoalTitle(subGoal)),
-                          isGoalActive(subGoal) ? Text('Active') : Container()
+                          isGoalActive(subGoal) != null
+                              ? const Text('Active')
+                              : Container()
                         ])))
                 .toList(),
             GlassGestureDetector(
