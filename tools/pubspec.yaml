@@ -13,7 +13,7 @@ dependencies:
   goals_core:
     path: "../goals_core"
 
-  goals_types_01: 1.0.0
+  goals_types_01: 1.0.1
 
   goals_types:
     path: 
