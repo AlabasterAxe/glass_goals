@@ -1,5 +1,5 @@
-name: goals_types_01
-description: version 1.0 of the persisted types for glass_goals
+name: goals_types
+description: Types for the glass goals app.
 version: 1.0.0
 repository: https://github.com/AlabasterAxe/glass_goals
 
