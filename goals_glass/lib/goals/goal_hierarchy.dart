@@ -14,6 +14,7 @@ import 'package:flutter/widgets.dart'
         State,
         StatefulWidget,
         Text,
+        ValueKey,
         Widget;
 import 'package:goals_core/model.dart' show Goal, isGoalActive;
 import 'package:goals_core/sync.dart'
@@ -25,12 +26,9 @@ import '../util/glass_gesture_detector.dart';
 import '../util/glass_page_view.dart';
 import '../util/glass_scaffold.dart';
 import 'add_subgoal_card.dart';
+import 'goal_card.dart';
 import 'goal_menu.dart';
 import 'goal_title.dart';
-
-DateTime endOfDay(DateTime date) {
-  return DateTime(date.year, date.month, date.day, 23, 59, 59);
-}
 
 class GoalsWidget extends StatefulWidget {
   final Map<String, Goal> goalState;
@@ -52,6 +50,17 @@ class _GoalsWidgetState extends State<GoalsWidget> {
     activeGoalId = widget.rootGoalId;
   }
 
+  onBack() {
+    final activeGoal = widget.goalState[activeGoalId]!;
+    if (activeGoal.parentId != null) {
+      setState(() {
+        activeGoalId = activeGoal.parentId!;
+      });
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeGoal = widget.goalState[activeGoalId]!;
@@ -71,78 +80,21 @@ class _GoalsWidgetState extends State<GoalsWidget> {
             child: GlassPageView(
           children: [
             ...activeGoal.subGoals
-                .map((subGoal) => GlassGestureDetector(
-                    onVerticalDragEnd: (details) {
-                      if (details.primaryVelocity != null &&
-                          details.primaryVelocity! > 10) {
-                        if (activeGoal.parentId != null) {
-                          setState(() {
-                            activeGoalId = activeGoal.parentId!;
-                          });
-                        } else {
-                          Navigator.pop(context);
-                        }
-                      }
-                      if (details.primaryVelocity != null &&
-                          details.primaryVelocity! < -10) {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => GlassScaffold(
-                                        child: GoalMenu(
-                                      goal: subGoal,
-                                      onArchive: () {
-                                        setState(() {
-                                          AppContext.of(context)
-                                              .syncClient
-                                              .modifyGoal(GoalDelta(
-                                                  id: subGoal.id,
-                                                  parentId: 'archive'));
-                                        });
-                                      },
-                                      onSetActive: () {
-                                        AppContext.of(context)
-                                            .syncClient
-                                            .modifyGoal(GoalDelta(
-                                                id: subGoal.id,
-                                                statusLogEntry: StatusLogEntry(
-                                                    status: GoalStatus.active,
-                                                    startTime: DateTime.now(),
-                                                    endTime: isGoalActive(
-                                                                subGoal) !=
-                                                            null
-                                                        ? DateTime.now()
-                                                        : endOfDay(
-                                                            DateTime.now()))));
-                                      },
-                                    ))));
-                      }
-                    },
+                .map((subGoal) => GoalCard(
+                    key: ValueKey(subGoal.id),
+                    goal: subGoal,
                     onTap: () {
                       setState(() {
                         activeGoalId = subGoal.id;
                       });
                     },
-                    child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Hero(tag: subGoal.id, child: GoalTitle(subGoal)),
-                          isGoalActive(subGoal) != null
-                              ? const Text('Active')
-                              : Container()
-                        ])))
+                    onBack: onBack))
                 .toList(),
             GlassGestureDetector(
               onVerticalDragEnd: (details) {
                 if (details.primaryVelocity != null &&
                     details.primaryVelocity! > 10) {
-                  if (activeGoal.parentId != null) {
-                    setState(() {
-                      activeGoalId = activeGoal.parentId!;
-                    });
-                  } else {
-                    Navigator.pop(context);
-                  }
+                  onBack();
                 }
               },
               child: AddSubGoalCard(onGoalText: (text) {
