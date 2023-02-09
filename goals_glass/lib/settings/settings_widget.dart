@@ -126,6 +126,8 @@ class SettingsWidget extends StatelessWidget {
                                 onTap: () async {
                                   await Hive.box('glass_goals.sync')
                                       .delete('syncCursor');
+                                  await Hive.box('glass_goals.sync')
+                                      .delete('ops');
                                 },
                               );
                             }),

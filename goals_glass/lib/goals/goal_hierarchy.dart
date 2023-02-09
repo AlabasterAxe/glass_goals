@@ -1,123 +1,35 @@
-import 'dart:developer' show log;
+import 'dart:developer';
 
-import 'package:flutter/material.dart'
-    show Colors, MaterialPageRoute, Navigator, Theme;
-import 'package:flutter/rendering.dart' show MainAxisAlignment;
+import 'package:flutter/material.dart' show Column, MaterialPageRoute;
 import 'package:flutter/widgets.dart'
     show
         BuildContext,
         Center,
-        Column,
         Container,
         Hero,
+        MainAxisAlignment,
+        Navigator,
         Positioned,
         Stack,
         State,
         StatefulWidget,
-        StatelessWidget,
         Text,
-        TextStyle,
         Widget;
-import 'package:uuid/uuid.dart' show Uuid;
-
-import './util/glass_gesture_detector.dart';
-import 'util/app_context.dart' show AppContext;
-import 'util/glass_page_view.dart' show GlassPageView;
-import 'util/glass_scaffold.dart' show GlassScaffold;
 import 'package:goals_core/model.dart' show Goal, isGoalActive;
-import 'styles.dart' show mainTextStyle;
 import 'package:goals_core/sync.dart'
     show GoalDelta, GoalStatus, StatusLogEntry;
+import 'package:uuid/uuid.dart';
 
-class GoalTitle extends StatelessWidget {
-  final Goal goal;
-
-  const GoalTitle(this.goal, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        goal.text,
-        style: Theme.of(context).textTheme.headline1,
-      ),
-    );
-  }
-}
+import '../util/app_context.dart';
+import '../util/glass_gesture_detector.dart';
+import '../util/glass_page_view.dart';
+import '../util/glass_scaffold.dart';
+import 'add_subgoal_card.dart';
+import 'goal_menu.dart';
+import 'goal_title.dart';
 
 DateTime endOfDay(DateTime date) {
   return DateTime(date.year, date.month, date.day, 23, 59, 59);
-}
-
-class AddSubGoalCard extends StatefulWidget {
-  final Function(String) onGoalText;
-  final Function(Object) onError;
-  const AddSubGoalCard(
-      {super.key, required this.onGoalText, required this.onError});
-
-  @override
-  State<AddSubGoalCard> createState() => _AddSubGoalCardState();
-}
-
-class _AddSubGoalCardState extends State<AddSubGoalCard> {
-  @override
-  Widget build(BuildContext context) {
-    final stt = AppContext.of(context).sttService;
-
-    return GlassGestureDetector(
-        onTap: () async {
-          try {
-            widget.onGoalText(await stt.detectSpeech());
-          } catch (e) {
-            widget.onError(e);
-          }
-        },
-        child: Center(
-            child: Text('+',
-                style: mainTextStyle.merge(const TextStyle(fontSize: 100)))));
-  }
-}
-
-class GoalMenu extends StatelessWidget {
-  final void Function() onArchive;
-  final void Function() onSetActive;
-  final Goal goal;
-  const GoalMenu({
-    super.key,
-    required this.onArchive,
-    required this.onSetActive,
-    required this.goal,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassPageView(
-      children: [
-        GlassGestureDetector(
-          onTap: () {
-            onSetActive();
-            Navigator.pop(context);
-          },
-          child: Container(
-              color: Colors.black.withOpacity(0.5),
-              child: Center(
-                  child: Text(
-                      isGoalActive(goal) != null ? 'Deactivate' : 'Activate',
-                      style: mainTextStyle))),
-        ),
-        GlassGestureDetector(
-          onTap: () {
-            onArchive();
-            Navigator.pop(context);
-          },
-          child: Container(
-              color: Colors.black.withOpacity(0.5),
-              child:
-                  const Center(child: Text('Archive', style: mainTextStyle))),
-        ),
-      ],
-    );
-  }
 }
 
 class GoalsWidget extends StatefulWidget {

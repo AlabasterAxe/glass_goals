@@ -35,7 +35,7 @@ Goal? getActiveGoalExpiringSoonest(Map<String, Goal> goalMap) {
   return result;
 }
 
-StatusLogEntry getGoalStatus(Goal goal) {
+StatusLogEntry? getGoalStatus(Goal goal) {
   final now = DateTime.now();
   final possibleStatuses = goal.statusLog
       .where((s) =>
@@ -43,7 +43,7 @@ StatusLogEntry getGoalStatus(Goal goal) {
           (s.endTime == null || s.endTime!.isAfter(now)))
       .toList();
   if (possibleStatuses.isEmpty) {
-    return StatusLogEntry(status: GoalStatus.pending);
+    return null;
   }
   possibleStatuses.sort((a, b) {
     if (b.startTime == null && a.startTime == null) {
@@ -63,7 +63,7 @@ StatusLogEntry getGoalStatus(Goal goal) {
 
 StatusLogEntry? isGoalActive(Goal goal) {
   final statusLogEntry = getGoalStatus(goal);
-  if (statusLogEntry.status == GoalStatus.active) {
+  if (statusLogEntry?.status == GoalStatus.active) {
     return statusLogEntry;
   }
   return null;

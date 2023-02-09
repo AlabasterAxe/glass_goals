@@ -23,7 +23,6 @@ class SyncClient {
   String? clientId;
   late Box appBox;
   final PersistenceService? persistenceService;
-  late Timer _syncTimer;
 
   SyncClient({this.persistenceService});
 
@@ -33,7 +32,7 @@ class SyncClient {
     hlc = HLC.now(clientId!);
     _computeState();
     sync();
-    _syncTimer = Timer.periodic(const Duration(minutes: 1), (_) async {
+    Timer.periodic(const Duration(minutes: 1), (_) async {
       _computeState();
     });
   }

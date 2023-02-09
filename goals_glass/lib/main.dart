@@ -6,13 +6,13 @@ import 'package:hive_flutter/hive_flutter.dart' show Hive, HiveX;
 import 'package:rxdart/rxdart.dart' show PublishSubject, Subject;
 import 'package:screen_brightness/screen_brightness.dart' show ScreenBrightness;
 
+import 'goals/goal_hierarchy.dart';
 import 'util/app_context.dart' show AppContext;
 import 'settings/settings_widget.dart';
 import 'styles.dart' show mainTextStyle;
 import 'util/glass_gesture_detector.dart';
 import 'util/glass_page_view.dart' show GlassPageView;
 import 'util/glass_scaffold.dart';
-import 'goal.dart' show GoalsWidget;
 import 'package:goals_core/model.dart'
     show Goal, getActiveGoalExpiringSoonest, getTransitiveSubGoals;
 import 'stt_service.dart' show SttService;
@@ -47,7 +47,7 @@ class _GlassGoalsState extends State<GlassGoals>
   Future<void> appInit() async {
     await Hive.initFlutter();
     await syncClient.init();
-    Timer.periodic(const Duration(minutes: 10), (_) {
+    Timer.periodic(const Duration(minutes: 1), (_) {
       final hintingEnabled = Hive.box('glass_goals.settings')
           .get('enableHinting', defaultValue: true);
       if (hintingEnabled) {

@@ -1,3 +1,25 @@
+# 2023.02.09
+  - I'm thinking more about how to deal with subgoals and interruptions
+    - subgoal: I'm working on goal 1, and I realize that in order to do goal 1 I have to do goal 1.1
+      - question: do I set a time limit for that goal?
+      - is it active for the next sub time down?
+      - I'm thinking maybe we have a prompt at the expiration of that goal?
+      - So maybe the process is as follows:
+        - Set Goal Active
+        - If a subgoal arises, describe the subgoal, set how long you expect to work on it
+        - at the expiration of the subgoal, there is a prompt as to whether or not you want to keep working on that subgoal
+        - Example:
+          - Set `Client Side Snapshots` active until eod
+          - Set `understand function binding` active for the next hour
+          - Once one hour elapses I am prompted to choose an option for `understand function binding`:
+            - abandon => card is marked archived
+            - continue => extends the time period by a selectable amount
+            - completed => marks the goal completed and pops it off the stack
+            - deactivate parent => marks the parent as inactive but once the parent is marked
+            - punt => this task gets moved to its parent's parent and marked pending
+
+          
+
 # 2023.02.07
   - I chatted with Jon a few days ago about the goals modelling task and he said he would probably model this with a dsl and some sort of a goal "program"
   - One thing that was very interesting to me that he described was the idea of a world context.
