@@ -18,7 +18,7 @@ import 'package:flutter/widgets.dart'
         Widget;
 import 'package:goals_core/model.dart' show Goal, isGoalActive;
 import 'package:goals_core/sync.dart'
-    show GoalDelta, GoalStatus, StatusLogEntry;
+    show GoalDelta, GoalStatus, StatusLogEntry, rootGoal;
 import 'package:uuid/uuid.dart';
 
 import '../util/app_context.dart';
@@ -63,7 +63,8 @@ class _GoalsWidgetState extends State<GoalsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final activeGoal = widget.goalState[activeGoalId]!;
+    final activeGoal =
+        widget.goalState[activeGoalId] ?? widget.goalState[rootGoal.id]!;
     return Stack(
       children: [
         Positioned(

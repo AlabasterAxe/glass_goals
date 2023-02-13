@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:hive/hive.dart' show Box, Hive;
@@ -97,14 +98,18 @@ class SyncClient {
     }
   }
 
-  _computeState() {
-    List<Op> ops = (appBox.get('ops', defaultValue: []) as List<dynamic>)
+  Iterable<Op> _getOpsFromBox(String boxName) {
+    return (appBox.get(boxName, defaultValue: []) as List<dynamic>)
+        .cast<String>()
+        .map(jsonDecode)
         .map(Op.fromJson)
         .toList();
+  }
 
-    ops.addAll((appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
-        .map(Op.fromJson)
-        .toList());
+  _computeState() {
+    List<Op> ops = _getOpsFromBox('ops').toList();
+
+    ops.addAll(_getOpsFromBox('unsyncedOps'));
 
     Map<String, Goal> goals = initialGoalState();
 
@@ -119,10 +124,8 @@ class SyncClient {
     }
     final int? cursor = appBox.get('syncCursor');
     final List<dynamic> ops = appBox.get('ops', defaultValue: []);
-    final Set<String> localOps = Set.from(
-        (appBox.get('ops', defaultValue: []) as List<dynamic>)
-            .map(Op.fromJson)
-            .map((op) => op.hlcTimestamp));
+    final Set<String> localOps =
+        Set.from(_getOpsFromBox('ops').map((op) => op.hlcTimestamp));
 
     try {
       final result = await persistenceService!.load(cursor: cursor);

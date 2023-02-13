@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:async/async.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:hive_flutter/hive_flutter.dart' show Hive, HiveX;
 import 'package:rxdart/rxdart.dart' show PublishSubject, Subject;
 import 'package:screen_brightness/screen_brightness.dart' show ScreenBrightness;
 
+import 'goals/goal_card.dart';
 import 'goals/goal_hierarchy.dart';
 import 'util/app_context.dart' show AppContext;
 import 'settings/settings_widget.dart';
@@ -174,10 +176,15 @@ class _GoalsHomeState extends State<GoalsHome> {
                     getTransitiveSubGoals(snapshot.requireData, rootGoal.id);
                 final activeGoal =
                     getActiveGoalExpiringSoonest(unarchivedGoals);
-                return Center(
-                    child: Text(
-                        activeGoal != null ? activeGoal.text : "No Active Goal",
-                        style: Theme.of(context).textTheme.headline1));
+                return activeGoal == null
+                    ? Center(
+                        child: Text("No Active Goal",
+                            style: Theme.of(context).textTheme.headline1))
+                    : GoalCard(
+                        goal: activeGoal,
+                        onBack: () {
+                          SystemNavigator.pop();
+                        });
               }),
           GlassGestureDetector(
               onTap: () {

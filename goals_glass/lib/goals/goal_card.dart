@@ -26,13 +26,10 @@ DateTime endOfDay(DateTime date) {
 
 class GoalCard extends StatelessWidget {
   final void Function() onBack;
-  final void Function() onTap;
+  final void Function()? onTap;
   final Goal goal;
   const GoalCard(
-      {super.key,
-      required this.goal,
-      required this.onBack,
-      required this.onTap});
+      {super.key, required this.goal, required this.onBack, this.onTap});
 
   @override
   Widget build(BuildContext context) {
