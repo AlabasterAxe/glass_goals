@@ -98,8 +98,8 @@ class SyncClient {
     }
   }
 
-  Iterable<Op> _getOpsFromBox(String boxName) {
-    return (appBox.get(boxName, defaultValue: []) as List<dynamic>)
+  Iterable<Op> _getOpsFromBox(String fieldName) {
+    return (appBox.get(fieldName, defaultValue: []) as List<dynamic>)
         .cast<String>()
         .map(jsonDecode)
         .map(Op.fromJson)
@@ -123,7 +123,8 @@ class SyncClient {
       return;
     }
     final int? cursor = appBox.get('syncCursor');
-    final List<dynamic> ops = appBox.get('ops', defaultValue: []);
+    final List<String> ops =
+        (appBox.get('ops', defaultValue: []) as List<dynamic>).cast<String>();
     final Set<String> localOps =
         Set.from(_getOpsFromBox('ops').map((op) => op.hlcTimestamp));
 
@@ -132,17 +133,16 @@ class SyncClient {
       appBox.put('syncCursor', result.cursor);
       for (Op op in result.ops) {
         if (!localOps.contains(op.hlcTimestamp)) {
-          ops.add(Op.toJson(op));
+          ops.add(json.encode(Op.toJson(op)));
         }
       }
     } catch (e) {
       log('Fetch failed', error: e);
     }
-    final List<dynamic> unsyncedOps =
-        appBox.get('unsyncedOps', defaultValue: []);
+    final Iterable<Op> unsyncedOps = _getOpsFromBox('unsyncedOps');
     if (unsyncedOps.isNotEmpty) {
-      await persistenceService!.save(unsyncedOps.map(Op.fromJson).toList());
-      ops.addAll(unsyncedOps);
+      await persistenceService!.save(unsyncedOps);
+      ops.addAll(unsyncedOps.map((op) => json.encode(Op.toJson(op))));
       await appBox.put('unsyncedOps', []);
     }
     await appBox.put('ops', ops);

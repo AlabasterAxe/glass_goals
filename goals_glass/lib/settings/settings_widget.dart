@@ -131,6 +131,28 @@ class SettingsWidget extends StatelessWidget {
                                 },
                               );
                             }),
+                        ValueListenableBuilder(
+                            valueListenable: Hive.box('glass_goals.sync')
+                                .listenable(keys: ['ops', 'unsyncedOps']),
+                            builder: (context, box, _) {
+                              final int numOps =
+                                  (box.get('ops', defaultValue: [])
+                                              as List<dynamic>)
+                                          .length +
+                                      (box.get('unsyncedOps', defaultValue: [])
+                                              as List<dynamic>)
+                                          .length;
+                              return SettingsPage(
+                                text: 'Clear Local Data',
+                                subtitle: "Num Ops: $numOps",
+                                onTap: () async {
+                                  await Hive.box('glass_goals.sync')
+                                      .delete('unsyncedOps');
+                                  await Hive.box('glass_goals.sync')
+                                      .delete('ops');
+                                },
+                              );
+                            }),
                       ])),
                     ));
               },

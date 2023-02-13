@@ -48,6 +48,7 @@ class _GlassGoalsState extends State<GlassGoals>
 
   Future<void> appInit() async {
     await Hive.initFlutter();
+    await Hive.openBox('glass_goals.settings');
     await syncClient.init();
     Timer.periodic(const Duration(minutes: 10), (_) {
       final hintingEnabled = Hive.box('glass_goals.settings')
@@ -69,7 +70,6 @@ class _GlassGoalsState extends State<GlassGoals>
       backgroundColorAnimationController.animateBack(0.0,
           duration: const Duration(milliseconds: 300));
     });
-    await Hive.openBox('glass_goals.settings');
   }
 
   @override

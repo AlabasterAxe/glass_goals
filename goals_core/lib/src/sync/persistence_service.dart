@@ -21,7 +21,7 @@ class LoadOpsResp {
 
 abstract class PersistenceService {
   Future<void> init();
-  Future<void> save(List<Op> ops);
+  Future<void> save(Iterable<Op> ops);
   Future<LoadOpsResp> load({int? cursor});
 }
 
@@ -68,7 +68,7 @@ class GoogleSheetsPersistenceService implements PersistenceService {
   }
 
   @override
-  Future<void> save(List<Op> ops) async {
+  Future<void> save(Iterable<Op> ops) async {
     if (!initted) {
       await init();
     }
