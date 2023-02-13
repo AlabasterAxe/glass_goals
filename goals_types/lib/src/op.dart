@@ -1,4 +1,4 @@
-import 'dart:convert' show jsonEncode;
+import 'dart:convert' show jsonDecode, jsonEncode;
 import 'package:goals_types_01/goals_types.dart' as goals_types_01;
 import 'package:equatable/equatable.dart' show Equatable;
 
@@ -23,7 +23,7 @@ class StatusLogEntry extends Equatable {
     this.endTime,
   });
 
-  static StatusLogEntry fromJson(dynamic json, int? version) {
+  static StatusLogEntry fromJsonMap(dynamic json, int? version) {
     if (version != null && version > TYPES_VERSION) {
       throw Exception('Unsupported version: $version');
     }
@@ -41,6 +41,14 @@ class StatusLogEntry extends Equatable {
     );
   }
 
+  static String toJson(StatusLogEntry entry) {
+    return jsonEncode(toJsonMap(entry));
+  }
+
+  static StatusLogEntry fromJson(String json, int? version) {
+    return fromJsonMap(jsonDecode(json), version);
+  }
+
   static StatusLogEntry? fromActiveUntil(String? activeUntil) {
     if (activeUntil == null) {
       return null;
@@ -53,7 +61,7 @@ class StatusLogEntry extends Equatable {
     );
   }
 
-  static Map<String, dynamic> toJson(StatusLogEntry statusLogEntry) {
+  static Map<String, dynamic> toJsonMap(StatusLogEntry statusLogEntry) {
     return {
       'status': statusLogEntry.status.name,
       'startTime': statusLogEntry.startTime?.toIso8601String(),
@@ -78,19 +86,28 @@ class GoalDelta extends Equatable {
   const GoalDelta(
       {required this.id, this.text, this.parentId, this.statusLogEntry});
 
-  static GoalDelta fromJson(dynamic json, int? version) {
+  static GoalDelta fromJson(String jsonString, int? version) {
+    return fromJsonMap(jsonDecode(jsonString), version);
+  }
+
+  static GoalDelta fromJsonMap(dynamic json, int? version) {
     if (version != null && version > TYPES_VERSION) {
       throw Exception('Unsupported version: $version');
     }
     if (version == null || version < TYPES_VERSION) {
-      return fromV1(goals_types_01.GoalDelta.fromJson(json));
+      if (json is Map) {
+        return fromV1(goals_types_01.GoalDelta.fromJson(jsonEncode(json)));
+      } else {
+        return fromV1(goals_types_01.GoalDelta.fromJson(json));
+      }
     }
     return GoalDelta(
       id: json[ID_FIELD_NAME],
       text: json[TEXT_FIELD_NAME],
       parentId: json[PARENT_ID_FIELD_NAME],
       statusLogEntry: json[STATUS_LOG_ENTRY_FIELD_NAME] != null
-          ? StatusLogEntry.fromJson(json[STATUS_LOG_ENTRY_FIELD_NAME], version)
+          ? StatusLogEntry.fromJsonMap(
+              json[STATUS_LOG_ENTRY_FIELD_NAME], version)
           : null,
     );
   }
@@ -104,7 +121,7 @@ class GoalDelta extends Equatable {
             StatusLogEntry.fromActiveUntil(legacyGoalDelta.activeUntil));
   }
 
-  static Map<String, dynamic> toJson(GoalDelta delta) {
+  static Map<String, dynamic> toJsonMap(GoalDelta delta) {
     final Map<String, dynamic> json = {
       ID_FIELD_NAME: delta.id,
     };
@@ -116,9 +133,13 @@ class GoalDelta extends Equatable {
     }
     if (delta.statusLogEntry != null) {
       json[STATUS_LOG_ENTRY_FIELD_NAME] =
-          StatusLogEntry.toJson(delta.statusLogEntry!);
+          StatusLogEntry.toJsonMap(delta.statusLogEntry!);
     }
     return json;
+  }
+
+  static String toJson(GoalDelta delta) {
+    return jsonEncode(toJsonMap(delta));
   }
 
   @override
@@ -134,19 +155,27 @@ class Op extends Equatable {
     required this.delta,
   });
 
-  static Map<String, dynamic> toJson(Op op) {
+  static Map<String, dynamic> toJsonMap(Op op) {
     return {
       'hlcTimestamp': op.hlcTimestamp,
-      'delta': GoalDelta.toJson(op.delta),
+      'delta': GoalDelta.toJsonMap(op.delta),
       'version': op.version,
     };
   }
 
-  static Op fromJson(dynamic json) {
+  static Op fromJsonMap(dynamic json) {
     final int? version = json['version'];
     return Op(
         hlcTimestamp: json['hlcTimestamp'],
-        delta: GoalDelta.fromJson(json['delta'], version));
+        delta: GoalDelta.fromJsonMap(json['delta'], version));
+  }
+
+  static Op fromJson(String jsonString) {
+    return fromJsonMap(jsonDecode(jsonString));
+  }
+
+  static String toJson(Op op) {
+    return jsonEncode(toJsonMap(op));
   }
 
   @override

@@ -143,9 +143,11 @@ class SettingsWidget extends StatelessWidget {
                                               as List<dynamic>)
                                           .length;
                               return SettingsPage(
-                                text: 'Clear Local Data',
+                                text: 'Clear All Local Data',
                                 subtitle: "Num Ops: $numOps",
                                 onTap: () async {
+                                  await Hive.box('glass_goals.sync')
+                                      .delete('syncCursor');
                                   await Hive.box('glass_goals.sync')
                                       .delete('unsyncedOps');
                                   await Hive.box('glass_goals.sync')

@@ -3,7 +3,7 @@ import 'package:gsheets/gsheets.dart' show GSheets, Worksheet;
 
 import 'package:goals_types/goals_types.dart' show GoalDelta, Op;
 import 'package:flutter/services.dart' show rootBundle;
-import 'dart:convert' show jsonDecode;
+import 'dart:convert' show jsonDecode, jsonEncode;
 
 Future<Map<String, dynamic>> loadSheetsSpec() async {
   if (kIsWeb) {

@@ -40,7 +40,9 @@ class SyncClient {
 
   modifyGoal(GoalDelta delta) {
     hlc = hlc.increment();
-    List<dynamic> unsyncedOps = appBox.get('unsyncedOps', defaultValue: []);
+    List<String> unsyncedOps =
+        (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
+            .cast<String>();
 
     final op = Op(hlcTimestamp: hlc.pack(), delta: delta);
     unsyncedOps.add(Op.toJson(op));
@@ -50,7 +52,9 @@ class SyncClient {
   }
 
   modifyGoals(List<GoalDelta> deltas) {
-    List<dynamic> unsyncedOps = appBox.get('unsyncedOps', defaultValue: []);
+    List<String> unsyncedOps =
+        (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
+            .cast<String>();
 
     for (final delta in deltas) {
       hlc = hlc.increment();
@@ -101,7 +105,6 @@ class SyncClient {
   Iterable<Op> _getOpsFromBox(String fieldName) {
     return (appBox.get(fieldName, defaultValue: []) as List<dynamic>)
         .cast<String>()
-        .map(jsonDecode)
         .map(Op.fromJson)
         .toList();
   }
@@ -133,7 +136,7 @@ class SyncClient {
       appBox.put('syncCursor', result.cursor);
       for (Op op in result.ops) {
         if (!localOps.contains(op.hlcTimestamp)) {
-          ops.add(json.encode(Op.toJson(op)));
+          ops.add(Op.toJson(op));
         }
       }
     } catch (e) {
@@ -142,7 +145,7 @@ class SyncClient {
     final Iterable<Op> unsyncedOps = _getOpsFromBox('unsyncedOps');
     if (unsyncedOps.isNotEmpty) {
       await persistenceService!.save(unsyncedOps);
-      ops.addAll(unsyncedOps.map((op) => json.encode(Op.toJson(op))));
+      ops.addAll(unsyncedOps.map(Op.toJson));
       await appBox.put('unsyncedOps', []);
     }
     await appBox.put('ops', ops);
