@@ -1,6 +1,6 @@
 import 'package:goals_types/goals_types.dart';
 
-import '../model.dart' show Goal;
+import '../model.dart' show Goal, WorldContext;
 
 Map<String, Goal> getTransitiveSubGoals(
     Map<String, Goal> goalMap, String rootGoalId) {
@@ -14,11 +14,12 @@ Map<String, Goal> getTransitiveSubGoals(
   return result;
 }
 
-Goal? getActiveGoalExpiringSoonest(Map<String, Goal> goalMap) {
+Goal? getActiveGoalExpiringSoonest(
+    WorldContext context, Map<String, Goal> goalMap) {
   Goal? result;
   StatusLogEntry? resultActiveStatus;
   for (final goal in goalMap.values) {
-    final activeStatus = isGoalActive(goal);
+    final activeStatus = isGoalActive(context, goal);
     if (activeStatus == null) {
       continue;
     }
@@ -35,34 +36,27 @@ Goal? getActiveGoalExpiringSoonest(Map<String, Goal> goalMap) {
   return result;
 }
 
-StatusLogEntry? getGoalStatus(Goal goal) {
-  final now = DateTime.now();
+// Currently, current goal status is just a function of time.
+StatusLogEntry? getGoalStatus(WorldContext context, Goal goal) {
+  final now = context.time;
   final possibleStatuses = goal.statusLog
-      .where((s) =>
-          (s.startTime == null || s.startTime!.isBefore(now)) &&
-          (s.endTime == null || s.endTime!.isAfter(now)))
+      .where((s) => (s.startTime == null || s.startTime!.isBefore(now)))
       .toList();
   if (possibleStatuses.isEmpty) {
     return null;
   }
-  possibleStatuses.sort((a, b) {
-    if (b.startTime == null && a.startTime == null) {
-      return 0;
-    }
+  possibleStatuses.sort((a, b) => b.creationTime.compareTo(a.creationTime));
 
-    if (b.startTime == null) {
-      return -1;
-    }
-    if (a.startTime == null) {
-      return 1;
-    }
-    return b.startTime!.compareTo(a.startTime!);
-  });
+  if (possibleStatuses.first.endTime != null &&
+      possibleStatuses.first.endTime!.isBefore(now)) {
+    return null;
+  }
+
   return possibleStatuses.first;
 }
 
-StatusLogEntry? isGoalActive(Goal goal) {
-  final statusLogEntry = getGoalStatus(goal);
+StatusLogEntry? isGoalActive(WorldContext context, Goal goal) {
+  final statusLogEntry = getGoalStatus(context, goal);
   if (statusLogEntry?.status == GoalStatus.active) {
     return statusLogEntry;
   }

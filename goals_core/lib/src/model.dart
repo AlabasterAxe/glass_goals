@@ -31,3 +31,11 @@ class Goal {
     subGoals.removeWhere((g) => g.id == id);
   }
 }
+
+class WorldContext {
+  final DateTime time;
+
+  WorldContext({required this.time});
+
+  static now() => WorldContext(time: DateTime.now());
+}

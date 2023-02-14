@@ -16,7 +16,11 @@ import 'util/glass_gesture_detector.dart';
 import 'util/glass_page_view.dart' show GlassPageView;
 import 'util/glass_scaffold.dart';
 import 'package:goals_core/model.dart'
-    show Goal, getActiveGoalExpiringSoonest, getTransitiveSubGoals;
+    show
+        Goal,
+        WorldContext,
+        getActiveGoalExpiringSoonest,
+        getTransitiveSubGoals;
 import 'stt_service.dart' show SttService;
 import 'package:goals_core/sync.dart'
     show SyncClient, rootGoal, GoogleSheetsPersistenceService;
@@ -174,8 +178,8 @@ class _GoalsHomeState extends State<GoalsHome> {
 
                 final unarchivedGoals =
                     getTransitiveSubGoals(snapshot.requireData, rootGoal.id);
-                final activeGoal =
-                    getActiveGoalExpiringSoonest(unarchivedGoals);
+                final activeGoal = getActiveGoalExpiringSoonest(
+                    WorldContext.now(), unarchivedGoals);
                 return activeGoal == null
                     ? Center(
                         child: Text("No Active Goal",

@@ -17,8 +17,10 @@ class StatusLogEntry extends Equatable {
   final GoalStatus status;
   final DateTime? startTime;
   final DateTime? endTime;
+  final DateTime creationTime;
   const StatusLogEntry({
     required this.status,
+    required this.creationTime,
     this.startTime,
     this.endTime,
   });
@@ -34,6 +36,9 @@ class StatusLogEntry extends Equatable {
     }
     return StatusLogEntry(
       status: GoalStatus.values.byName(json['status']),
+      creationTime: json['creationTime'] != null
+          ? DateTime.parse(json['creationTime'])
+          : DateTime(2023, 1, 1),
       startTime:
           json['startTime'] != null ? DateTime.parse(json['startTime']) : null,
       endTime:
@@ -64,8 +69,8 @@ class StatusLogEntry extends Equatable {
   static Map<String, dynamic> toJsonMap(StatusLogEntry statusLogEntry) {
     return {
       'status': statusLogEntry.status.name,
-      'startTime': statusLogEntry.startTime?.toIso8601String(),
-      'endTime': statusLogEntry.endTime?.toIso8601String(),
+      'startTime': statusLogEntry.startTime?.toUtc().toIso8601String(),
+      'endTime': statusLogEntry.endTime?.toUtc().toIso8601String(),
     };
   }
 

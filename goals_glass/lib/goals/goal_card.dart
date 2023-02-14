@@ -10,7 +10,7 @@ import 'package:flutter/widgets.dart'
         StatelessWidget,
         Text,
         Widget;
-import 'package:goals_core/model.dart' show Goal, isGoalActive;
+import 'package:goals_core/model.dart' show Goal, WorldContext, isGoalActive;
 import 'package:goals_core/sync.dart'
     show GoalDelta, GoalStatus, StatusLogEntry;
 
@@ -58,7 +58,9 @@ class GoalCard extends StatelessWidget {
                                     statusLogEntry: StatusLogEntry(
                                         status: GoalStatus.active,
                                         startTime: DateTime.now(),
-                                        endTime: isGoalActive(goal) != null
+                                        endTime: isGoalActive(
+                                                    WorldContext.now(), goal) !=
+                                                null
                                             ? DateTime.now()
                                             : endOfDay(DateTime.now()))));
                           },
@@ -68,7 +70,9 @@ class GoalCard extends StatelessWidget {
         onTap: onTap,
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Hero(tag: goal.id, child: GoalTitle(goal)),
-          isGoalActive(goal) != null ? const Text('Active') : Container()
+          isGoalActive(WorldContext.now(), goal) != null
+              ? const Text('Active')
+              : Container()
         ]));
   }
 }

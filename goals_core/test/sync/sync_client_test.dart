@@ -3,22 +3,28 @@ import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_types/goals_types.dart' show Op, GoalDelta;
 import 'package:goals_core/src/sync/sync_client.dart' show SyncClient;
 
-final subGoal = Goal(
-  id: '2',
-  text: 'bar',
-  parentId: '0',
-);
+Map<String, Goal> testGoals() {
+  final subGoal = Goal(
+    id: '2',
+    text: 'bar',
+    parentId: '0',
+  );
 
-final testRootGoal =
-    Goal(id: '0', text: 'root', parentId: null, subGoals: [subGoal]);
+  final testRootGoal =
+      Goal(id: '0', text: 'root', parentId: null, subGoals: [subGoal]);
+
+  final goals = <String, Goal>{};
+  for (final goal in [testRootGoal, subGoal]) {
+    goals[goal.id] = goal;
+  }
+
+  return goals;
+}
 
 void main() {
   test('add subgoal', () {
     final client = SyncClient();
-    final Map<String, Goal> goals = {
-      '0': testRootGoal,
-      '2': subGoal,
-    };
+    final goals = testGoals();
     client.applyOp(
         goals,
         const Op(
@@ -31,10 +37,7 @@ void main() {
 
   test('add subsubgoal', () {
     final client = SyncClient();
-    final Map<String, Goal> goals = {
-      '0': testRootGoal,
-      '2': subGoal,
-    };
+    final goals = testGoals();
     client.applyOp(
         goals,
         const Op(
@@ -51,10 +54,7 @@ void main() {
 
   test('modifies existing goal', () {
     final client = SyncClient();
-    final Map<String, Goal> goals = {
-      '0': testRootGoal,
-      '2': subGoal,
-    };
+    final goals = testGoals();
     client.applyOp(
         goals,
         const Op(
@@ -67,10 +67,7 @@ void main() {
 
   test('applies 2 ops', () {
     final client = SyncClient();
-    final Map<String, Goal> goals = {
-      '0': testRootGoal,
-      '2': subGoal,
-    };
+    final goals = testGoals();
     client.applyOps(goals, [
       const Op(
           hlcTimestamp: '0',
@@ -90,10 +87,7 @@ void main() {
 
   test('sorts by timestamp', () {
     final client = SyncClient();
-    final Map<String, Goal> goals = {
-      '0': testRootGoal,
-      '2': subGoal,
-    };
+    final goals = testGoals();
     client.applyOps(goals, [
       const Op(hlcTimestamp: '0', delta: GoalDelta(id: '0', text: 'foo')),
       const Op(hlcTimestamp: '2', delta: GoalDelta(id: '0', text: 'qux')),
@@ -107,10 +101,7 @@ void main() {
 
   test('rehomes goal', () {
     final client = SyncClient();
-    final Map<String, Goal> goals = {
-      '0': testRootGoal,
-      '2': subGoal,
-    };
+    final goals = testGoals();
     client.applyOp(
       goals,
       const Op(
