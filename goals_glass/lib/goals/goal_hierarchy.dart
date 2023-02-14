@@ -82,9 +82,9 @@ class _GoalsWidgetState extends State<GoalsWidget> {
             child: GlassPageView(
           children: [
             ...activeGoal.subGoals
-                .where((subGoal) =>
-                    getGoalStatus(WorldContext.now(), subGoal)?.status !=
-                    GoalStatus.archived)
+                .where((subGoal) => ![GoalStatus.archived, GoalStatus.done]
+                    .contains(
+                        getGoalStatus(WorldContext.now(), subGoal)?.status))
                 .map((subGoal) => GoalCard(
                     key: ValueKey(subGoal.id),
                     goal: subGoal,

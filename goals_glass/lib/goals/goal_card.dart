@@ -60,6 +60,17 @@ class GoalCard extends StatelessWidget {
                                       creationTime: DateTime.now(),
                                     )));
                           },
+                          onDone: () {
+                            AppContext.of(context)
+                                .syncClient
+                                .modifyGoal(GoalDelta(
+                                    id: goal.id,
+                                    statusLogEntry: StatusLogEntry(
+                                      status: GoalStatus.done,
+                                      creationTime: DateTime.now(),
+                                      startTime: DateTime.now(),
+                                    )));
+                          },
                           onSetActive: () {
                             AppContext.of(context).syncClient.modifyGoal(
                                 GoalDelta(
