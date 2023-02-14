@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' show MaterialPageRoute;
+import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
     show
         BuildContext,
@@ -14,6 +15,7 @@ import 'package:goals_core/model.dart' show Goal, WorldContext, isGoalActive;
 import 'package:goals_core/sync.dart'
     show GoalDelta, GoalStatus, StatusLogEntry;
 
+import '../styles.dart' show subTitleStyle;
 import '../util/app_context.dart';
 import '../util/glass_gesture_detector.dart';
 import '../util/glass_scaffold.dart';
@@ -57,6 +59,7 @@ class GoalCard extends StatelessWidget {
                                     id: goal.id,
                                     statusLogEntry: StatusLogEntry(
                                         status: GoalStatus.active,
+                                        creationTime: DateTime.now(),
                                         startTime: DateTime.now(),
                                         endTime: isGoalActive(
                                                     WorldContext.now(), goal) !=
@@ -68,11 +71,14 @@ class GoalCard extends StatelessWidget {
           }
         },
         onTap: onTap,
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Hero(tag: goal.id, child: GoalTitle(goal)),
-          isGoalActive(WorldContext.now(), goal) != null
-              ? const Text('Active')
-              : Container()
-        ]));
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Hero(tag: goal.id, child: GoalTitle(goal)),
+            isGoalActive(WorldContext.now(), goal) != null
+                ? const Text('Active', style: subTitleStyle)
+                : Container()
+          ]),
+        ));
   }
 }

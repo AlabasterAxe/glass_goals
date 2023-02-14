@@ -37,12 +37,14 @@ class StatusLogEntry extends Equatable {
     return StatusLogEntry(
       status: GoalStatus.values.byName(json['status']),
       creationTime: json['creationTime'] != null
-          ? DateTime.parse(json['creationTime'])
+          ? DateTime.parse(json['creationTime']).toLocal()
           : DateTime(2023, 1, 1),
-      startTime:
-          json['startTime'] != null ? DateTime.parse(json['startTime']) : null,
-      endTime:
-          json['startTime'] != null ? DateTime.parse(json['endTime']) : null,
+      startTime: json['startTime'] != null
+          ? DateTime.parse(json['startTime']).toLocal()
+          : null,
+      endTime: json['startTime'] != null
+          ? DateTime.parse(json['endTime']).toLocal()
+          : null,
     );
   }
 
@@ -59,9 +61,11 @@ class StatusLogEntry extends Equatable {
       return null;
     }
     final activeUntilDateTime = DateTime.parse(activeUntil);
+    final startTime = activeUntilDateTime.subtract(Duration(days: 1));
     return StatusLogEntry(
       status: GoalStatus.active,
-      startTime: activeUntilDateTime.subtract(Duration(days: 1)),
+      creationTime: startTime,
+      startTime: startTime,
       endTime: activeUntilDateTime,
     );
   }
@@ -69,13 +73,14 @@ class StatusLogEntry extends Equatable {
   static Map<String, dynamic> toJsonMap(StatusLogEntry statusLogEntry) {
     return {
       'status': statusLogEntry.status.name,
+      'creationTime': statusLogEntry.creationTime.toUtc().toIso8601String(),
       'startTime': statusLogEntry.startTime?.toUtc().toIso8601String(),
       'endTime': statusLogEntry.endTime?.toUtc().toIso8601String(),
     };
   }
 
   @override
-  List<Object?> get props => [status, startTime, endTime];
+  List<Object?> get props => [status, startTime, endTime, creationTime];
 }
 
 class GoalDelta extends Equatable {

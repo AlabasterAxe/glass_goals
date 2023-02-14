@@ -12,15 +12,16 @@ void main() {
           id: '1',
           text: 'foo',
           parentId: '0',
-          statusLogEntry: StatusLogEntry(status: GoalStatus.active)),
+          statusLogEntry: StatusLogEntry(
+              creationTime: DateTime(2023), status: GoalStatus.active)),
     );
 
     final json = Op.toJson(op);
 
     expect(
-        jsonEncode(json),
+        json,
         equals(
-            '{"hlcTimestamp":"0","delta":{"id":"1","text":"foo","parentId":"0","statusLogEntry":{"status":"active","startTime":null,"endTime":null}},"version":2}'));
+            '{"hlcTimestamp":"0","delta":{"id":"1","text":"foo","parentId":"0","statusLogEntry":{"status":"active","creationTime":"2023-01-01T05:00:00.000Z","startTime":null,"endTime":null}},"version":2}'));
 
     final op2 = Op.fromJson(json);
 
