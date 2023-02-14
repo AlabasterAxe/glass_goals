@@ -60,8 +60,8 @@ class GoalMenu extends StatelessWidget {
                       goalHasStatus(
                                   WorldContext.now(), goal, GoalStatus.done) !=
                               null
-                          ? 'Mark Complete'
-                          : 'Reopen',
+                          ? 'Reopen'
+                          : 'Mark Complete',
                       style: mainTextStyle))),
         ),
         GlassGestureDetector(
