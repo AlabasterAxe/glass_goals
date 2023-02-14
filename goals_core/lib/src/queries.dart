@@ -19,7 +19,7 @@ Goal? getActiveGoalExpiringSoonest(
   Goal? result;
   StatusLogEntry? resultActiveStatus;
   for (final goal in goalMap.values) {
-    final activeStatus = isGoalActive(context, goal);
+    final activeStatus = goalHasStatus(context, goal, GoalStatus.active);
     if (activeStatus == null) {
       continue;
     }
@@ -55,9 +55,10 @@ StatusLogEntry? getGoalStatus(WorldContext context, Goal goal) {
   return possibleStatuses.first;
 }
 
-StatusLogEntry? isGoalActive(WorldContext context, Goal goal) {
+StatusLogEntry? goalHasStatus(
+    WorldContext context, Goal goal, GoalStatus status) {
   final statusLogEntry = getGoalStatus(context, goal);
-  if (statusLogEntry?.status == GoalStatus.active) {
+  if (statusLogEntry?.status == status) {
     return statusLogEntry;
   }
   return null;

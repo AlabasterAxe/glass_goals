@@ -8,7 +8,9 @@ import 'package:flutter/widgets.dart'
         StatelessWidget,
         Text,
         Widget;
-import 'package:goals_core/model.dart' show Goal, WorldContext, isGoalActive;
+import 'package:goals_core/model.dart'
+    show Goal, WorldContext, goalHasStatus, isGoalActive;
+import 'package:goals_core/sync.dart';
 
 import '../styles.dart';
 import '../util/glass_gesture_detector.dart';
@@ -38,8 +40,26 @@ class GoalMenu extends StatelessWidget {
               color: Colors.black.withOpacity(0.5),
               child: Center(
                   child: Text(
-                      isGoalActive(WorldContext.now(), goal) != null
+                      goalHasStatus(WorldContext.now(), goal,
+                                  GoalStatus.active) !=
+                              null
                           ? 'Deactivate'
+                          : 'Activate',
+                      style: mainTextStyle))),
+        ),
+        GlassGestureDetector(
+          onTap: () {
+            onSetActive();
+            Navigator.pop(context);
+          },
+          child: Container(
+              color: Colors.black.withOpacity(0.5),
+              child: Center(
+                  child: Text(
+                      goalHasStatus(WorldContext.now(), goal,
+                                  GoalStatus.active) !=
+                              null
+                          ? 'Mark Complete'
                           : 'Activate',
                       style: mainTextStyle))),
         ),

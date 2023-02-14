@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart' show MaterialPageRoute;
-import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
     show
         BuildContext,
         Column,
         Container,
+        EdgeInsets,
         Hero,
         MainAxisAlignment,
         Navigator,
+        Padding,
         StatelessWidget,
         Text,
         Widget;
-import 'package:goals_core/model.dart' show Goal, WorldContext, isGoalActive;
+import 'package:goals_core/model.dart' show Goal, WorldContext, goalHasStatus;
 import 'package:goals_core/sync.dart'
     show GoalDelta, GoalStatus, StatusLogEntry;
 
@@ -50,8 +51,14 @@ class GoalCard extends StatelessWidget {
                             child: GoalMenu(
                           goal: goal,
                           onArchive: () {
-                            AppContext.of(context).syncClient.modifyGoal(
-                                GoalDelta(id: goal.id, parentId: 'archive'));
+                            AppContext.of(context)
+                                .syncClient
+                                .modifyGoal(GoalDelta(
+                                    id: goal.id,
+                                    statusLogEntry: StatusLogEntry(
+                                      status: GoalStatus.archived,
+                                      creationTime: DateTime.now(),
+                                    )));
                           },
                           onSetActive: () {
                             AppContext.of(context).syncClient.modifyGoal(
@@ -61,8 +68,10 @@ class GoalCard extends StatelessWidget {
                                         status: GoalStatus.active,
                                         creationTime: DateTime.now(),
                                         startTime: DateTime.now(),
-                                        endTime: isGoalActive(
-                                                    WorldContext.now(), goal) !=
+                                        endTime: goalHasStatus(
+                                                    WorldContext.now(),
+                                                    goal,
+                                                    GoalStatus.active) !=
                                                 null
                                             ? DateTime.now()
                                             : endOfDay(DateTime.now()))));
@@ -75,7 +84,7 @@ class GoalCard extends StatelessWidget {
           padding: const EdgeInsets.all(16.0),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             Hero(tag: goal.id, child: GoalTitle(goal)),
-            isGoalActive(WorldContext.now(), goal) != null
+            goalHasStatus(WorldContext.now(), goal, GoalStatus.active) != null
                 ? const Text('Active', style: subTitleStyle)
                 : Container()
           ]),

@@ -16,7 +16,8 @@ import 'package:flutter/widgets.dart'
         Text,
         ValueKey,
         Widget;
-import 'package:goals_core/model.dart' show Goal, isGoalActive;
+import 'package:goals_core/model.dart'
+    show Goal, WorldContext, getGoalStatus, goalHasStatus, isGoalActive;
 import 'package:goals_core/sync.dart'
     show GoalDelta, GoalStatus, StatusLogEntry, rootGoal;
 import 'package:uuid/uuid.dart';
@@ -81,6 +82,9 @@ class _GoalsWidgetState extends State<GoalsWidget> {
             child: GlassPageView(
           children: [
             ...activeGoal.subGoals
+                .where((subGoal) =>
+                    getGoalStatus(WorldContext.now(), subGoal)?.status !=
+                    GoalStatus.archived)
                 .map((subGoal) => GoalCard(
                     key: ValueKey(subGoal.id),
                     goal: subGoal,
