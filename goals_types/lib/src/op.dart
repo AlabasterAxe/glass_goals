@@ -42,7 +42,7 @@ class StatusLogEntry extends Equatable {
       startTime: json['startTime'] != null
           ? DateTime.parse(json['startTime']).toLocal()
           : null,
-      endTime: json['startTime'] != null
+      endTime: json['endTime'] != null
           ? DateTime.parse(json['endTime']).toLocal()
           : null,
     );

@@ -50,7 +50,7 @@ class GoalMenu extends StatelessWidget {
         ),
         GlassGestureDetector(
           onTap: () {
-            onSetActive();
+            onDone();
             Navigator.pop(context);
           },
           child: Container(
