@@ -1,34 +1,27 @@
 import 'dart:developer';
 
-import 'package:flutter/material.dart' show Column, MaterialPageRoute;
 import 'package:flutter/widgets.dart'
     show
         BuildContext,
         Center,
-        Container,
         Hero,
-        MainAxisAlignment,
         Navigator,
+        PageController,
         Positioned,
         Stack,
         State,
         StatefulWidget,
-        Text,
         ValueKey,
         Widget;
-import 'package:goals_core/model.dart'
-    show Goal, WorldContext, getGoalStatus, goalHasStatus, isGoalActive;
-import 'package:goals_core/sync.dart'
-    show GoalDelta, GoalStatus, StatusLogEntry, rootGoal;
+import 'package:goals_core/model.dart' show Goal, WorldContext, getGoalStatus;
+import 'package:goals_core/sync.dart' show GoalDelta, GoalStatus, rootGoal;
 import 'package:uuid/uuid.dart';
 
 import '../util/app_context.dart';
 import '../util/glass_gesture_detector.dart';
 import '../util/glass_page_view.dart';
-import '../util/glass_scaffold.dart';
 import 'add_subgoal_card.dart';
 import 'goal_card.dart';
-import 'goal_menu.dart';
 import 'goal_title.dart';
 
 class GoalsWidget extends StatefulWidget {
@@ -42,20 +35,38 @@ class GoalsWidget extends StatefulWidget {
 }
 
 class _GoalsWidgetState extends State<GoalsWidget> {
-  late String activeGoalId;
+  late String _activeGoalId;
+  late PageController _pageController;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    activeGoalId = widget.rootGoalId;
+    _activeGoalId = widget.rootGoalId;
+    _pageController = PageController();
   }
 
   onBack() {
-    final activeGoal = widget.goalState[activeGoalId]!;
-    if (activeGoal.parentId != null) {
+    final activeGoal = widget.goalState[_activeGoalId];
+    if (activeGoal == null) {
       setState(() {
-        activeGoalId = activeGoal.parentId!;
+        _activeGoalId = rootGoal.id;
+      });
+      return;
+    }
+    if (activeGoal.parentId != null) {
+      final parentGoal = widget.goalState[activeGoal.parentId];
+      int? childPage;
+      if (parentGoal != null) {
+        childPage = parentGoal.subGoals
+            .indexWhere((subGoal) => subGoal.id == activeGoal.id);
+      }
+
+      setState(() {
+        _activeGoalId = activeGoal.parentId!;
+        if (childPage != null) {
+          _pageController.jumpToPage(childPage);
+        }
       });
     } else {
       Navigator.pop(context);
@@ -65,7 +76,7 @@ class _GoalsWidgetState extends State<GoalsWidget> {
   @override
   Widget build(BuildContext context) {
     final activeGoal =
-        widget.goalState[activeGoalId] ?? widget.goalState[rootGoal.id]!;
+        widget.goalState[_activeGoalId] ?? widget.goalState[rootGoal.id]!;
     return Stack(
       children: [
         Positioned(
@@ -80,6 +91,7 @@ class _GoalsWidgetState extends State<GoalsWidget> {
             ))),
         Positioned.fill(
             child: GlassPageView(
+          controller: _pageController,
           children: [
             ...activeGoal.subGoals
                 .where((subGoal) => ![GoalStatus.archived, GoalStatus.done]
@@ -90,7 +102,7 @@ class _GoalsWidgetState extends State<GoalsWidget> {
                     goal: subGoal,
                     onTap: () {
                       setState(() {
-                        activeGoalId = subGoal.id;
+                        _activeGoalId = subGoal.id;
                       });
                     },
                     onBack: onBack))
