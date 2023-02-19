@@ -67,8 +67,31 @@ class SyncClient {
     sync();
   }
 
+  _checkCycles(Map<String, Goal> goalMap, String goalId, String? parentId) {
+    if (parentId == null) {
+      return false;
+    }
+
+    if (goalId == parentId) {
+      return true;
+    }
+
+    final parent = goalMap[parentId];
+    if (parent == null) {
+      return false;
+    }
+
+    return _checkCycles(goalMap, goalId, parent.parentId);
+  }
+
   applyOp(Map<String, Goal> goalMap, Op op) {
     Goal? goal = goalMap[op.delta.id];
+
+    if (_checkCycles(goalMap, op.delta.id, op.delta.parentId)) {
+      // silently ignore deltas that would create cycles.
+      return;
+    }
+
     if (goal == null) {
       goalMap[op.delta.id] = goal = Goal(
           id: op.delta.id,
