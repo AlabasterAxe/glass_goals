@@ -23,6 +23,7 @@ dependencies:
   async: ^2.9.0
   goals_core:
     path: "../goals_core"
+  wakelock: ^0.6.2
 
 dev_dependencies:
   flutter_test:

@@ -12,6 +12,7 @@ import 'package:flutter/widgets.dart'
         Widget;
 
 import 'package:flutter/material.dart' show Scaffold, Colors;
+import 'package:wakelock/wakelock.dart' show Wakelock;
 
 import 'app_context.dart';
 
@@ -42,6 +43,7 @@ class GlassScaffold extends StatelessWidget {
           child: child,
         ),
         builder: (context, child) {
+          Wakelock.enable();
           return Scaffold(
             backgroundColor:
                 Color.lerp(Colors.black, Colors.white, bgAnimation.value),
