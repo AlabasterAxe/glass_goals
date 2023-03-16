@@ -78,13 +78,14 @@ class SyncClient {
 
     final parent = goalMap[parentId];
     if (parent == null) {
-      return false;
+      throw Exception('Parent goal not found: $parentId');
     }
 
     return _checkCycles(goalMap, goalId, parent.parentId);
   }
 
   applyOp(Map<String, Goal> goalMap, Op op) {
+    hlc = hlc.receive(HLC.unpack(op.hlcTimestamp));
     Goal? goal = goalMap[op.delta.id];
 
     if (_checkCycles(goalMap, op.delta.id, op.delta.parentId)) {
@@ -107,7 +108,9 @@ class SyncClient {
       goal.statusLog.add(op.delta.statusLogEntry!);
     }
 
-    if (op.delta.parentId != null && goal.parentId != op.delta.parentId) {
+    if (goal.parentId != null &&
+        op.delta.parentId != null &&
+        goal.parentId != op.delta.parentId) {
       goalMap[goal.parentId!]?.removeSubGoal(goal.id);
       goal.parentId = op.delta.parentId;
     }
@@ -126,10 +129,9 @@ class SyncClient {
   }
 
   Iterable<Op> _getOpsFromBox(String fieldName) {
-    return (appBox.get(fieldName, defaultValue: []) as List<dynamic>)
-        .cast<String>()
-        .map(Op.fromJson)
-        .toList();
+    final boxContents =
+        appBox.get(fieldName, defaultValue: []) as List<dynamic>;
+    return boxContents.cast<String>().map(Op.fromJson).toList();
   }
 
   _computeState() {
@@ -167,9 +169,13 @@ class SyncClient {
     }
     final Iterable<Op> unsyncedOps = _getOpsFromBox('unsyncedOps');
     if (unsyncedOps.isNotEmpty) {
-      await persistenceService!.save(unsyncedOps);
-      ops.addAll(unsyncedOps.map(Op.toJson));
-      await appBox.put('unsyncedOps', []);
+      try {
+        await persistenceService!.save(unsyncedOps);
+        ops.addAll(unsyncedOps.map(Op.toJson));
+        await appBox.put('unsyncedOps', []);
+      } catch (e) {
+        log('Save failed', error: e);
+      }
     }
     await appBox.put('ops', ops);
     await appBox.put('lastSyncDateTime', DateTime.now().toIso8601String());

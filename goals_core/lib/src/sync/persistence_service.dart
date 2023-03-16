@@ -41,6 +41,7 @@ class GoogleSheetsPersistenceService implements PersistenceService {
     if (sheet == null) {
       throw Exception("Could not find sheet");
     }
+
     opsSheet = sheet;
     initted = true;
   }
