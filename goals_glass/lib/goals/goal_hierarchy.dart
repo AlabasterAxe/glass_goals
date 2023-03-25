@@ -102,6 +102,8 @@ class _GoalsWidgetState extends State<GoalsWidget> {
                     goal: subGoal,
                     onTap: () {
                       setState(() {
+                        // TODO: preserve scroll position?
+                        _pageController.jumpToPage(0);
                         _activeGoalId = subGoal.id;
                       });
                     },
