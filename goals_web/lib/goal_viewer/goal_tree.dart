@@ -104,18 +104,20 @@ class _GoalTreeWidgetState extends State<GoalTreeWidget> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         for (final subGoal in rootGoal.subGoals)
-                          GoalTreeWidget(
-                            goalMap: widget.goalMap,
-                            rootGoalId: subGoal.id,
-                            onSelected: widget.onSelected,
-                            selectedGoals: widget.selectedGoals,
-                            expandedGoals: widget.expandedGoals,
-                            onExpanded: widget.onExpanded,
-                            depthLimit: widget.depthLimit == null
-                                ? null
-                                : widget.depthLimit! - 1,
-                          ),
-                      ])
+                          widget.goalMap.containsKey(subGoal.id)
+                              ? GoalTreeWidget(
+                                  goalMap: widget.goalMap,
+                                  rootGoalId: subGoal.id,
+                                  onSelected: widget.onSelected,
+                                  selectedGoals: widget.selectedGoals,
+                                  expandedGoals: widget.expandedGoals,
+                                  onExpanded: widget.onExpanded,
+                                  depthLimit: widget.depthLimit == null
+                                      ? null
+                                      : widget.depthLimit! - 1,
+                                )
+                              : null,
+                      ].where((element) => element != null).toList().cast())
                 ])
               : Container()
         ],

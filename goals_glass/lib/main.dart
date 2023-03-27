@@ -9,6 +9,7 @@ import 'package:screen_brightness/screen_brightness.dart' show ScreenBrightness;
 
 import 'goals/goal_card.dart';
 import 'goals/goal_hierarchy.dart';
+import 'goals/goal_list.dart';
 import 'util/app_context.dart' show AppContext;
 import 'settings/settings_widget.dart';
 import 'styles.dart' show mainTextStyle;
@@ -20,6 +21,7 @@ import 'package:goals_core/model.dart'
         Goal,
         WorldContext,
         getActiveGoalExpiringSoonest,
+        getGoalsRequiringAttention,
         getTransitiveSubGoals;
 import 'stt_service.dart' show SttService;
 import 'package:goals_core/sync.dart'
@@ -207,12 +209,37 @@ class _GoalsHomeState extends State<GoalsHome> {
                                         child: CircularProgressIndicator()));
                               }
                               return GlassScaffold(
-                                  child: GoalsWidget(snapshot.requireData,
+                                  child: GoalHierarchy(snapshot.requireData,
                                       rootGoalId: rootGoal.id));
                             })));
               },
               child: Center(
                   child: Text("Goals",
+                      style: Theme.of(context).textTheme.headline1))),
+          GlassGestureDetector(
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => StreamBuilder<Map<String, Goal>>(
+                            stream:
+                                AppContext.of(context).syncClient.stateSubject,
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return const Center(
+                                    child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator()));
+                              }
+                              return GlassScaffold(
+                                  child: GoalList(getGoalsRequiringAttention(
+                                      WorldContext.now(),
+                                      snapshot.requireData)));
+                            })));
+              },
+              child: Center(
+                  child: Text("Review",
                       style: Theme.of(context).textTheme.headline1))),
           GlassGestureDetector(
               onTap: () {

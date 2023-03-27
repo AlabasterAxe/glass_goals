@@ -1,3 +1,19 @@
+# 2023.03.25
+  - Logic for showing possible actions when choosing an action for the day:
+    - Show all active tasks
+    - Don't allow marking tasks active unless their parent is marked active
+    - Don't show tasks if any of their children are marked active
+    - Show tasks that don't currently have a setting (i.e. they were previously active and have become inactive)
+  - Examples:
+    - Example 1:
+      - State:
+        - Migration (active until EOQ):
+          - Client Side Migration (active until end of sprint)
+          - Stop Server-side project creation (pending)
+      - Result:
+        - Client Side Migration
+  
+
 # 2023.02.09
   - I'm thinking more about how to deal with subgoals and interruptions
     - subgoal: I'm working on goal 1, and I realize that in order to do goal 1 I have to do goal 1.1

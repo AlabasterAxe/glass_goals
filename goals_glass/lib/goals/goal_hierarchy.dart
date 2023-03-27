@@ -24,17 +24,17 @@ import 'add_subgoal_card.dart';
 import 'goal_card.dart';
 import 'goal_title.dart';
 
-class GoalsWidget extends StatefulWidget {
+class GoalHierarchy extends StatefulWidget {
   final Map<String, Goal> goalState;
   final String rootGoalId;
 
-  const GoalsWidget(this.goalState, {super.key, required this.rootGoalId});
+  const GoalHierarchy(this.goalState, {super.key, required this.rootGoalId});
 
   @override
-  State<GoalsWidget> createState() => _GoalsWidgetState();
+  State<GoalHierarchy> createState() => _GoalHierarchyState();
 }
 
-class _GoalsWidgetState extends State<GoalsWidget> {
+class _GoalHierarchyState extends State<GoalHierarchy> {
   late String _activeGoalId;
   late PageController _pageController;
 

@@ -14,6 +14,17 @@ Map<String, Goal> getTransitiveSubGoals(
   return result;
 }
 
+Map<String, Goal> getGoalsMatchingPredicate(WorldContext context,
+    Map<String, Goal> goalMap, bool Function(Goal) predicate) {
+  final result = <String, Goal>{};
+  for (final goal in goalMap.values) {
+    if (predicate(goal)) {
+      result[goal.id] = goal;
+    }
+  }
+  return result;
+}
+
 Goal? getActiveGoalExpiringSoonest(
     WorldContext context, Map<String, Goal> goalMap) {
   Goal? result;
@@ -31,6 +42,35 @@ Goal? getActiveGoalExpiringSoonest(
       result = goal;
       resultActiveStatus = activeStatus;
     }
+  }
+
+  return result;
+}
+
+/// The logic for goals requiring attention is as follows:
+///  - Show all active tasks
+///  - Don't show tasks if any of their children are marked active
+///  - Show tasks that don't currently have a setting (i.e. they were previously active and have become inactive)
+Map<String, Goal> getGoalsRequiringAttention(
+    WorldContext context, Map<String, Goal> goalMap) {
+  /// The logic for goals requiring attention is as follows:
+  ///  - Show all active tasks
+  ///  - Don't show tasks if any of their children are marked active
+  ///  - Show tasks that don't currently have a setting (i.e. they were previously active and have become inactive)
+  final result = <String, Goal>{};
+  final activeOrUncategorizedGoals =
+      getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
+    final status = getGoalStatus(context, goal);
+    return status == null || status.status == GoalStatus.active;
+  });
+
+  ///  - Don't show tasks if any of their children are marked active
+  for (final goal in activeOrUncategorizedGoals.values) {
+    if (goal.subGoals
+        .any((g) => activeOrUncategorizedGoals.containsKey(g.id))) {
+      continue;
+    }
+    result[goal.id] = goal;
   }
 
   return result;
