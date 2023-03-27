@@ -1,5 +1,16 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart'
-    show Colors, IconButton, Icons, ToggleButtons;
+    show
+        AlertDialog,
+        Colors,
+        Dialog,
+        IconButton,
+        Icons,
+        TextButton,
+        ToggleButtons,
+        showDatePicker,
+        showDialog;
 import 'package:flutter/widgets.dart';
 import 'package:goals_core/model.dart'
     show
@@ -16,12 +27,57 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'goal_list.dart' show GoalListWidget;
 import 'goal_tree.dart' show GoalTreeWidget;
 
+class DatePickerDialog extends StatefulWidget {
+  const DatePickerDialog({super.key});
+
+  @override
+  State<DatePickerDialog> createState() => _DatePickerDialogState();
+}
+
+class _DatePickerDialogState extends State<DatePickerDialog> {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: IntrinsicWidth(
+        child: IntrinsicHeight(
+          child: Column(
+            children: [
+              const Text('Active Until?'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton(
+                      onPressed: Navigator.of(context).pop,
+                      child: const Text('Forever')),
+                  IconButton(
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2100));
+                        if (context.mounted) {
+                          Navigator.of(context).pop(date);
+                        }
+                      },
+                      icon: const Icon(Icons.calendar_today))
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class HoverToolbarWidget extends StatelessWidget {
   final Function() onMerge;
   final Function() onUnarchive;
   final Function() onArchive;
   final Function() onDone;
   final Function() onPending;
+  final Function(DateTime? endDate) onActive;
   const HoverToolbarWidget({
     super.key,
     required this.onMerge,
@@ -29,6 +85,7 @@ class HoverToolbarWidget extends StatelessWidget {
     required this.onArchive,
     required this.onDone,
     required this.onPending,
+    required this.onActive,
   });
 
   @override
@@ -70,6 +127,16 @@ class HoverToolbarWidget extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.access_time),
               onPressed: onPending,
+            ),
+            IconButton(
+              icon: const Icon(Icons.rocket_launch),
+              onPressed: () async {
+                final DateTime? date = await showDialog(
+                  context: context,
+                  builder: (context) => const DatePickerDialog(),
+                );
+                onActive(date);
+              },
             ),
           ],
         ));
@@ -217,6 +284,24 @@ class _GoalViewerState extends State<GoalViewer> {
     selectedGoals.clear();
   }
 
+  onActive(DateTime? endDate) {
+    final List<GoalDelta> goalDeltas = [];
+    for (final String goalId in selectedGoals) {
+      goalDeltas.add(GoalDelta(
+        id: goalId,
+        statusLogEntry: StatusLogEntry(
+          creationTime: DateTime.now(),
+          status: GoalStatus.pending,
+          startTime: DateTime.now(),
+          endTime: endDate,
+        ),
+      ));
+    }
+
+    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
+    selectedGoals.clear();
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -316,7 +401,7 @@ class _GoalViewerState extends State<GoalViewer> {
         selectedGoals.isNotEmpty
             ? Positioned(
                 top: 50,
-                width: 200,
+                width: 400,
                 height: 50,
                 child: HoverToolbarWidget(
                   onMerge: onMerge,
@@ -324,6 +409,7 @@ class _GoalViewerState extends State<GoalViewer> {
                   onArchive: onArchive,
                   onDone: onDone,
                   onPending: onPending,
+                  onActive: onActive,
                 ),
               )
             : Container(),
