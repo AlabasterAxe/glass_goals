@@ -291,7 +291,7 @@ class _GoalViewerState extends State<GoalViewer> {
         id: goalId,
         statusLogEntry: StatusLogEntry(
           creationTime: DateTime.now(),
-          status: GoalStatus.pending,
+          status: GoalStatus.active,
           startTime: DateTime.now(),
           endTime: endDate,
         ),
