@@ -1,10 +1,11 @@
 
 TODO:
-  - Create a settings service
+  - Add a way to snooze a goal for a longer period of time
   - Support rendering multiple active goals
-  - implement an op rewriter
   - deeply filter the goal hierarchy
     - right now we only support removing goals from the map but we should probably filter node children as well
+  - implement an op rewriter
+  - Create a settings service
 
 DONE:
   - add validation e.g. forbid cycles in the graph
