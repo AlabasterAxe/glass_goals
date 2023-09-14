@@ -20,6 +20,7 @@ import 'package:flutter/widgets.dart'
         Widget;
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
+import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
 import 'package:uuid/uuid.dart';
 import '../app_context.dart';
 import 'goal_item.dart' show GoalItemWidget;
@@ -167,6 +168,9 @@ class _GoalTreeWidgetState extends State<GoalTreeWidget> {
                                     : widget.depthLimit! - 1,
                               )
                             : null,
+                      hasRenderableChildren
+                          ? AddSubgoalItemWidget(parentId: rootGoal.id)
+                          : null,
                     ].where((element) => element != null).toList().cast())
               ])
             : Container()
