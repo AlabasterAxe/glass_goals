@@ -9,6 +9,7 @@ import 'package:flutter/material.dart'
         Icons,
         TextButton,
         ToggleButtons,
+        Tooltip,
         showDatePicker,
         showDialog;
 import 'package:flutter/widgets.dart';
@@ -108,35 +109,53 @@ class HoverToolbarWidget extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            IconButton(
-              icon: const Icon(Icons.merge),
-              onPressed: onMerge,
+            Tooltip(
+              message: 'Merge',
+              child: IconButton(
+                icon: const Icon(Icons.merge),
+                onPressed: onMerge,
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.unarchive),
-              onPressed: onUnarchive,
+            Tooltip(
+              message: 'Unarchive',
+              child: IconButton(
+                icon: const Icon(Icons.unarchive),
+                onPressed: onUnarchive,
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.archive),
-              onPressed: onArchive,
+            Tooltip(
+              message: 'Archive',
+              child: IconButton(
+                icon: const Icon(Icons.archive),
+                onPressed: onArchive,
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.done),
-              onPressed: onDone,
+            Tooltip(
+              message: 'Activate',
+              child: IconButton(
+                icon: const Icon(Icons.directions_run),
+                onPressed: () async {
+                  final DateTime? date = await showDialog(
+                    context: context,
+                    builder: (context) => const DatePickerDialog(),
+                  );
+                  onActive(date);
+                },
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.access_time),
-              onPressed: onPending,
+            Tooltip(
+              message: 'Snooze',
+              child: IconButton(
+                icon: const Icon(Icons.snooze),
+                onPressed: onPending,
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.rocket_launch),
-              onPressed: () async {
-                final DateTime? date = await showDialog(
-                  context: context,
-                  builder: (context) => const DatePickerDialog(),
-                );
-                onActive(date);
-              },
+            Tooltip(
+              message: 'Mark Done',
+              child: IconButton(
+                icon: const Icon(Icons.done),
+                onPressed: onDone,
+              ),
             ),
           ],
         ));
@@ -373,13 +392,37 @@ class _GoalViewerState extends State<GoalViewer> {
                           );
                         case GoalView.to_review:
                           return GoalListWidget(
-                            goalMap: getGoalsRequiringAttention(
-                                WorldContext.now(), widget.goalMap),
-                            selectedGoals: selectedGoals,
-                            onSelected: onSelected,
-                            expandedGoals: expandedGoals,
-                            onExpanded: onExpanded,
-                          );
+                              goalMap: getGoalsRequiringAttention(
+                                  WorldContext.now(), widget.goalMap),
+                              selectedGoals: selectedGoals,
+                              onSelected: onSelected,
+                              expandedGoals: expandedGoals,
+                              onExpanded: onExpanded,
+                              comparator: (Goal goal1, Goal goal2) {
+                                if (getGoalStatus(WorldContext.now(), goal1)
+                                        ?.status ==
+                                    getGoalStatus(WorldContext.now(), goal2)
+                                        ?.status) {
+                                  return goal1.text.compareTo(goal2.text);
+                                } else if (getGoalStatus(
+                                                WorldContext.now(), goal1)
+                                            ?.status ==
+                                        GoalStatus.active &&
+                                    getGoalStatus(WorldContext.now(), goal2)
+                                            ?.status ==
+                                        null) {
+                                  return 1;
+                                } else if (getGoalStatus(
+                                                WorldContext.now(), goal2)
+                                            ?.status ==
+                                        GoalStatus.active &&
+                                    getGoalStatus(WorldContext.now(), goal1)
+                                            ?.status ==
+                                        null) {
+                                  return -1;
+                                }
+                                return 0;
+                              });
                       }
                     })),
           ),

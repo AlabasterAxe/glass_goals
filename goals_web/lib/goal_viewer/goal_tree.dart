@@ -46,6 +46,7 @@ class GoalTreeWidget extends StatefulWidget {
 }
 
 class _GoalTreeWidgetState extends State<GoalTreeWidget> {
+  bool hovered = false;
   moveGoals(String newParentId, Set<String> goalIds) {
     final List<GoalDelta> goalDeltas = [];
     for (final goalId in goalIds) {
@@ -70,6 +71,16 @@ class _GoalTreeWidgetState extends State<GoalTreeWidget> {
               };
               moveGoals(rootGoal.id, selectedAndDraggedGoals);
             },
+            onMove: (_) => {
+              setState(() {
+                hovered = true;
+              })
+            },
+            onLeave: (_) => {
+              setState(() {
+                hovered = false;
+              })
+            },
             builder: (context, _, __) => Draggable<String>(
               data: rootGoal.id,
               feedback: Container(
@@ -89,11 +100,13 @@ class _GoalTreeWidgetState extends State<GoalTreeWidget> {
                 ),
               ),
               child: GoalItemWidget(
-                  goal: rootGoal,
-                  selected: widget.selectedGoals.contains(rootGoal.id),
-                  onSelected: (value) {
-                    widget.onSelected(rootGoal.id);
-                  }),
+                goal: rootGoal,
+                selected: widget.selectedGoals.contains(rootGoal.id),
+                onSelected: (value) {
+                  widget.onSelected(rootGoal.id);
+                },
+                hovered: hovered,
+              ),
             ),
           ),
           widget.expandedGoals.contains(rootGoal.id) &&
