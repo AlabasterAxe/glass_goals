@@ -30,7 +30,7 @@ class GoalTreeWidget extends StatefulWidget {
   final Set<String> selectedGoals;
   final Set<String> expandedGoals;
   final Function(String goalId) onSelected;
-  final Function(String goalId) onExpanded;
+  final Function(String goalId, {bool expanded}) onExpanded;
   final int? depthLimit;
   const GoalTreeWidget({
     super.key,
@@ -139,6 +139,8 @@ class _GoalTreeWidgetState extends State<GoalTreeWidget> {
                                   id: const Uuid().v4(),
                                   text: "[New Subgoal]",
                                   parentId: rootGoal.id));
+                          setState(() =>
+                              widget.onExpanded(rootGoal.id, expanded: true));
                         },
                         icon: const Icon(Icons.add, size: 18)),
               ],

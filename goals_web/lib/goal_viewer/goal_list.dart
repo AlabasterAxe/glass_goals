@@ -9,7 +9,7 @@ class GoalListWidget extends StatelessWidget {
   final Set<String> selectedGoals;
   final Function(String goalId) onSelected;
   final Set<String> expandedGoals;
-  final Function(String goalId) onExpanded;
+  final Function(String goalId, {bool expanded}) onExpanded;
   final Comparator<Goal> comparator;
   GoalListWidget({
     super.key,

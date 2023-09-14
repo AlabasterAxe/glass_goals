@@ -207,9 +207,15 @@ class _GoalViewerState extends State<GoalViewer> {
     });
   }
 
-  onExpanded(String goalId) {
+  onExpanded(String goalId, {bool? expanded}) {
     setState(() {
-      if (expandedGoals.contains(goalId)) {
+      if (expanded != null) {
+        if (expanded) {
+          expandedGoals.add(goalId);
+        } else {
+          expandedGoals.remove(goalId);
+        }
+      } else if (expandedGoals.contains(goalId)) {
         expandedGoals.remove(goalId);
       } else {
         expandedGoals.add(goalId);
