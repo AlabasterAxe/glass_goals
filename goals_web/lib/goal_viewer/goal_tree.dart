@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart' show Colors;
+import 'package:flutter/material.dart'
+    show Colors, Expanded, Icon, IconButton, Icons;
 import 'package:flutter/painting.dart' show TextDecoration, TextStyle;
 import 'package:flutter/rendering.dart'
     show BoxDecoration, BoxShape, CrossAxisAlignment, EdgeInsets;
@@ -47,6 +48,7 @@ class GoalTreeWidget extends StatefulWidget {
 
 class _GoalTreeWidgetState extends State<GoalTreeWidget> {
   bool hovered = false;
+  bool dragging = false;
   moveGoals(String newParentId, Set<String> goalIds) {
     final List<GoalDelta> goalDeltas = [];
     for (final goalId in goalIds) {
@@ -58,83 +60,103 @@ class _GoalTreeWidgetState extends State<GoalTreeWidget> {
   @override
   Widget build(BuildContext context) {
     final Goal rootGoal = widget.goalMap[widget.rootGoalId]!;
-    return GestureDetector(
-      onTap: () => widget.onExpanded(rootGoal.id),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          DragTarget<String>(
-            onAccept: (droppedGoalId) {
-              final selectedAndDraggedGoals = {
-                ...widget.selectedGoals,
-                droppedGoalId
-              };
-              moveGoals(rootGoal.id, selectedAndDraggedGoals);
-            },
-            onMove: (_) => {
-              setState(() {
-                hovered = true;
-              })
-            },
-            onLeave: (_) => {
+    var isExpanded = widget.expandedGoals.contains(rootGoal.id);
+    var isSelected = widget.selectedGoals.contains(rootGoal.id);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DragTarget<String>(
+          onAccept: (droppedGoalId) {
+            final selectedAndDraggedGoals = {
+              ...widget.selectedGoals,
+              droppedGoalId
+            };
+            moveGoals(rootGoal.id, selectedAndDraggedGoals);
+          },
+          onMove: (_) {
+            setState(() {
+              hovered = true;
+            });
+          },
+          onLeave: (_) {
+            setState(() {
+              hovered = false;
+            });
+          },
+          builder: (context, _, __) => Draggable<String>(
+            data: rootGoal.id,
+            onDragEnd: (_) {
               setState(() {
                 hovered = false;
-              })
+                dragging = false;
+              });
             },
-            builder: (context, _, __) => Draggable<String>(
-              data: rootGoal.id,
-              feedback: Container(
-                decoration: const BoxDecoration(
-                    color: Colors.red, shape: BoxShape.circle),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                      (widget.selectedGoals.contains(rootGoal.id)
-                              ? widget.selectedGoals.length
-                              : widget.selectedGoals.length + 1)
-                          .toString(),
-                      style: const TextStyle(
-                          fontSize: 20,
-                          decoration: TextDecoration.none,
-                          color: Colors.white)),
-                ),
-              ),
-              child: GoalItemWidget(
-                goal: rootGoal,
-                selected: widget.selectedGoals.contains(rootGoal.id),
-                onSelected: (value) {
-                  widget.onSelected(rootGoal.id);
-                },
-                hovered: hovered,
+            onDragStarted: () {
+              setState(() {
+                dragging = true;
+              });
+            },
+            feedback: Container(
+              decoration: const BoxDecoration(
+                  color: Colors.red, shape: BoxShape.circle),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                    (isSelected
+                            ? widget.selectedGoals.length
+                            : widget.selectedGoals.length + 1)
+                        .toString(),
+                    style: const TextStyle(
+                        fontSize: 20,
+                        decoration: TextDecoration.none,
+                        color: Colors.white)),
               ),
             ),
+            child: Row(
+              children: [
+                GoalItemWidget(
+                  goal: rootGoal,
+                  selected: widget.selectedGoals.contains(rootGoal.id),
+                  onSelected: (value) {
+                    widget.onSelected(rootGoal.id);
+                  },
+                  hovered: hovered && !dragging,
+                ),
+                rootGoal.subGoals.length > 0
+                    ? IconButton(
+                        onPressed: () => widget.onExpanded(rootGoal.id),
+                        icon: Icon(isExpanded
+                            ? Icons.arrow_drop_down
+                            : Icons.arrow_right))
+                    : Container(),
+              ],
+            ),
           ),
-          widget.expandedGoals.contains(rootGoal.id) &&
-                  (widget.depthLimit == null || widget.depthLimit! > 0)
-              ? Row(children: [
-                  const SizedBox(width: 20),
-                  Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (final subGoal in rootGoal.subGoals)
-                          widget.goalMap.containsKey(subGoal.id)
-                              ? GoalTreeWidget(
-                                  goalMap: widget.goalMap,
-                                  rootGoalId: subGoal.id,
-                                  onSelected: widget.onSelected,
-                                  selectedGoals: widget.selectedGoals,
-                                  expandedGoals: widget.expandedGoals,
-                                  onExpanded: widget.onExpanded,
-                                  depthLimit: widget.depthLimit == null
-                                      ? null
-                                      : widget.depthLimit! - 1,
-                                )
-                              : null,
-                      ].where((element) => element != null).toList().cast())
-                ])
-              : Container()
-        ],
-      ),
+        ),
+        isExpanded && (widget.depthLimit == null || widget.depthLimit! > 0)
+            ? Row(children: [
+                const SizedBox(width: 20),
+                Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final subGoal in rootGoal.subGoals)
+                        widget.goalMap.containsKey(subGoal.id)
+                            ? GoalTreeWidget(
+                                goalMap: widget.goalMap,
+                                rootGoalId: subGoal.id,
+                                onSelected: widget.onSelected,
+                                selectedGoals: widget.selectedGoals,
+                                expandedGoals: widget.expandedGoals,
+                                onExpanded: widget.onExpanded,
+                                depthLimit: widget.depthLimit == null
+                                    ? null
+                                    : widget.depthLimit! - 1,
+                              )
+                            : null,
+                    ].where((element) => element != null).toList().cast())
+              ])
+            : Container()
+      ],
     );
   }
 }
