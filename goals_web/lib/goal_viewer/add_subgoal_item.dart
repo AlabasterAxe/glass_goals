@@ -72,7 +72,7 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
                   focusNode: _focusNode,
                 ))
             : GestureDetector(
-                onDoubleTap: () => {
+                onTap: () => {
                   setState(() {
                     _editing = true;
                     _focusNode.requestFocus();

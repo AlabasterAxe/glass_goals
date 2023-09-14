@@ -32,7 +32,7 @@ String getGoalStatusString(Goal goal) {
     case GoalStatus.archived:
       return 'Archived';
     case GoalStatus.pending:
-      return 'Pending';
+      return 'On Hold';
     case null:
       return 'No status';
   }
@@ -79,8 +79,7 @@ class _GoalItemWidgetState extends State<GoalItemWidget> {
         children: [
           Checkbox(value: widget.selected, onChanged: widget.onSelected),
           _editing
-              ? SizedBox(
-                  width: 200,
+              ? IntrinsicWidth(
                   child: TextField(
                     autocorrect: false,
                     controller: _textController,
@@ -99,7 +98,8 @@ class _GoalItemWidgetState extends State<GoalItemWidget> {
                       });
                     },
                     focusNode: _focusNode,
-                  ))
+                  ),
+                )
               : GestureDetector(
                   onDoubleTap: () => {
                     setState(() {
