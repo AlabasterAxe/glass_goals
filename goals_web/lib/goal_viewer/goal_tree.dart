@@ -20,6 +20,7 @@ import 'package:flutter/widgets.dart'
         Widget;
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
+import 'package:uuid/uuid.dart';
 import '../app_context.dart';
 import 'goal_item.dart' show GoalItemWidget;
 
@@ -49,6 +50,7 @@ class GoalTreeWidget extends StatefulWidget {
 class _GoalTreeWidgetState extends State<GoalTreeWidget> {
   bool hovered = false;
   bool dragging = false;
+
   moveGoals(String newParentId, Set<String> goalIds) {
     final List<GoalDelta> goalDeltas = [];
     for (final goalId in goalIds) {
@@ -60,8 +62,10 @@ class _GoalTreeWidgetState extends State<GoalTreeWidget> {
   @override
   Widget build(BuildContext context) {
     final Goal rootGoal = widget.goalMap[widget.rootGoalId]!;
-    var isExpanded = widget.expandedGoals.contains(rootGoal.id);
-    var isSelected = widget.selectedGoals.contains(rootGoal.id);
+    final isExpanded = widget.expandedGoals.contains(rootGoal.id);
+    final isSelected = widget.selectedGoals.contains(rootGoal.id);
+    final hasRenderableChildren = widget.goalMap[widget.rootGoalId]!.subGoals
+        .any((element) => widget.goalMap.containsKey(element.id));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -116,19 +120,27 @@ class _GoalTreeWidgetState extends State<GoalTreeWidget> {
               children: [
                 GoalItemWidget(
                   goal: rootGoal,
-                  selected: widget.selectedGoals.contains(rootGoal.id),
+                  selected: isSelected,
                   onSelected: (value) {
                     widget.onSelected(rootGoal.id);
                   },
                   hovered: hovered && !dragging,
                 ),
-                rootGoal.subGoals.length > 0
+                hasRenderableChildren
                     ? IconButton(
                         onPressed: () => widget.onExpanded(rootGoal.id),
                         icon: Icon(isExpanded
                             ? Icons.arrow_drop_down
                             : Icons.arrow_right))
-                    : Container(),
+                    : IconButton(
+                        onPressed: () {
+                          AppContext.of(context).syncClient.modifyGoal(
+                              GoalDelta(
+                                  id: const Uuid().v4(),
+                                  text: "[New Subgoal]",
+                                  parentId: rootGoal.id));
+                        },
+                        icon: const Icon(Icons.add, size: 18)),
               ],
             ),
           ),

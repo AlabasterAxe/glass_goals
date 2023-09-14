@@ -78,6 +78,7 @@ class HoverToolbarWidget extends StatelessWidget {
   final Function() onArchive;
   final Function() onDone;
   final Function() onPending;
+  final Function() onClearSelection;
   final Function(DateTime? endDate) onActive;
   const HoverToolbarWidget({
     super.key,
@@ -87,6 +88,7 @@ class HoverToolbarWidget extends StatelessWidget {
     required this.onDone,
     required this.onPending,
     required this.onActive,
+    required this.onClearSelection,
   });
 
   @override
@@ -155,6 +157,13 @@ class HoverToolbarWidget extends StatelessWidget {
               child: IconButton(
                 icon: const Icon(Icons.done),
                 onPressed: onDone,
+              ),
+            ),
+            Tooltip(
+              message: 'Clear Selection',
+              child: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: onClearSelection,
               ),
             ),
           ],
@@ -301,6 +310,12 @@ class _GoalViewerState extends State<GoalViewer> {
 
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
     selectedGoals.clear();
+  }
+
+  onClearSelection() {
+    setState(() {
+      selectedGoals.clear();
+    });
   }
 
   onActive(DateTime? endDate) {
@@ -453,6 +468,7 @@ class _GoalViewerState extends State<GoalViewer> {
                   onDone: onDone,
                   onPending: onPending,
                   onActive: onActive,
+                  onClearSelection: onClearSelection,
                 ),
               )
             : Container(),
