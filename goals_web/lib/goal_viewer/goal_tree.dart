@@ -127,23 +127,13 @@ class _GoalTreeWidgetState extends State<GoalTreeWidget> {
                   },
                   hovered: hovered && !dragging,
                 ),
-                hasRenderableChildren
-                    ? IconButton(
-                        onPressed: () => widget.onExpanded(rootGoal.id),
-                        icon: Icon(isExpanded
-                            ? Icons.arrow_drop_down
-                            : Icons.arrow_right))
-                    : IconButton(
-                        onPressed: () {
-                          AppContext.of(context).syncClient.modifyGoal(
-                              GoalDelta(
-                                  id: const Uuid().v4(),
-                                  text: "[New Subgoal]",
-                                  parentId: rootGoal.id));
-                          setState(() =>
-                              widget.onExpanded(rootGoal.id, expanded: true));
-                        },
-                        icon: const Icon(Icons.add, size: 18)),
+                IconButton(
+                    onPressed: () => widget.onExpanded(rootGoal.id),
+                    icon: Icon(isExpanded
+                        ? Icons.arrow_drop_down
+                        : hasRenderableChildren
+                            ? Icons.arrow_right
+                            : Icons.add)),
               ],
             ),
           ),
@@ -168,9 +158,7 @@ class _GoalTreeWidgetState extends State<GoalTreeWidget> {
                                     : widget.depthLimit! - 1,
                               )
                             : null,
-                      hasRenderableChildren
-                          ? AddSubgoalItemWidget(parentId: rootGoal.id)
-                          : null,
+                      AddSubgoalItemWidget(parentId: rootGoal.id),
                     ].where((element) => element != null).toList().cast())
               ])
             : Container()

@@ -34,56 +34,60 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(7.0),
-          child: Icon(Icons.add, size: 18),
-        ),
-        _editing
-            ? SizedBox(
-                width: 200,
-                child: TextField(
-                  autocorrect: false,
-                  controller: _textController,
-                  decoration: null,
-                  style: mainTextStyle,
-                  onEditingComplete: () {
-                    final newText = _textController!.text;
-                    _textController!.text = "[New Subgoal]";
-                    _textController!.selection = TextSelection(
-                        baseOffset: 0,
-                        extentOffset: _textController!.text.length);
-                    AppContext.of(context).syncClient.modifyGoal(
-                        AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                            id: const Uuid().v4(),
-                            text: newText,
-                            parentId: widget.parentId)));
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Row(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(7.0),
+            child: Icon(Icons.add, size: 18),
+          ),
+          _editing
+              ? SizedBox(
+                  width: 200,
+                  child: TextField(
+                    autocorrect: false,
+                    controller: _textController,
+                    decoration: null,
+                    style: mainTextStyle,
+                    onEditingComplete: () {
+                      final newText = _textController!.text;
+                      _textController!.text = "[New Subgoal]";
+                      _textController!.selection = TextSelection(
+                          baseOffset: 0,
+                          extentOffset: _textController!.text.length);
+                      AppContext.of(context).syncClient.modifyGoal(
+                          AppContext.of(context).syncClient.modifyGoal(
+                              GoalDelta(
+                                  id: const Uuid().v4(),
+                                  text: newText,
+                                  parentId: widget.parentId)));
+                      setState(() {
+                        _editing = false;
+                      });
+                    },
+                    onTapOutside: (_) {
+                      _textController!.text = "[New Subgoal]";
+                      setState(() {
+                        _editing = false;
+                      });
+                    },
+                    focusNode: _focusNode,
+                  ))
+              : GestureDetector(
+                  onTap: () => {
                     setState(() {
-                      _editing = false;
-                    });
+                      _editing = true;
+                      _focusNode.requestFocus();
+                      _textController!.selection = TextSelection(
+                          baseOffset: 0,
+                          extentOffset: _textController!.text.length);
+                    })
                   },
-                  onTapOutside: (_) {
-                    _textController!.text = "[New Subgoal]";
-                    setState(() {
-                      _editing = false;
-                    });
-                  },
-                  focusNode: _focusNode,
-                ))
-            : GestureDetector(
-                onTap: () => {
-                  setState(() {
-                    _editing = true;
-                    _focusNode.requestFocus();
-                    _textController!.selection = TextSelection(
-                        baseOffset: 0,
-                        extentOffset: _textController!.text.length);
-                  })
-                },
-                child: Text(_textController!.text, style: mainTextStyle),
-              ),
-      ],
+                  child: Text(_textController!.text, style: mainTextStyle),
+                ),
+        ],
+      ),
     );
   }
 }
