@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:goals_core/model.dart' show Goal, WorldContext, getGoalStatus;
 import 'package:goals_core/sync.dart';
+import 'package:intl/intl.dart' show DateFormat;
 
 import '../app_context.dart';
 import '../styles.dart';
@@ -22,17 +23,42 @@ class GoalItemWidget extends StatefulWidget {
   State<GoalItemWidget> createState() => _GoalItemWidgetState();
 }
 
+String getRelativeDateString(DateTime now, DateTime? future) {
+  if (future == null) {
+    return 'Forever';
+  }
+
+  if (now.year != future.year) {
+    return DateFormat.yMd().format(future);
+  }
+
+  if (now.difference(future).inDays > 7) {
+    return DateFormat.Md().format(future);
+  }
+
+  if (now.difference(future).inDays > 1) {
+    return DateFormat.E().format(future);
+  }
+
+  if (now.difference(future).inDays == 1) {
+    return 'Tomorrow';
+  }
+
+  return 'Today';
+}
+
 String getGoalStatusString(Goal goal) {
-  final status = getGoalStatus(WorldContext.now(), goal);
+  final worldContext = WorldContext.now();
+  final status = getGoalStatus(worldContext, goal);
   switch (status?.status) {
     case GoalStatus.active:
-      return 'Active';
+      return 'Active: ${getRelativeDateString(worldContext.time, status!.endTime)}';
     case GoalStatus.done:
       return 'Done';
     case GoalStatus.archived:
       return 'Archived';
     case GoalStatus.pending:
-      return 'On Hold';
+      return 'On Hold: ${getRelativeDateString(worldContext.time, status!.endTime)}';
     case null:
       return 'No status';
   }

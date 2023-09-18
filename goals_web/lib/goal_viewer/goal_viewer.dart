@@ -17,6 +17,7 @@ import 'package:goals_core/model.dart'
     show
         Goal,
         WorldContext,
+        activeGoalExpiringSoonestComparator,
         getGoalStatus,
         getGoalsMatchingPredicate,
         getGoalsRequiringAttention;
@@ -57,10 +58,12 @@ class _DatePickerDialogState extends State<DatePickerDialog> {
                   IconButton(
                       onPressed: () async {
                         final date = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime(2100));
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2100),
+                          locale: const Locale('en', 'GB'),
+                        );
                         if (context.mounted) {
                           Navigator.of(context).pop(date);
                         }
@@ -432,26 +435,25 @@ class _GoalViewerState extends State<GoalViewer> {
                               expandedGoals: expandedGoals,
                               onExpanded: onExpanded,
                               comparator: (Goal goal1, Goal goal2) {
-                                if (getGoalStatus(WorldContext.now(), goal1)
-                                        ?.status ==
-                                    getGoalStatus(WorldContext.now(), goal2)
-                                        ?.status) {
-                                  return goal1.text.compareTo(goal2.text);
-                                } else if (getGoalStatus(
-                                                WorldContext.now(), goal1)
-                                            ?.status ==
-                                        GoalStatus.active &&
-                                    getGoalStatus(WorldContext.now(), goal2)
-                                            ?.status ==
-                                        null) {
-                                  return 1;
-                                } else if (getGoalStatus(
-                                                WorldContext.now(), goal2)
-                                            ?.status ==
-                                        GoalStatus.active &&
+                                final goal1Status =
                                     getGoalStatus(WorldContext.now(), goal1)
-                                            ?.status ==
-                                        null) {
+                                        ?.status;
+                                final goal2Status =
+                                    getGoalStatus(WorldContext.now(), goal2)
+                                        ?.status;
+                                final cmptor =
+                                    activeGoalExpiringSoonestComparator(
+                                        WorldContext.now());
+                                if (goal1Status == goal2Status) {
+                                  if (goal1Status == GoalStatus.active) {
+                                    return cmptor(goal1, goal2);
+                                  }
+                                  return goal1.text.compareTo(goal2.text);
+                                } else if (goal1Status == GoalStatus.active &&
+                                    goal2Status == null) {
+                                  return 1;
+                                } else if (goal2Status == GoalStatus.active &&
+                                    goal1Status == null) {
                                   return -1;
                                 }
                                 return 0;

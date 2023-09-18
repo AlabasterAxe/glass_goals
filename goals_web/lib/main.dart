@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:hive_flutter/hive_flutter.dart' show Hive, HiveX;
 import 'app_context.dart' show AppContext;
@@ -54,6 +55,11 @@ class _WebGoalsState extends State<WebGoals>
                   primaryColor: Colors.black,
                 ),
                 home: const GoalsHome(),
+                localizationsDelegates: GlobalMaterialLocalizations.delegates,
+                supportedLocales: const [
+                  Locale('en', 'US'),
+                  Locale('en', 'GB'),
+                ],
               ));
         });
   }

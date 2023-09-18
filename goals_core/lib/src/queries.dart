@@ -47,6 +47,38 @@ Goal? getActiveGoalExpiringSoonest(
   return result;
 }
 
+Comparator<Goal> activeGoalExpiringSoonestComparator(WorldContext context) {
+  return (Goal a, Goal b) {
+    if (a.id == b.id) {
+      return 0;
+    }
+    final aStatus = getGoalStatus(context, a);
+    final bStatus = getGoalStatus(context, b);
+    if (aStatus?.status != GoalStatus.active &&
+        bStatus?.status != GoalStatus.active) {
+      return 0;
+    }
+    if (aStatus?.status == GoalStatus.active &&
+        bStatus?.status != GoalStatus.active) {
+      return -1;
+    }
+    if (bStatus?.status == GoalStatus.active &&
+        aStatus?.status != GoalStatus.active) {
+      return 1;
+    }
+    if (aStatus?.endTime == null && bStatus?.endTime == null) {
+      return 0;
+    }
+    if (aStatus?.endTime == null && bStatus?.endTime != null) {
+      return 1;
+    }
+    if (bStatus?.endTime == null && aStatus?.endTime != null) {
+      return -1;
+    }
+    return aStatus!.endTime!.compareTo(bStatus!.endTime!);
+  };
+}
+
 /// The logic for goals requiring attention is as follows:
 ///  - Show all active tasks
 ///  - Don't show tasks if any of their children are marked active

@@ -1,5 +1,4 @@
-import 'package:flutter/material.dart'
-    show Colors, Expanded, Icon, IconButton, Icons;
+import 'package:flutter/material.dart' show Colors, Icon, IconButton, Icons;
 import 'package:flutter/painting.dart' show TextDecoration, TextStyle;
 import 'package:flutter/rendering.dart'
     show BoxDecoration, BoxShape, CrossAxisAlignment, EdgeInsets;
@@ -10,7 +9,6 @@ import 'package:flutter/widgets.dart'
         Container,
         DragTarget,
         Draggable,
-        GestureDetector,
         Padding,
         Row,
         SizedBox,
@@ -21,7 +19,7 @@ import 'package:flutter/widgets.dart'
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
-import 'package:uuid/uuid.dart';
+
 import '../app_context.dart';
 import 'goal_item.dart' show GoalItemWidget;
 

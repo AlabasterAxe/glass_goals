@@ -37,5 +37,5 @@ class WorldContext {
 
   WorldContext({required this.time});
 
-  static now() => WorldContext(time: DateTime.now());
+  static WorldContext now() => WorldContext(time: DateTime.now());
 }

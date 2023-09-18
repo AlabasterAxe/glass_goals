@@ -32,11 +32,14 @@ dependencies:
   flutter:
     sdk: flutter
 
+  flutter_localizations:
+      sdk: flutter
   goals_core:
     path: "../goals_core"
   
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  intl: any
   uuid: ^3.0.7
 
 dev_dependencies:
