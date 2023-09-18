@@ -29,7 +29,11 @@ import 'goal_list.dart' show GoalListWidget;
 import 'goal_tree.dart' show GoalTreeWidget;
 
 class DatePickerDialog extends StatefulWidget {
-  const DatePickerDialog({super.key});
+  final Widget title;
+  const DatePickerDialog({
+    super.key,
+    required this.title,
+  });
 
   @override
   State<DatePickerDialog> createState() => _DatePickerDialogState();
@@ -43,7 +47,7 @@ class _DatePickerDialogState extends State<DatePickerDialog> {
         child: IntrinsicHeight(
           child: Column(
             children: [
-              const Text('Active Until?'),
+              widget.title,
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -77,7 +81,7 @@ class HoverToolbarWidget extends StatelessWidget {
   final Function() onUnarchive;
   final Function() onArchive;
   final Function() onDone;
-  final Function() onPending;
+  final Function(DateTime? endDate) onSnooze;
   final Function() onClearSelection;
   final Function(DateTime? endDate) onActive;
   const HoverToolbarWidget({
@@ -86,7 +90,7 @@ class HoverToolbarWidget extends StatelessWidget {
     required this.onUnarchive,
     required this.onArchive,
     required this.onDone,
-    required this.onPending,
+    required this.onSnooze,
     required this.onActive,
     required this.onClearSelection,
   });
@@ -139,7 +143,8 @@ class HoverToolbarWidget extends StatelessWidget {
                 onPressed: () async {
                   final DateTime? date = await showDialog(
                     context: context,
-                    builder: (context) => const DatePickerDialog(),
+                    builder: (context) =>
+                        const DatePickerDialog(title: Text('Active Until?')),
                   );
                   onActive(date);
                 },
@@ -149,7 +154,14 @@ class HoverToolbarWidget extends StatelessWidget {
               message: 'Snooze',
               child: IconButton(
                 icon: const Icon(Icons.snooze),
-                onPressed: onPending,
+                onPressed: () async {
+                  final DateTime? date = await showDialog(
+                    context: context,
+                    builder: (context) =>
+                        const DatePickerDialog(title: Text('Snooze Until?')),
+                  );
+                  onSnooze(date);
+                },
               ),
             ),
             Tooltip(
@@ -300,7 +312,7 @@ class _GoalViewerState extends State<GoalViewer> {
     selectedGoals.clear();
   }
 
-  onPending() {
+  onSnooze(DateTime? endDate) {
     final List<GoalDelta> goalDeltas = [];
     for (final String goalId in selectedGoals) {
       goalDeltas.add(GoalDelta(
@@ -309,7 +321,7 @@ class _GoalViewerState extends State<GoalViewer> {
           creationTime: DateTime.now(),
           status: GoalStatus.pending,
           startTime: DateTime.now(),
-          endTime: DateTime.now().add(const Duration(days: 7)),
+          endTime: endDate ?? DateTime.now().add(const Duration(days: 7)),
         ),
       ));
     }
@@ -472,7 +484,7 @@ class _GoalViewerState extends State<GoalViewer> {
                   onUnarchive: onUnarchive,
                   onArchive: onArchive,
                   onDone: onDone,
-                  onPending: onPending,
+                  onSnooze: onSnooze,
                   onActive: onActive,
                   onClearSelection: onClearSelection,
                 ),
