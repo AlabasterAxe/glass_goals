@@ -32,15 +32,15 @@ String getRelativeDateString(DateTime now, DateTime? future) {
     return DateFormat.yMd().format(future);
   }
 
-  if (now.difference(future).inDays > 7) {
+  if (future.difference(now).inDays > 7) {
     return DateFormat.Md().format(future);
   }
 
-  if (now.difference(future).inDays > 1) {
+  if (future.difference(now).inDays > 1) {
     return DateFormat.E().format(future);
   }
 
-  if (now.difference(future).inDays == 1) {
+  if (future.difference(now).inDays == 1) {
     return 'Tomorrow';
   }
 
