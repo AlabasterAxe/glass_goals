@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:goals_core/model.dart' show Goal, WorldContext, getGoalStatus;
 import 'package:goals_core/sync.dart';
@@ -11,12 +13,14 @@ class GoalItemWidget extends StatefulWidget {
   final bool selected;
   final Function(bool? value) onSelected;
   final bool hovered;
+  final Goal? parent;
   const GoalItemWidget({
     super.key,
     required this.goal,
     required this.selected,
     required this.onSelected,
     required this.hovered,
+    this.parent,
   });
 
   @override
@@ -133,7 +137,9 @@ class _GoalItemWidgetState extends State<GoalItemWidget> {
                       _focusNode.requestFocus();
                     })
                   },
-                  child: Text(widget.goal.text, style: mainTextStyle),
+                  child: Text(
+                      '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
+                      style: mainTextStyle),
                 ),
           const SizedBox(width: 4),
           // chip like container widget around text status widget:

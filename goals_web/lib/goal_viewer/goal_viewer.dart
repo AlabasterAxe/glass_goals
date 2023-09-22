@@ -385,6 +385,23 @@ class _GoalViewerState extends State<GoalViewer> {
     return oneHot;
   }
 
+  int _toReviewComparator(Goal goal1, Goal goal2) {
+    final goal1Status = getGoalStatus(WorldContext.now(), goal1)?.status;
+    final goal2Status = getGoalStatus(WorldContext.now(), goal2)?.status;
+    final cmptor = activeGoalExpiringSoonestComparator(WorldContext.now());
+    if (goal1Status == goal2Status) {
+      if (goal1Status == GoalStatus.active) {
+        return cmptor(goal1, goal2);
+      }
+      return goal1.text.compareTo(goal2.text);
+    } else if (goal1Status == GoalStatus.active && goal2Status == null) {
+      return 1;
+    } else if (goal2Status == GoalStatus.active && goal1Status == null) {
+      return -1;
+    }
+    return 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -419,45 +436,39 @@ class _GoalViewerState extends State<GoalViewer> {
                             onExpanded: onExpanded,
                           );
                         case GoalView.list:
+                          final goalIds =
+                              (widget.goalMap.values.toList(growable: false)
+                                    ..sort((a, b) => a.text
+                                        .toLowerCase()
+                                        .compareTo(b.text.toLowerCase())))
+                                  .map((e) => e.id)
+                                  .toList();
                           return GoalListWidget(
                             goalMap: widget.goalMap,
+                            goalIds: goalIds,
                             selectedGoals: selectedGoals,
                             onSelected: onSelected,
                             expandedGoals: expandedGoals,
                             onExpanded: onExpanded,
                           );
                         case GoalView.to_review:
+                          final goalsRequiringAttention =
+                              getGoalsRequiringAttention(
+                                  WorldContext.now(), widget.goalMap);
+                          final goalIds = (goalsRequiringAttention.values
+                                  .toList(growable: false)
+                                ..sort(_toReviewComparator))
+                              .map((e) => e.id)
+                              .toList();
+
                           return GoalListWidget(
-                              goalMap: getGoalsRequiringAttention(
-                                  WorldContext.now(), widget.goalMap),
-                              selectedGoals: selectedGoals,
-                              onSelected: onSelected,
-                              expandedGoals: expandedGoals,
-                              onExpanded: onExpanded,
-                              comparator: (Goal goal1, Goal goal2) {
-                                final goal1Status =
-                                    getGoalStatus(WorldContext.now(), goal1)
-                                        ?.status;
-                                final goal2Status =
-                                    getGoalStatus(WorldContext.now(), goal2)
-                                        ?.status;
-                                final cmptor =
-                                    activeGoalExpiringSoonestComparator(
-                                        WorldContext.now());
-                                if (goal1Status == goal2Status) {
-                                  if (goal1Status == GoalStatus.active) {
-                                    return cmptor(goal1, goal2);
-                                  }
-                                  return goal1.text.compareTo(goal2.text);
-                                } else if (goal1Status == GoalStatus.active &&
-                                    goal2Status == null) {
-                                  return 1;
-                                } else if (goal2Status == GoalStatus.active &&
-                                    goal1Status == null) {
-                                  return -1;
-                                }
-                                return 0;
-                              });
+                            goalMap: widget.goalMap,
+                            goalIds: goalIds,
+                            selectedGoals: selectedGoals,
+                            onSelected: onSelected,
+                            expandedGoals: expandedGoals,
+                            onExpanded: onExpanded,
+                          );
                       }
                     })),
           ),

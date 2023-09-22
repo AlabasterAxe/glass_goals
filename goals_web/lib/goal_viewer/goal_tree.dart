@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart' show Colors, Icon, IconButton, Icons;
 import 'package:flutter/painting.dart' show TextDecoration, TextStyle;
 import 'package:flutter/rendering.dart'
@@ -31,6 +33,7 @@ class GoalTreeWidget extends StatefulWidget {
   final Function(String goalId) onSelected;
   final Function(String goalId, {bool expanded}) onExpanded;
   final int? depthLimit;
+  final bool showParentName;
   const GoalTreeWidget({
     super.key,
     required this.goalMap,
@@ -40,6 +43,7 @@ class GoalTreeWidget extends StatefulWidget {
     required this.expandedGoals,
     required this.onExpanded,
     this.depthLimit,
+    this.showParentName = false,
   });
 
   @override
@@ -124,6 +128,9 @@ class _GoalTreeWidgetState extends State<GoalTreeWidget> {
                     widget.onSelected(rootGoal.id);
                   },
                   hovered: hovered && !dragging,
+                  parent: widget.showParentName
+                      ? widget.goalMap[rootGoal.parentId]
+                      : null,
                 ),
                 IconButton(
                     onPressed: () => widget.onExpanded(rootGoal.id),
