@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
         "vsync"
-    ]
+    ],
+    "dart.flutterSdkPath": ".fvm/flutter_sdk",
 }
