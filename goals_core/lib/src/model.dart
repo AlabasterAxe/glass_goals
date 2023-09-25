@@ -1,4 +1,4 @@
-import 'package:goals_types/goals_types.dart' show StatusLogEntry;
+import 'package:goals_types/goals_types.dart' show GoalLogEntry;
 
 class Goal {
   final String id;
@@ -7,7 +7,7 @@ class Goal {
   String text;
   final List<Goal> subGoals = [];
   String? parentId;
-  final List<StatusLogEntry> statusLog = [];
+  final List<GoalLogEntry> log = [];
 
   Goal({required this.text, required this.id, subGoals, this.parentId}) {
     if (subGoals != null) {

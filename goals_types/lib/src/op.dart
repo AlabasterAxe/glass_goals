@@ -11,16 +11,20 @@ enum GoalStatus {
   archived,
 }
 
-class StatusLogEntry extends Equatable {
+abstract class GoalLogEntry extends Equatable {
+  final DateTime creationTime;
+  const GoalLogEntry({required this.creationTime});
+}
+
+class StatusLogEntry extends GoalLogEntry {
   static const FIRST_VERSION = 2;
 
   final GoalStatus status;
   final DateTime? startTime;
   final DateTime? endTime;
-  final DateTime creationTime;
   const StatusLogEntry({
+    required super.creationTime,
     required this.status,
-    required this.creationTime,
     this.startTime,
     this.endTime,
   });

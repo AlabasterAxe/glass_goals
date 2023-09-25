@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:hive/hive.dart' show Box, Hive;
@@ -38,7 +37,7 @@ class SyncClient {
     });
   }
 
-  modifyGoal(GoalDelta delta) {
+  void modifyGoal(GoalDelta delta) {
     hlc = hlc.increment();
     List<String> unsyncedOps =
         (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
@@ -51,7 +50,7 @@ class SyncClient {
     sync();
   }
 
-  modifyGoals(List<GoalDelta> deltas) {
+  void modifyGoals(List<GoalDelta> deltas) {
     List<String> unsyncedOps =
         (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
             .cast<String>();
@@ -105,7 +104,7 @@ class SyncClient {
     }
 
     if (op.delta.statusLogEntry != null) {
-      goal.statusLog.add(op.delta.statusLogEntry!);
+      goal.log.add(op.delta.statusLogEntry!);
     }
 
     if (goal.parentId != null &&

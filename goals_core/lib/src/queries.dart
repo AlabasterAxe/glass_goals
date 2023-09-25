@@ -111,9 +111,11 @@ Map<String, Goal> getGoalsRequiringAttention(
 // Currently, current goal status is just a function of time.
 StatusLogEntry? getGoalStatus(WorldContext context, Goal goal) {
   final now = context.time;
-  final possibleStatuses = goal.statusLog
-      .where((s) => (s.startTime == null || s.startTime!.isBefore(now)))
-      .toList();
+  final List<StatusLogEntry> possibleStatuses = goal.log
+      .where((s) => (s is StatusLogEntry &&
+          (s.startTime == null || s.startTime!.isBefore(now))))
+      .toList()
+      .cast();
   if (possibleStatuses.isEmpty) {
     return null;
   }
