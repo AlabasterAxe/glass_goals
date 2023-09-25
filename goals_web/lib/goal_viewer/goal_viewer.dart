@@ -223,7 +223,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     setState(() {
       _selectedDisplayMode = mode;
       Hive.box('goals_web.ui')
-          .put('goalViewerDisplayMode', _selectedDisplayMode);
+          .put('goalViewerDisplayMode', _selectedDisplayMode?.name);
     });
   }
 
@@ -379,9 +379,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       as List<dynamic>)
                   .cast<String>());
 
-          focusedGoalId = box.get('focusedGoal', defaultValue: null);
-          _selectedDisplayMode =
-              box.get('goalViewerDisplayMode', defaultValue: GoalView.tree);
+          final modeString = box.get('goalViewerDisplayMode',
+              defaultValue: GoalView.tree.name);
+          _selectedDisplayMode = GoalView.values.byName(modeString);
         });
         isInitted = true;
       });
@@ -430,23 +430,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         return const Text('Loading...');
                       }
                       switch (_selectedDisplayMode) {
-                        case GoalView.tree:
-                          return GoalTreeWidget(
-                              goalMap: getGoalsMatchingPredicate(
-                                  worldContext,
-                                  widget.goalMap,
-                                  (goal) =>
-                                      getGoalStatus(worldContext, goal)
-                                              ?.status !=
-                                          GoalStatus.archived &&
-                                      getGoalStatus(worldContext, goal)
-                                              ?.status !=
-                                          GoalStatus.done),
-                              rootGoalId: widget.rootGoalId,
-                              onSelected: onSelected,
-                              onExpanded: onExpanded,
-                              focusedGoalId: focusedGoalId,
-                              onFocused: onFocused);
                         case GoalView.list:
                           final goalIds =
                               (widget.goalMap.values.toList(growable: false)
@@ -477,6 +460,23 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                             onSelected: onSelected,
                             onExpanded: onExpanded,
                           );
+                        default:
+                          return GoalTreeWidget(
+                              goalMap: getGoalsMatchingPredicate(
+                                  worldContext,
+                                  widget.goalMap,
+                                  (goal) =>
+                                      getGoalStatus(worldContext, goal)
+                                              ?.status !=
+                                          GoalStatus.archived &&
+                                      getGoalStatus(worldContext, goal)
+                                              ?.status !=
+                                          GoalStatus.done),
+                              rootGoalId: widget.rootGoalId,
+                              onSelected: onSelected,
+                              onExpanded: onExpanded,
+                              focusedGoalId: focusedGoalId,
+                              onFocused: onFocused);
                       }
                     })),
           ),
@@ -484,7 +484,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             direction: Axis.horizontal,
             onPressed: (index) {
               setState(() {
-                _selectedDisplayMode = _displayModeOptions[index];
+                onSwitchMode(_displayModeOptions[index]);
               });
             },
             isSelected: _getOneHot(),
