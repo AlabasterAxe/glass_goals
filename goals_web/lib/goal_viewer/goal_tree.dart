@@ -17,6 +17,7 @@ import 'package:flutter/widgets.dart'
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
+import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../app_context.dart';
@@ -25,8 +26,6 @@ import 'goal_item.dart' show GoalItemWidget;
 class GoalTreeWidget extends StatefulHookConsumerWidget {
   final Map<String, Goal> goalMap;
   final String rootGoalId;
-  final Set<String> selectedGoals;
-  final Set<String> expandedGoals;
   final String? focusedGoalId;
   final Function(String goalId) onSelected;
   final Function(String goalId)? onFocused;
@@ -37,9 +36,7 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
     super.key,
     required this.goalMap,
     required this.rootGoalId,
-    required this.selectedGoals,
     required this.onSelected,
-    required this.expandedGoals,
     required this.onExpanded,
     this.onFocused,
     this.focusedGoalId,
@@ -66,8 +63,9 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
   @override
   Widget build(BuildContext context) {
     final Goal rootGoal = widget.goalMap[widget.rootGoalId]!;
-    final isExpanded = widget.expandedGoals.contains(rootGoal.id);
-    final isSelected = widget.selectedGoals.contains(rootGoal.id);
+    final selectedGoals = ref.watch(selectedGoalsProvider);
+    final isExpanded = ref.watch(expandedGoalsProvider).contains(rootGoal.id);
+    final isSelected = selectedGoals.contains(rootGoal.id);
     final hasRenderableChildren = widget.goalMap[widget.rootGoalId]!.subGoals
         .any((element) => widget.goalMap.containsKey(element.id));
     return Column(
@@ -75,10 +73,7 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
       children: [
         DragTarget<String>(
           onAccept: (droppedGoalId) {
-            final selectedAndDraggedGoals = {
-              ...widget.selectedGoals,
-              droppedGoalId
-            };
+            final selectedAndDraggedGoals = {...selectedGoals, droppedGoalId};
             moveGoals(rootGoal.id, selectedAndDraggedGoals);
           },
           onMove: (_) {
@@ -111,8 +106,8 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
                     (isSelected
-                            ? widget.selectedGoals.length
-                            : widget.selectedGoals.length + 1)
+                            ? selectedGoals.length
+                            : selectedGoals.length + 1)
                         .toString(),
                     style: const TextStyle(
                         fontSize: 20,
@@ -156,8 +151,6 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                                 goalMap: widget.goalMap,
                                 rootGoalId: subGoal.id,
                                 onSelected: widget.onSelected,
-                                selectedGoals: widget.selectedGoals,
-                                expandedGoals: widget.expandedGoals,
                                 onExpanded: widget.onExpanded,
                                 depthLimit: widget.depthLimit == null
                                     ? null

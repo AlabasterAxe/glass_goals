@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart'
     show
         Colors,
@@ -205,7 +207,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   ];
   GoalView _selectedDisplayMode = GoalView.tree;
 
-  final Set<String> expandedGoals = {};
   String? focusedGoalId;
   Future<void>? openBoxFuture;
   bool isInitted = false;
@@ -228,18 +229,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   onExpanded(String goalId, {bool? expanded}) {
     setState(() {
-      if (expanded != null) {
-        if (expanded) {
-          expandedGoals.add(goalId);
-        } else {
-          expandedGoals.remove(goalId);
-        }
-      } else if (expandedGoals.contains(goalId)) {
-        expandedGoals.remove(goalId);
-      } else {
-        expandedGoals.add(goalId);
-      }
-      Hive.box('goals_web.ui').put('expandedGoals', expandedGoals.toList());
+      setState(() {
+        ref.read(expandedGoalsProvider.notifier).toggle(goalId);
+        Hive.box('goals_web.ui')
+            .put('expandedGoals', ref.read(expandedGoalsProvider).toList());
+      });
     });
   }
 
@@ -380,10 +374,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               (box.get('selectedGoals', defaultValue: <String>[])
                       as List<dynamic>)
                   .cast<String>());
-          expandedGoals.addAll(
+          ref.read(expandedGoalsProvider.notifier).addAll(
               (box.get('expandedGoals', defaultValue: <String>[])
                       as List<dynamic>)
                   .cast<String>());
+
           focusedGoalId = box.get('focusedGoal', defaultValue: null);
           _selectedDisplayMode =
               box.get('goalViewerDisplayMode', defaultValue: GoalView.tree);
@@ -448,9 +443,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                                               ?.status !=
                                           GoalStatus.done),
                               rootGoalId: widget.rootGoalId,
-                              selectedGoals: selectedGoals,
                               onSelected: onSelected,
-                              expandedGoals: expandedGoals,
                               onExpanded: onExpanded,
                               focusedGoalId: focusedGoalId,
                               onFocused: onFocused);
@@ -465,9 +458,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           return GoalListWidget(
                             goalMap: widget.goalMap,
                             goalIds: goalIds,
-                            selectedGoals: selectedGoals,
                             onSelected: onSelected,
-                            expandedGoals: expandedGoals,
                             onExpanded: onExpanded,
                           );
                         case GoalView.to_review:
@@ -483,9 +474,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           return GoalListWidget(
                             goalMap: widget.goalMap,
                             goalIds: goalIds,
-                            selectedGoals: selectedGoals,
                             onSelected: onSelected,
-                            expandedGoals: expandedGoals,
                             onExpanded: onExpanded,
                           );
                       }
