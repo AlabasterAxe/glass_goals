@@ -1,5 +1,3 @@
-import 'dart:convert' show jsonEncode;
-
 import 'package:test/test.dart';
 import 'package:goals_types/goals_types.dart'
     show GoalDelta, GoalStatus, Op, StatusLogEntry;

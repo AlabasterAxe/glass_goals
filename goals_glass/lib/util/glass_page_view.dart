@@ -1,12 +1,5 @@
 import 'package:flutter/widgets.dart'
-    show
-        BuildContext,
-        Container,
-        PageController,
-        PageView,
-        State,
-        StatefulWidget,
-        Widget;
+    show BuildContext, PageController, PageView, State, StatefulWidget, Widget;
 
 import 'app_context.dart' show AppContext;
 

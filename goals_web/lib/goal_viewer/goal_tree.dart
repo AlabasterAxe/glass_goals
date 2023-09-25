@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart' show Colors, Icon, IconButton, Icons;
 import 'package:flutter/painting.dart' show TextDecoration, TextStyle;
 import 'package:flutter/rendering.dart'
@@ -14,8 +12,6 @@ import 'package:flutter/widgets.dart'
         Padding,
         Row,
         SizedBox,
-        State,
-        StatefulWidget,
         Text,
         Widget;
 import 'package:goals_core/model.dart' show Goal;

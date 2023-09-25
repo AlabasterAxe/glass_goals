@@ -55,7 +55,6 @@ String formatSyncTimeAsDelta(String? syncTime) {
   final int hours = duration.inHours % 24;
   final int minutes = duration.inMinutes % 60;
   final int seconds = duration.inSeconds % 60;
-  final int milliseconds = duration.inMilliseconds % 1000;
 
   if (days > 1) {
     return '$days days ago';

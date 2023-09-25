@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:async/async.dart' show RestartableTimer;
 import 'package:flutter/widgets.dart'
     show AnimationController, BuildContext, InheritedWidget, PageController;

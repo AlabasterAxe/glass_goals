@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:goals_core/model.dart' show Goal, WorldContext, getGoalStatus;
 import 'package:goals_core/sync.dart';
@@ -89,7 +87,7 @@ Color getGoalStatusColor(Goal goal) {
 class _GoalItemWidgetState extends State<GoalItemWidget> {
   TextEditingController? _textController;
   bool _editing = false;
-  FocusNode _focusNode = FocusNode();
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void didChangeDependencies() {
@@ -104,7 +102,6 @@ class _GoalItemWidgetState extends State<GoalItemWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final status = getGoalStatus(WorldContext.now(), widget.goal);
     return Container(
       color: widget.hovered ? Colors.grey.shade300 : Colors.transparent,
       child: Row(
@@ -150,7 +147,7 @@ class _GoalItemWidgetState extends State<GoalItemWidget> {
               color: getGoalStatusColor(widget.goal),
               borderRadius: BorderRadius.circular(10.0),
             ),
-            padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
             child: Text(
               getGoalStatusString(widget.goal),
               style: const TextStyle(color: Colors.white, fontSize: 8),

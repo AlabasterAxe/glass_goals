@@ -1,10 +1,5 @@
-import 'dart:async';
-
-import 'package:async/async.dart' show RestartableTimer;
-import 'package:flutter/widgets.dart'
-    show AnimationController, BuildContext, InheritedWidget;
-import 'package:goals_core/src/sync/sync_client.dart' show SyncClient;
-import 'package:rxdart/subjects.dart' show Subject;
+import 'package:flutter/widgets.dart' show BuildContext, InheritedWidget;
+import 'package:goals_core/sync.dart' show SyncClient;
 
 class AppContext extends InheritedWidget {
   final SyncClient syncClient;

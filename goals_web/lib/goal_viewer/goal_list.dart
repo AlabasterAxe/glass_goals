@@ -11,7 +11,7 @@ class GoalListWidget extends StatelessWidget {
   final Function(String goalId) onSelected;
   final Set<String> expandedGoals;
   final Function(String goalId, {bool expanded}) onExpanded;
-  GoalListWidget({
+  const GoalListWidget({
     super.key,
     required this.goalMap,
     required this.goalIds,

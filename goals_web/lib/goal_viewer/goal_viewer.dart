@@ -21,6 +21,7 @@ import 'package:goals_core/model.dart'
 import 'package:goals_core/sync.dart'
     show GoalDelta, GoalStatus, StatusLogEntry, archiveGoal;
 import 'package:goals_web/app_context.dart';
+import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -204,7 +205,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   ];
   GoalView _selectedDisplayMode = GoalView.tree;
 
-  final Set<String> selectedGoals = {};
   final Set<String> expandedGoals = {};
   String? focusedGoalId;
   Future<void>? openBoxFuture;
@@ -212,12 +212,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   onSelected(String goalId) {
     setState(() {
-      if (selectedGoals.contains(goalId)) {
-        selectedGoals.remove(goalId);
-      } else {
-        selectedGoals.add(goalId);
-      }
-      Hive.box('goals_web.ui').put('selectedGoals', selectedGoals.toList());
+      ref.read(selectedGoalsProvider.notifier).toggle(goalId);
+      Hive.box('goals_web.ui')
+          .put('selectedGoals', ref.read(selectedGoalsProvider).toList());
     });
   }
 
@@ -254,10 +251,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   }
 
   onMerge() {
-    final winningGoalId = selectedGoals.first;
+    final goalIds = ref.read(selectedGoalsProvider);
+    final winningGoalId = goalIds.first;
     final syncClient = AppContext.of(context).syncClient;
     final List<GoalDelta> goalDeltas = [];
-    for (final String goalId in selectedGoals) {
+    for (final String goalId in goalIds) {
       if (goalId == winningGoalId) {
         continue;
       }
@@ -278,12 +276,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     syncClient.modifyGoals(goalDeltas);
-    selectedGoals.clear();
+    ref.read(selectedGoalsProvider.notifier).clear();
   }
 
   onUnarchive() {
     final List<GoalDelta> goalDeltas = [];
-    for (final String goalId in selectedGoals) {
+    for (final String goalId in ref.read(selectedGoalsProvider)) {
       goalDeltas.add(GoalDelta(
         id: goalId,
         statusLogEntry: StatusLogEntry(
@@ -294,12 +292,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    selectedGoals.clear();
+    ref.read(selectedGoalsProvider.notifier).clear();
   }
 
   onArchive() {
     final List<GoalDelta> goalDeltas = [];
-    for (final String goalId in selectedGoals) {
+    for (final String goalId in ref.read(selectedGoalsProvider)) {
       goalDeltas.add(GoalDelta(
         id: goalId,
         statusLogEntry: StatusLogEntry(
@@ -310,12 +308,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    selectedGoals.clear();
+    ref.read(selectedGoalsProvider.notifier).clear();
   }
 
   onDone() {
     final List<GoalDelta> goalDeltas = [];
-    for (final String goalId in selectedGoals) {
+    for (final String goalId in ref.read(selectedGoalsProvider)) {
       goalDeltas.add(GoalDelta(
         id: goalId,
         statusLogEntry: StatusLogEntry(
@@ -326,12 +324,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    selectedGoals.clear();
+    ref.read(selectedGoalsProvider.notifier).clear();
   }
 
   onSnooze(DateTime? endDate) {
     final List<GoalDelta> goalDeltas = [];
-    for (final String goalId in selectedGoals) {
+    for (final String goalId in ref.read(selectedGoalsProvider)) {
       goalDeltas.add(GoalDelta(
         id: goalId,
         statusLogEntry: StatusLogEntry(
@@ -344,18 +342,18 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    selectedGoals.clear();
+    ref.read(selectedGoalsProvider.notifier).clear();
   }
 
   onClearSelection() {
     setState(() {
-      selectedGoals.clear();
+      ref.read(selectedGoalsProvider.notifier).clear();
     });
   }
 
   onActive(DateTime? endDate) {
     final List<GoalDelta> goalDeltas = [];
-    for (final String goalId in selectedGoals) {
+    for (final String goalId in ref.read(selectedGoalsProvider)) {
       goalDeltas.add(GoalDelta(
         id: goalId,
         statusLogEntry: StatusLogEntry(
@@ -368,7 +366,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    selectedGoals.clear();
+    ref.read(selectedGoalsProvider.notifier).clear();
   }
 
   @override
@@ -378,7 +376,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     if (!isInitted) {
       setState(() {
         openBoxFuture = Hive.openBox('goals_web.ui').then((box) {
-          selectedGoals.addAll(
+          ref.read(selectedGoalsProvider.notifier).addAll(
               (box.get('selectedGoals', defaultValue: <String>[])
                       as List<dynamic>)
                   .cast<String>());
@@ -421,6 +419,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedGoals = ref.watch(selectedGoalsProvider);
     return Stack(
       alignment: Alignment.center,
       fit: StackFit.expand,

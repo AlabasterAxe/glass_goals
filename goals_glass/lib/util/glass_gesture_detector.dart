@@ -6,7 +6,6 @@ import 'package:flutter/widgets.dart'
         HitTestBehavior,
         StatelessWidget,
         Widget;
-import 'package:screen_brightness/screen_brightness.dart';
 
 import 'app_context.dart' show AppContext;
 
