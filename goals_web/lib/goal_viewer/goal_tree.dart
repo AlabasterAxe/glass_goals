@@ -21,16 +21,19 @@ import 'package:flutter/widgets.dart'
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../app_context.dart';
 import 'goal_item.dart' show GoalItemWidget;
 
-class GoalTreeWidget extends StatefulWidget {
+class GoalTreeWidget extends StatefulHookConsumerWidget {
   final Map<String, Goal> goalMap;
   final String rootGoalId;
   final Set<String> selectedGoals;
   final Set<String> expandedGoals;
+  final String? focusedGoalId;
   final Function(String goalId) onSelected;
+  final Function(String goalId)? onFocused;
   final Function(String goalId, {bool expanded}) onExpanded;
   final int? depthLimit;
   final bool showParentName;
@@ -42,15 +45,17 @@ class GoalTreeWidget extends StatefulWidget {
     required this.onSelected,
     required this.expandedGoals,
     required this.onExpanded,
+    this.onFocused,
+    this.focusedGoalId,
     this.depthLimit,
     this.showParentName = false,
   });
 
   @override
-  State<GoalTreeWidget> createState() => _GoalTreeWidgetState();
+  ConsumerState<GoalTreeWidget> createState() => _GoalTreeWidgetState();
 }
 
-class _GoalTreeWidgetState extends State<GoalTreeWidget> {
+class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
   bool hovered = false;
   bool dragging = false;
 

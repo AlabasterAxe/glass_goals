@@ -41,6 +41,8 @@ dependencies:
   hive_flutter: ^1.1.0
   intl: any
   uuid: ^3.0.7
+  flutter_hooks: ^0.18.0
+  hooks_riverpod: ^2.4.0
 
 dev_dependencies:
   flutter_test:
@@ -52,6 +54,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^2.0.0
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

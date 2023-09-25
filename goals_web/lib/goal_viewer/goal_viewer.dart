@@ -1,8 +1,5 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart'
     show
-        AlertDialog,
         Colors,
         Dialog,
         IconButton,
@@ -22,9 +19,10 @@ import 'package:goals_core/model.dart'
         getGoalsMatchingPredicate,
         getGoalsRequiringAttention;
 import 'package:goals_core/sync.dart'
-    show GoalDelta, GoalStatus, StatusLogEntry, archiveGoal, rootGoal;
+    show GoalDelta, GoalStatus, StatusLogEntry, archiveGoal;
 import 'package:goals_web/app_context.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'goal_list.dart' show GoalListWidget;
 import 'goal_tree.dart' show GoalTreeWidget;
@@ -186,19 +184,19 @@ class HoverToolbarWidget extends StatelessWidget {
   }
 }
 
-class GoalViewer extends StatefulWidget {
+class GoalViewer extends StatefulHookConsumerWidget {
   final Map<String, Goal> goalMap;
   final String rootGoalId;
   const GoalViewer(
       {super.key, required this.goalMap, required this.rootGoalId});
 
   @override
-  State<GoalViewer> createState() => _GoalViewerState();
+  ConsumerState<GoalViewer> createState() => _GoalViewerState();
 }
 
 enum GoalView { tree, list, to_review }
 
-class _GoalViewerState extends State<GoalViewer> {
+class _GoalViewerState extends ConsumerState<GoalViewer> {
   final List<GoalView> _displayModeOptions = <GoalView>[
     GoalView.tree,
     GoalView.list,
@@ -208,6 +206,7 @@ class _GoalViewerState extends State<GoalViewer> {
 
   final Set<String> selectedGoals = {};
   final Set<String> expandedGoals = {};
+  String? focusedGoalId;
   Future<void>? openBoxFuture;
   bool isInitted = false;
 
@@ -219,6 +218,14 @@ class _GoalViewerState extends State<GoalViewer> {
         selectedGoals.add(goalId);
       }
       Hive.box('goals_web.ui').put('selectedGoals', selectedGoals.toList());
+    });
+  }
+
+  onSwitchMode(GoalView mode) {
+    setState(() {
+      _selectedDisplayMode = mode;
+      Hive.box('goals_web.ui')
+          .put('goalViewerDisplayMode', _selectedDisplayMode);
     });
   }
 
@@ -236,6 +243,13 @@ class _GoalViewerState extends State<GoalViewer> {
         expandedGoals.add(goalId);
       }
       Hive.box('goals_web.ui').put('expandedGoals', expandedGoals.toList());
+    });
+  }
+
+  onFocused(String? goalId) {
+    setState(() {
+      focusedGoalId = goalId;
+      Hive.box('goals_web.ui').put('focusedGoal', focusedGoalId);
     });
   }
 
@@ -372,6 +386,9 @@ class _GoalViewerState extends State<GoalViewer> {
               (box.get('expandedGoals', defaultValue: <String>[])
                       as List<dynamic>)
                   .cast<String>());
+          focusedGoalId = box.get('focusedGoal', defaultValue: null);
+          _selectedDisplayMode =
+              box.get('goalViewerDisplayMode', defaultValue: GoalView.tree);
         });
         isInitted = true;
       });
@@ -421,20 +438,23 @@ class _GoalViewerState extends State<GoalViewer> {
                       switch (_selectedDisplayMode) {
                         case GoalView.tree:
                           return GoalTreeWidget(
-                            goalMap: getGoalsMatchingPredicate(
-                                worldContext,
-                                widget.goalMap,
-                                (goal) =>
-                                    getGoalStatus(worldContext, goal)?.status !=
-                                        GoalStatus.archived &&
-                                    getGoalStatus(worldContext, goal)?.status !=
-                                        GoalStatus.done),
-                            rootGoalId: widget.rootGoalId,
-                            selectedGoals: selectedGoals,
-                            onSelected: onSelected,
-                            expandedGoals: expandedGoals,
-                            onExpanded: onExpanded,
-                          );
+                              goalMap: getGoalsMatchingPredicate(
+                                  worldContext,
+                                  widget.goalMap,
+                                  (goal) =>
+                                      getGoalStatus(worldContext, goal)
+                                              ?.status !=
+                                          GoalStatus.archived &&
+                                      getGoalStatus(worldContext, goal)
+                                              ?.status !=
+                                          GoalStatus.done),
+                              rootGoalId: widget.rootGoalId,
+                              selectedGoals: selectedGoals,
+                              onSelected: onSelected,
+                              expandedGoals: expandedGoals,
+                              onExpanded: onExpanded,
+                              focusedGoalId: focusedGoalId,
+                              onFocused: onFocused);
                         case GoalView.list:
                           final goalIds =
                               (widget.goalMap.values.toList(growable: false)

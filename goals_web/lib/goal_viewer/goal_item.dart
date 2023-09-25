@@ -13,6 +13,7 @@ class GoalItemWidget extends StatefulWidget {
   final bool selected;
   final Function(bool? value) onSelected;
   final bool hovered;
+  final bool focused;
   final Goal? parent;
   const GoalItemWidget({
     super.key,
@@ -20,6 +21,7 @@ class GoalItemWidget extends StatefulWidget {
     required this.selected,
     required this.onSelected,
     required this.hovered,
+    this.focused = false,
     this.parent,
   });
 

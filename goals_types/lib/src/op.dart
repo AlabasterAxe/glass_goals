@@ -16,6 +16,17 @@ abstract class GoalLogEntry extends Equatable {
   const GoalLogEntry({required this.creationTime});
 }
 
+class NoteLogEntry extends GoalLogEntry {
+  final String text;
+  const NoteLogEntry({
+    required super.creationTime,
+    required this.text,
+  });
+
+  @override
+  List<Object?> get props => [creationTime, text];
+}
+
 class StatusLogEntry extends GoalLogEntry {
   static const FIRST_VERSION = 2;
 

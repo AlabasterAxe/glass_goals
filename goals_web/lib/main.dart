@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:hive_flutter/hive_flutter.dart' show Hive, HiveX;
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'app_context.dart' show AppContext;
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart'
@@ -12,7 +13,7 @@ import 'package:goals_core/sync.dart'
 import 'goal_viewer/goal_viewer.dart';
 
 void main() {
-  runApp(const WebGoals());
+  runApp(const ProviderScope(child: WebGoals()));
 }
 
 class WebGoals extends StatefulWidget {
