@@ -56,12 +56,10 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
                       _textController!.selection = TextSelection(
                           baseOffset: 0,
                           extentOffset: _textController!.text.length);
-                      AppContext.of(context).syncClient.modifyGoal(
-                          AppContext.of(context).syncClient.modifyGoal(
-                              GoalDelta(
-                                  id: const Uuid().v4(),
-                                  text: newText,
-                                  parentId: widget.parentId)));
+                      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                          id: const Uuid().v4(),
+                          text: newText,
+                          parentId: widget.parentId));
                       setState(() {
                         _editing = false;
                       });
