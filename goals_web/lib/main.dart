@@ -64,29 +64,13 @@ class _WebGoalsState extends State<WebGoals>
           future: appInit(),
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
-              return const MaterialApp(
-                  home: Scaffold(
-                      backgroundColor: Colors.black,
-                      body: Center(
-                          child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator()))));
+              return const Center(
+                  child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator()));
             }
-            return AppContext(
-                syncClient: syncClient,
-                child: MaterialApp(
-                  title: 'Glass Goals',
-                  theme: ThemeData(
-                    primaryColor: Colors.black,
-                  ),
-                  home: const GoalsHome(),
-                  localizationsDelegates: GlobalMaterialLocalizations.delegates,
-                  supportedLocales: const [
-                    Locale('en', 'US'),
-                    Locale('en', 'GB'),
-                  ],
-                ));
+            return AppContext(syncClient: syncClient, child: const GoalsHome());
           }),
     });
   }

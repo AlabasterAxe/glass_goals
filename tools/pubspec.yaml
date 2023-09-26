@@ -1,0 +1,18 @@
+
+name: tools 
+description: Little command-line utilities
+
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=2.18.6 <3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  goals_core:
+    path: "../goals_core"
+
+  firebase_auth: ^4.10.0

@@ -1,0 +1,34 @@
+name: cloner
+description: A new Flutter project.
+
+publish_to: 'none' 
+
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+
+  goals_core:
+    path: "../../goals_core"
+
+  firebase_auth: ^4.10.0
+  hive_flutter: ^1.1.0
+  firebase_ui_oauth_google: ^1.2.11
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^2.0.0
+
+flutter:
+
+  uses-material-design: true
+
