@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart'
+    show FirebaseFirestore, GetOptions;
 import 'package:flutter/foundation.dart';
 import 'package:gsheets/gsheets.dart' show GSheets, Worksheet;
 
@@ -20,7 +22,6 @@ class LoadOpsResp {
 }
 
 abstract class PersistenceService {
-  Future<void> init();
   Future<void> save(Iterable<Op> ops);
   Future<LoadOpsResp> load({int? cursor});
 }
@@ -29,7 +30,6 @@ class GoogleSheetsPersistenceService implements PersistenceService {
   late Worksheet opsSheet;
   bool initted = false;
 
-  @override
   Future<void> init() async {
     if (initted) return;
     final sheetsSpec = await loadSheetsSpec();
@@ -82,5 +82,39 @@ class GoogleSheetsPersistenceService implements PersistenceService {
     if (!success) {
       throw Exception("Failed to save ops");
     }
+  }
+}
+
+class FirestorePersistenceService implements PersistenceService {
+  final db = FirebaseFirestore.instance;
+  final seenOps = <String>{};
+
+  @override
+  Future<LoadOpsResp> load({int? cursor}) async {
+    List<Op> newOps = [];
+    final allRows = await db.collection('ops').get();
+
+    for (final row in allRows.docs) {
+      final rowData = row.data();
+      final delta = GoalDelta.fromJson(rowData['delta'], rowData['version']);
+      final hlcTimestamp = row.id;
+      newOps.add(Op(hlcTimestamp: hlcTimestamp, delta: delta));
+    }
+
+    return LoadOpsResp(newOps, 0);
+  }
+
+  @override
+  Future<void> save(Iterable<Op> ops) async {
+    final futures = <Future>[];
+    futures.add(db.collection('ops').add({
+      for (var op in ops)
+        op.hlcTimestamp: {
+          'version': op.version,
+          'delta': GoalDelta.toJson(op.delta),
+        }
+    }));
+
+    await Future.wait(futures);
   }
 }
