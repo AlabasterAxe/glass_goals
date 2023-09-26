@@ -1,8 +1,6 @@
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart'
-    show Firebase, FirebaseOptions;
+import 'package:firebase_core/firebase_core.dart' show Firebase;
 import 'package:firebase_ui_auth/firebase_ui_auth.dart'
     show AuthStateChangeAction, FirebaseUIAuth, SignInScreen, SignedIn;
 import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart'
