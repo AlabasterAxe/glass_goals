@@ -1,5 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart'
-    show FirebaseFirestore, GetOptions;
+import 'package:cloud_firestore/cloud_firestore.dart' show FirebaseFirestore;
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:flutter/foundation.dart';
 import 'package:gsheets/gsheets.dart' show GSheets, Worksheet;
 
@@ -92,7 +92,10 @@ class FirestorePersistenceService implements PersistenceService {
   @override
   Future<LoadOpsResp> load({int? cursor}) async {
     List<Op> newOps = [];
-    final allRows = await db.collection('ops').get();
+    final allRows = await db
+        .collection('ops')
+        .where('viewers', arrayContains: FirebaseAuth.instance.currentUser!.uid)
+        .get();
 
     for (final row in allRows.docs) {
       final rowData = row.data();
@@ -107,13 +110,14 @@ class FirestorePersistenceService implements PersistenceService {
   @override
   Future<void> save(Iterable<Op> ops) async {
     final futures = <Future>[];
-    futures.add(db.collection('ops').add({
-      for (var op in ops)
-        op.hlcTimestamp: {
-          'version': op.version,
-          'delta': GoalDelta.toJson(op.delta),
-        }
-    }));
+
+    for (final op in ops) {
+      futures.add(db.collection('ops').doc(op.hlcTimestamp).set({
+        'version': op.version,
+        'delta': GoalDelta.toJson(op.delta),
+        'viewers': [FirebaseAuth.instance.currentUser!.uid],
+      }));
+    }
 
     await Future.wait(futures);
   }

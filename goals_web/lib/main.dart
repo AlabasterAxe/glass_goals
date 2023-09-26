@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart'
     show Firebase, FirebaseOptions;
 import 'package:firebase_ui_auth/firebase_ui_auth.dart'
@@ -16,13 +17,14 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'app_context.dart' show AppContext;
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart'
-    show SyncClient, rootGoal, GoogleSheetsPersistenceService;
+    show FirestorePersistenceService, SyncClient, rootGoal;
 
 import 'goal_viewer/goal_viewer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Hive.initFlutter();
 
   FirebaseUIAuth.configureProviders([
     GoogleProvider(
@@ -43,10 +45,9 @@ class WebGoals extends StatefulWidget {
 class _WebGoalsState extends State<WebGoals>
     with SingleTickerProviderStateMixin {
   SyncClient syncClient =
-      SyncClient(persistenceService: GoogleSheetsPersistenceService());
+      SyncClient(persistenceService: FirestorePersistenceService());
 
   Future<void> appInit() async {
-    await Hive.initFlutter();
     await syncClient.init();
   }
 
