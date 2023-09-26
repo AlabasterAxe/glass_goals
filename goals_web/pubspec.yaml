@@ -43,6 +43,7 @@ dependencies:
   uuid: ^3.0.7
   flutter_hooks: ^0.18.0
   hooks_riverpod: ^2.4.0
+  firebase_ui_auth: ^1.8.0
 
 dev_dependencies:
   flutter_test:

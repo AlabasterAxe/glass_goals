@@ -35,34 +35,36 @@ class _WebGoalsState extends State<WebGoals>
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<void>(
-        future: appInit(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const MaterialApp(
-                home: Scaffold(
-                    backgroundColor: Colors.black,
-                    body: Center(
-                        child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator()))));
-          }
-          return AppContext(
-              syncClient: syncClient,
-              child: MaterialApp(
-                title: 'Glass Goals',
-                theme: ThemeData(
-                  primaryColor: Colors.black,
-                ),
-                home: const GoalsHome(),
-                localizationsDelegates: GlobalMaterialLocalizations.delegates,
-                supportedLocales: const [
-                  Locale('en', 'US'),
-                  Locale('en', 'GB'),
-                ],
-              ));
-        });
+    return MaterialApp(initialRoute: '/home', routes: {
+      '/home': (context) => FutureBuilder<void>(
+          future: appInit(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const MaterialApp(
+                  home: Scaffold(
+                      backgroundColor: Colors.black,
+                      body: Center(
+                          child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator()))));
+            }
+            return AppContext(
+                syncClient: syncClient,
+                child: MaterialApp(
+                  title: 'Glass Goals',
+                  theme: ThemeData(
+                    primaryColor: Colors.black,
+                  ),
+                  home: const GoalsHome(),
+                  localizationsDelegates: GlobalMaterialLocalizations.delegates,
+                  supportedLocales: const [
+                    Locale('en', 'US'),
+                    Locale('en', 'GB'),
+                  ],
+                ));
+          }),
+    });
   }
 }
 
