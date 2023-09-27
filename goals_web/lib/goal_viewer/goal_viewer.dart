@@ -28,7 +28,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'goal_list.dart' show GoalListWidget;
-import 'goal_tree.dart' show GoalTreeWidget;
 
 class DatePickerDialog extends StatefulWidget {
   final Widget title;
@@ -485,10 +484,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                               .map((e) => e.id)
                               .toList();
                           return GoalListWidget(
-                              goalMap: pendingGoalMap,
-                              goalIds: rootGoalIds,
-                              onSelected: onSelected,
-                              onExpanded: onExpanded);
+                            goalMap: pendingGoalMap,
+                            goalIds: rootGoalIds,
+                            onSelected: onSelected,
+                            onExpanded: onExpanded,
+                            showAddGoal: true,
+                          );
                       }
                     })),
           ),

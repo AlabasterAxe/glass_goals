@@ -6,10 +6,10 @@ import '../app_context.dart';
 import '../styles.dart';
 
 class AddSubgoalItemWidget extends StatefulWidget {
-  final String parentId;
+  final String? parentId;
   const AddSubgoalItemWidget({
     super.key,
-    required this.parentId,
+    this.parentId,
   });
 
   @override
@@ -21,14 +21,17 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
   bool _editing = false;
   final _focusNode = FocusNode();
 
+  String get _defaultText =>
+      widget.parentId == null ? "[New Goal]" : "[New Subgoal]";
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
     if (_textController == null) {
-      _textController = TextEditingController(text: "[New Subgoal]");
+      _textController = TextEditingController(text: _defaultText);
     } else {
-      _textController!.text = "[New Subgoal]";
+      _textController!.text = _defaultText;
     }
   }
 
@@ -53,7 +56,7 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
                     style: mainTextStyle,
                     onEditingComplete: () {
                       final newText = _textController!.text;
-                      _textController!.text = "[New Subgoal]";
+                      _textController!.text = _defaultText;
                       _textController!.selection = TextSelection(
                           baseOffset: 0,
                           extentOffset: _textController!.text.length);
@@ -66,7 +69,7 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
                       });
                     },
                     onTapOutside: (_) {
-                      _textController!.text = "[New Subgoal]";
+                      _textController!.text = _defaultText;
                       setState(() {
                         _editing = false;
                       });

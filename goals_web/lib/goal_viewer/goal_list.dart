@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart'
-    show BuildContext, Column, StatelessWidget, Widget;
+    show BuildContext, Column, Container, StatelessWidget, Widget;
 import 'package:goals_core/model.dart' show Goal;
+import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
 
 import 'goal_tree.dart' show GoalTreeWidget;
 
@@ -10,6 +11,7 @@ class GoalListWidget extends StatelessWidget {
   final Function(String goalId) onSelected;
   final Function(String goalId, {bool expanded}) onExpanded;
   final int? depthLimit;
+  final bool showAddGoal;
   const GoalListWidget({
     super.key,
     required this.goalMap,
@@ -17,6 +19,7 @@ class GoalListWidget extends StatelessWidget {
     required this.onSelected,
     required this.onExpanded,
     this.depthLimit,
+    this.showAddGoal = false,
   });
 
   @override
@@ -31,6 +34,7 @@ class GoalListWidget extends StatelessWidget {
               depthLimit: depthLimit,
               showParentName: true,
             ),
+          showAddGoal ? const AddSubgoalItemWidget() : Container(),
         ],
       );
 }
