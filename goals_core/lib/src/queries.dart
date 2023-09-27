@@ -54,28 +54,28 @@ Comparator<Goal> activeGoalExpiringSoonestComparator(WorldContext context) {
     }
     final aStatus = getGoalStatus(context, a);
     final bStatus = getGoalStatus(context, b);
-    if (aStatus?.status != GoalStatus.active &&
-        bStatus?.status != GoalStatus.active) {
+    if (aStatus.status != GoalStatus.active &&
+        bStatus.status != GoalStatus.active) {
       return 0;
     }
-    if (aStatus?.status == GoalStatus.active &&
-        bStatus?.status != GoalStatus.active) {
+    if (aStatus.status == GoalStatus.active &&
+        bStatus.status != GoalStatus.active) {
       return -1;
     }
-    if (bStatus?.status == GoalStatus.active &&
-        aStatus?.status != GoalStatus.active) {
+    if (bStatus.status == GoalStatus.active &&
+        aStatus.status != GoalStatus.active) {
       return 1;
     }
-    if (aStatus?.endTime == null && bStatus?.endTime == null) {
+    if (aStatus.endTime == null && bStatus.endTime == null) {
       return 0;
     }
-    if (aStatus?.endTime == null && bStatus?.endTime != null) {
+    if (aStatus.endTime == null && bStatus.endTime != null) {
       return 1;
     }
-    if (bStatus?.endTime == null && aStatus?.endTime != null) {
+    if (bStatus.endTime == null && aStatus.endTime != null) {
       return -1;
     }
-    return aStatus!.endTime!.compareTo(bStatus!.endTime!);
+    return aStatus.endTime!.compareTo(bStatus.endTime!);
   };
 }
 
@@ -93,7 +93,7 @@ Map<String, Goal> getGoalsRequiringAttention(
   final activeOrUncategorizedGoals =
       getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
     final status = getGoalStatus(context, goal);
-    return status == null || status.status == GoalStatus.active;
+    return status.status == null || status.status == GoalStatus.active;
   });
 
   ///  - Don't show tasks if any of their children are marked active
@@ -109,30 +109,26 @@ Map<String, Goal> getGoalsRequiringAttention(
 }
 
 // Currently, current goal status is just a function of time.
-StatusLogEntry? getGoalStatus(WorldContext context, Goal goal) {
+StatusLogEntry getGoalStatus(WorldContext context, Goal goal) {
   final now = context.time;
-  final List<StatusLogEntry> possibleStatuses = goal.log
-      .where((s) => (s is StatusLogEntry &&
-          (s.startTime == null || s.startTime!.isBefore(now))))
-      .toList()
-      .cast();
-  if (possibleStatuses.isEmpty) {
-    return null;
-  }
-  possibleStatuses.sort((a, b) => b.creationTime.compareTo(a.creationTime));
+  goal.log;
 
-  if (possibleStatuses.first.endTime != null &&
-      possibleStatuses.first.endTime!.isBefore(now)) {
-    return null;
-  }
-
-  return possibleStatuses.first;
+  final StatusLogEntry? lastStatus = (goal.log
+        ..sort((a, b) => b.creationTime.compareTo(a.creationTime)))
+      .whereType<StatusLogEntry>()
+      .where((entry) =>
+          entry.startTime == null ||
+          entry.startTime!.isBefore(now) &&
+              (entry.endTime == null || entry.endTime!.isAfter(now)))
+      .lastOrNull;
+  return lastStatus ??
+      StatusLogEntry(creationTime: DateTime(1970, 1, 1), status: null);
 }
 
 StatusLogEntry? goalHasStatus(
     WorldContext context, Goal goal, GoalStatus status) {
   final statusLogEntry = getGoalStatus(context, goal);
-  if (statusLogEntry?.status == status) {
+  if (statusLogEntry.status == status) {
     return statusLogEntry;
   }
   return null;

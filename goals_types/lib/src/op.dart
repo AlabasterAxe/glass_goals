@@ -30,12 +30,14 @@ class NoteLogEntry extends GoalLogEntry {
 class StatusLogEntry extends GoalLogEntry {
   static const FIRST_VERSION = 2;
 
-  final GoalStatus status;
+  // a status log entry with a null status basically unsets the status
+  // during the period it applies to.
+  final GoalStatus? status;
   final DateTime? startTime;
   final DateTime? endTime;
   const StatusLogEntry({
     required super.creationTime,
-    required this.status,
+    this.status,
     this.startTime,
     this.endTime,
   });
@@ -87,7 +89,7 @@ class StatusLogEntry extends GoalLogEntry {
 
   static Map<String, dynamic> toJsonMap(StatusLogEntry statusLogEntry) {
     return {
-      'status': statusLogEntry.status.name,
+      'status': statusLogEntry.status?.name,
       'creationTime': statusLogEntry.creationTime.toUtc().toIso8601String(),
       'startTime': statusLogEntry.startTime?.toUtc().toIso8601String(),
       'endTime': statusLogEntry.endTime?.toUtc().toIso8601String(),

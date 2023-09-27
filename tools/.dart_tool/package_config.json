@@ -143,13 +143,13 @@
       "name": "goals_core",
       "rootUri": "../../goals_core",
       "packageUri": "lib/",
-      "languageVersion": "2.18"
+      "languageVersion": "3.0"
     },
     {
       "name": "goals_types",
       "rootUri": "../../goals_types",
       "packageUri": "lib/",
-      "languageVersion": "2.18"
+      "languageVersion": "3.0"
     },
     {
       "name": "goals_types_01",
@@ -311,10 +311,10 @@
       "name": "tools",
       "rootUri": "../",
       "packageUri": "lib/",
-      "languageVersion": "2.18"
+      "languageVersion": "3.0"
     }
   ],
-  "generated": "2023-09-26T18:40:39.114562Z",
+  "generated": "2023-09-27T17:03:22.757493Z",
   "generator": "pub",
   "generatorVersion": "3.1.2"
 }
