@@ -120,7 +120,7 @@ StatusLogEntry getGoalStatus(WorldContext context, Goal goal) {
           entry.startTime == null ||
           entry.startTime!.isBefore(now) &&
               (entry.endTime == null || entry.endTime!.isAfter(now)))
-      .lastOrNull;
+      .firstOrNull;
   return lastStatus ??
       StatusLogEntry(creationTime: DateTime(1970, 1, 1), status: null);
 }

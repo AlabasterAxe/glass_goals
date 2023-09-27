@@ -4,3 +4,6 @@ node_modules/
 .flutter-plugins*
 
 **/assets/local/*
+
+*.sync.hive
+*.sync.lock
