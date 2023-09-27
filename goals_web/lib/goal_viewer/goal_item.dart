@@ -106,7 +106,10 @@ class _GoalItemWidgetState extends State<GoalItemWidget> {
       color: widget.hovered ? Colors.grey.shade300 : Colors.transparent,
       child: Row(
         children: [
-          Checkbox(value: widget.selected, onChanged: widget.onSelected),
+          Checkbox(
+              value: widget.selected,
+              onChanged: widget.onSelected,
+              visualDensity: VisualDensity.standard),
           _editing
               ? IntrinsicWidth(
                   child: TextField(
@@ -140,17 +143,18 @@ class _GoalItemWidgetState extends State<GoalItemWidget> {
                       '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
                       style: mainTextStyle),
                 ),
-          const SizedBox(width: 4),
+          SizedBox(width: uiUnit(2)),
           // chip like container widget around text status widget:
           Container(
             decoration: BoxDecoration(
               color: getGoalStatusColor(widget.goal),
-              borderRadius: BorderRadius.circular(10.0),
+              borderRadius: BorderRadius.circular(10000.0),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+            padding:
+                EdgeInsets.symmetric(horizontal: uiUnit(2), vertical: uiUnit()),
             child: Text(
               getGoalStatusString(widget.goal),
-              style: const TextStyle(color: Colors.white, fontSize: 8),
+              style: smallTextStyle.copyWith(color: Colors.white),
             ),
           ),
         ],

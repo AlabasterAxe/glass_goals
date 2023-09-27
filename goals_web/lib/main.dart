@@ -7,7 +7,6 @@ import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart'
     show GoogleProvider;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:goals_web/firebase_options.dart';
 
 import 'package:hive_flutter/hive_flutter.dart' show Hive, HiveX;
@@ -94,8 +93,7 @@ class GoalsHome extends StatelessWidget {
                       height: 20,
                       child: CircularProgressIndicator()));
             }
-            return GoalViewer(
-                goalMap: snapshot.requireData, rootGoalId: rootGoal.id);
+            return GoalViewer(goalMap: snapshot.requireData);
           }),
     );
   }

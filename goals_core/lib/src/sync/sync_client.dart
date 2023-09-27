@@ -10,11 +10,7 @@ import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_types/goals_types.dart' show GoalDelta, Op;
 import 'persistence_service.dart' show PersistenceService;
 
-final rootGoal = Goal(id: 'root', text: 'Live a fulfilling life');
-final archiveGoal = Goal(id: 'archive', text: 'Archive');
-
-Map<String, Goal> initialGoalState() =>
-    {'root': rootGoal, 'archive': archiveGoal};
+Map<String, Goal> initialGoalState() => {};
 
 class SyncClient {
   Subject<Map<String, Goal>> stateSubject =

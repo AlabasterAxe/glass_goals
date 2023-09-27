@@ -38,9 +38,10 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
       cursor: SystemMouseCursors.click,
       child: Row(
         children: [
-          const Padding(
-            padding: EdgeInsets.all(7.0),
-            child: Icon(Icons.add, size: 18),
+          SizedBox(
+            width: uiUnit(10),
+            height: uiUnit(10),
+            child: const Center(child: Icon(Icons.add, size: 18)),
           ),
           _editing
               ? SizedBox(
@@ -82,7 +83,8 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
                           extentOffset: _textController!.text.length);
                     })
                   },
-                  child: Text(_textController!.text, style: mainTextStyle),
+                  child: Text(_textController!.text,
+                      style: mainTextStyle.copyWith(color: Colors.black54)),
                 ),
         ],
       ),

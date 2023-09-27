@@ -25,7 +25,7 @@ import 'package:goals_core/model.dart'
         getTransitiveSubGoals;
 import 'stt_service.dart' show SttService;
 import 'package:goals_core/sync.dart'
-    show SyncClient, rootGoal, GoogleSheetsPersistenceService;
+    show SyncClient, GoogleSheetsPersistenceService;
 
 void main() {
   runApp(const GlassGoals());
@@ -179,7 +179,7 @@ class _GoalsHomeState extends State<GoalsHome> {
                 }
 
                 final unarchivedGoals =
-                    getTransitiveSubGoals(snapshot.requireData, rootGoal.id);
+                    getTransitiveSubGoals(snapshot.requireData, 'root');
                 final activeGoal = getActiveGoalExpiringSoonest(
                     WorldContext.now(), unarchivedGoals);
                 return activeGoal == null
@@ -210,7 +210,7 @@ class _GoalsHomeState extends State<GoalsHome> {
                               }
                               return GlassScaffold(
                                   child: GoalHierarchy(snapshot.requireData,
-                                      rootGoalId: rootGoal.id));
+                                      rootGoalId: 'root'));
                             })));
               },
               child: Center(

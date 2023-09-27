@@ -9,28 +9,28 @@ class GoalListWidget extends StatelessWidget {
   final List<String> goalIds;
   final Function(String goalId) onSelected;
   final Function(String goalId, {bool expanded}) onExpanded;
+  final int? depthLimit;
   const GoalListWidget({
     super.key,
     required this.goalMap,
     required this.goalIds,
     required this.onSelected,
     required this.onExpanded,
+    this.depthLimit,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (final goalId in goalIds)
-          GoalTreeWidget(
-            goalMap: goalMap,
-            rootGoalId: goalId,
-            onSelected: onSelected,
-            onExpanded: onExpanded,
-            depthLimit: 1,
-            showParentName: true,
-          ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Column(
+        children: [
+          for (final goalId in goalIds)
+            GoalTreeWidget(
+              goalMap: goalMap,
+              rootGoalId: goalId,
+              onSelected: onSelected,
+              onExpanded: onExpanded,
+              depthLimit: depthLimit,
+              showParentName: true,
+            ),
+        ],
+      );
 }

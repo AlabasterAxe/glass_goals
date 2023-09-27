@@ -21,7 +21,7 @@ import 'package:goals_core/model.dart'
         getGoalsMatchingPredicate,
         getGoalsRequiringAttention;
 import 'package:goals_core/sync.dart'
-    show GoalDelta, GoalStatus, StatusLogEntry, archiveGoal;
+    show GoalDelta, GoalStatus, StatusLogEntry;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -189,9 +189,7 @@ class HoverToolbarWidget extends StatelessWidget {
 
 class GoalViewer extends StatefulHookConsumerWidget {
   final Map<String, Goal> goalMap;
-  final String rootGoalId;
-  const GoalViewer(
-      {super.key, required this.goalMap, required this.rootGoalId});
+  const GoalViewer({super.key, required this.goalMap});
 
   @override
   ConsumerState<GoalViewer> createState() => _GoalViewerState();
@@ -255,9 +253,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       }
 
       goalDeltas.add(GoalDelta(
-        id: goalId,
-        parentId: archiveGoal.id,
-      ));
+          id: goalId,
+          statusLogEntry: StatusLogEntry(
+            creationTime: DateTime.now(),
+            status: GoalStatus.archived,
+          )));
       final goal = widget.goalMap[goalId];
       if (goal != null) {
         for (final Goal childGoal in goal.subGoals) {
@@ -443,6 +443,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                             goalIds: goalIds,
                             onSelected: onSelected,
                             onExpanded: onExpanded,
+                            depthLimit: 1,
                           );
                         case GoalView.to_review:
                           final goalsRequiringAttention =
@@ -459,24 +460,26 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                             goalIds: goalIds,
                             onSelected: onSelected,
                             onExpanded: onExpanded,
+                            depthLimit: 1,
                           );
                         default:
-                          return GoalTreeWidget(
-                              goalMap: getGoalsMatchingPredicate(
-                                  worldContext,
-                                  widget.goalMap,
-                                  (goal) =>
-                                      getGoalStatus(worldContext, goal)
-                                              ?.status !=
-                                          GoalStatus.archived &&
-                                      getGoalStatus(worldContext, goal)
-                                              ?.status !=
-                                          GoalStatus.done),
-                              rootGoalId: widget.rootGoalId,
+                          final pendingGoalMap = getGoalsMatchingPredicate(
+                              worldContext,
+                              widget.goalMap,
+                              (goal) =>
+                                  getGoalStatus(worldContext, goal)?.status !=
+                                      GoalStatus.archived &&
+                                  getGoalStatus(worldContext, goal)?.status !=
+                                      GoalStatus.done);
+                          final rootGoalIds = pendingGoalMap.values
+                              .where((goal) => goal.parentId == null)
+                              .map((e) => e.id)
+                              .toList();
+                          return GoalListWidget(
+                              goalMap: pendingGoalMap,
+                              goalIds: rootGoalIds,
                               onSelected: onSelected,
-                              onExpanded: onExpanded,
-                              focusedGoalId: focusedGoalId,
-                              onFocused: onFocused);
+                              onExpanded: onExpanded);
                       }
                     })),
           ),

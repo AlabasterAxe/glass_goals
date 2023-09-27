@@ -14,7 +14,7 @@ import 'package:flutter/widgets.dart'
         ValueKey,
         Widget;
 import 'package:goals_core/model.dart' show Goal, WorldContext, getGoalStatus;
-import 'package:goals_core/sync.dart' show GoalDelta, GoalStatus, rootGoal;
+import 'package:goals_core/sync.dart' show GoalDelta, GoalStatus;
 import 'package:uuid/uuid.dart';
 
 import '../util/app_context.dart';
@@ -50,7 +50,7 @@ class _GoalHierarchyState extends State<GoalHierarchy> {
     final activeGoal = widget.goalState[_activeGoalId];
     if (activeGoal == null) {
       setState(() {
-        _activeGoalId = rootGoal.id;
+        _activeGoalId = 'root';
       });
       return;
     }
@@ -76,7 +76,7 @@ class _GoalHierarchyState extends State<GoalHierarchy> {
   @override
   Widget build(BuildContext context) {
     final activeGoal =
-        widget.goalState[_activeGoalId] ?? widget.goalState[rootGoal.id]!;
+        widget.goalState[_activeGoalId] ?? widget.goalState['root']!;
     return Stack(
       children: [
         Positioned(
