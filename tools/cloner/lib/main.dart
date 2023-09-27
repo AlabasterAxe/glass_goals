@@ -10,11 +10,7 @@ import 'package:flutter/material.dart';
 
 import 'package:hive_flutter/hive_flutter.dart' show Hive, HiveX;
 import 'package:goals_core/sync.dart'
-    show
-        FirestorePersistenceService,
-        GoogleSheetsPersistenceService,
-        SyncClient,
-        rootGoal;
+    show FirestorePersistenceService, GoogleSheetsPersistenceService;
 
 import 'firebase_options.dart';
 
