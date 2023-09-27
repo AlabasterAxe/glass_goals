@@ -396,12 +396,21 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   }
 
   int _toReviewComparator(Goal goal1, Goal goal2) {
-    final goal1Status = getGoalStatus(WorldContext.now(), goal1)?.status;
-    final goal2Status = getGoalStatus(WorldContext.now(), goal2)?.status;
+    final goal1Status = getGoalStatus(WorldContext.now(), goal1).status;
+    final goal2Status = getGoalStatus(WorldContext.now(), goal2).status;
     final cmptor = activeGoalExpiringSoonestComparator(WorldContext.now());
     if (goal1Status == goal2Status) {
       if (goal1Status == GoalStatus.active) {
         return cmptor(goal1, goal2);
+      }
+      final goal1Parent = widget.goalMap[goal1.parentId];
+      final goal2Parent = widget.goalMap[goal2.parentId];
+      if (goal1Parent != null && goal2Parent != null) {
+        return goal1Parent.text.compareTo(goal2Parent.text);
+      } else if (goal1Parent != null && goal2Parent == null) {
+        return goal1Parent.text.compareTo(goal2.text);
+      } else if (goal2Parent != null && goal1Parent == null) {
+        return goal1.text.compareTo(goal2Parent.text);
       }
       return goal1.text.compareTo(goal2.text);
     } else if (goal1Status == GoalStatus.active && goal2Status == null) {
