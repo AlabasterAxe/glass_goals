@@ -10,6 +10,7 @@ class GoalListWidget extends StatelessWidget {
   final List<String> goalIds;
   final Function(String goalId) onSelected;
   final Function(String goalId, {bool expanded}) onExpanded;
+  final Function(String goalId) onFocused;
   final int? depthLimit;
   final bool showAddGoal;
   const GoalListWidget({
@@ -18,6 +19,7 @@ class GoalListWidget extends StatelessWidget {
     required this.goalIds,
     required this.onSelected,
     required this.onExpanded,
+    required this.onFocused,
     this.depthLimit,
     this.showAddGoal = false,
   });
@@ -31,6 +33,7 @@ class GoalListWidget extends StatelessWidget {
               rootGoalId: goalId,
               onSelected: onSelected,
               onExpanded: onExpanded,
+              onFocused: onFocused,
               depthLimit: depthLimit,
               showParentName: true,
             ),

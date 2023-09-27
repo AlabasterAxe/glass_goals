@@ -26,7 +26,6 @@ import 'goal_item.dart' show GoalItemWidget;
 class GoalTreeWidget extends StatefulHookConsumerWidget {
   final Map<String, Goal> goalMap;
   final String rootGoalId;
-  final String? focusedGoalId;
   final Function(String goalId) onSelected;
   final Function(String goalId)? onFocused;
   final Function(String goalId, {bool expanded}) onExpanded;
@@ -39,7 +38,6 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
     required this.onSelected,
     required this.onExpanded,
     this.onFocused,
-    this.focusedGoalId,
     this.depthLimit,
     this.showParentName = false,
   });
@@ -66,6 +64,7 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
     final selectedGoals = ref.watch(selectedGoalsProvider);
     final isExpanded = ref.watch(expandedGoalsProvider).contains(rootGoal.id);
     final isSelected = selectedGoals.contains(rootGoal.id);
+    final isFocused = ref.watch(focusedGoalProvider) == rootGoal.id;
     final hasRenderableChildren = widget.goalMap[widget.rootGoalId]!.subGoals
         .any((element) => widget.goalMap.containsKey(element.id));
     return Column(
@@ -123,6 +122,8 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                   onSelected: (value) {
                     widget.onSelected(rootGoal.id);
                   },
+                  onFocused: widget.onFocused,
+                  focused: isFocused,
                   hovered: hovered && !dragging,
                   parent: widget.showParentName
                       ? widget.goalMap[rootGoal.parentId]
@@ -151,6 +152,7 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                                 goalMap: widget.goalMap,
                                 rootGoalId: subGoal.id,
                                 onSelected: widget.onSelected,
+                                onFocused: widget.onFocused,
                                 onExpanded: widget.onExpanded,
                                 depthLimit: widget.depthLimit == null
                                     ? null

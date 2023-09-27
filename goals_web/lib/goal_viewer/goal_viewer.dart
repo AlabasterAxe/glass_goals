@@ -1,11 +1,10 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart'
     show
         Colors,
         Dialog,
         IconButton,
         Icons,
+        Scaffold,
         TextButton,
         ToggleButtons,
         Tooltip,
@@ -204,7 +203,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   ];
   GoalView _selectedDisplayMode = GoalView.tree;
 
-  String? focusedGoalId;
   Future<void>? openBoxFuture;
   bool isInitted = false;
 
@@ -236,8 +234,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   onFocused(String? goalId) {
     setState(() {
-      focusedGoalId = goalId;
-      Hive.box('goals_web.ui').put('focusedGoal', focusedGoalId);
+      ref.read(focusedGoalProvider.notifier).set(goalId);
+      Hive.box('goals_web.ui').put('focusedGoal', goalId);
     });
   }
 
@@ -423,108 +421,113 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   @override
   Widget build(BuildContext context) {
     final selectedGoals = ref.watch(selectedGoalsProvider);
-    return Stack(
-      alignment: Alignment.center,
-      fit: StackFit.expand,
-      children: [
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(
-            child: SingleChildScrollView(
-                child: FutureBuilder<void>(
-                    future: openBoxFuture,
-                    builder: (context, snapshot) {
-                      final worldContext = WorldContext.now();
-                      if (snapshot.connectionState != ConnectionState.done) {
-                        return const Text('Loading...');
-                      }
-                      switch (_selectedDisplayMode) {
-                        case GoalView.list:
-                          final goalIds =
-                              (widget.goalMap.values.toList(growable: false)
-                                    ..sort((a, b) => a.text
-                                        .toLowerCase()
-                                        .compareTo(b.text.toLowerCase())))
-                                  .map((e) => e.id)
-                                  .toList();
-                          return GoalListWidget(
-                            goalMap: widget.goalMap,
-                            goalIds: goalIds,
-                            onSelected: onSelected,
-                            onExpanded: onExpanded,
-                            depthLimit: 1,
-                          );
-                        case GoalView.to_review:
-                          final goalsRequiringAttention =
-                              getGoalsRequiringAttention(
-                                  WorldContext.now(), widget.goalMap);
-                          final goalIds = (goalsRequiringAttention.values
-                                  .toList(growable: false)
-                                ..sort(_toReviewComparator))
-                              .map((e) => e.id)
-                              .toList();
+    return Scaffold(
+      body: Stack(
+        alignment: Alignment.center,
+        fit: StackFit.expand,
+        children: [
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(
+              child: SingleChildScrollView(
+                  child: FutureBuilder<void>(
+                      future: openBoxFuture,
+                      builder: (context, snapshot) {
+                        final worldContext = WorldContext.now();
+                        if (snapshot.connectionState != ConnectionState.done) {
+                          return const Text('Loading...');
+                        }
+                        switch (_selectedDisplayMode) {
+                          case GoalView.list:
+                            final goalIds =
+                                (widget.goalMap.values.toList(growable: false)
+                                      ..sort((a, b) => a.text
+                                          .toLowerCase()
+                                          .compareTo(b.text.toLowerCase())))
+                                    .map((e) => e.id)
+                                    .toList();
+                            return GoalListWidget(
+                              goalMap: widget.goalMap,
+                              goalIds: goalIds,
+                              onSelected: onSelected,
+                              onExpanded: onExpanded,
+                              onFocused: onFocused,
+                              depthLimit: 1,
+                            );
+                          case GoalView.to_review:
+                            final goalsRequiringAttention =
+                                getGoalsRequiringAttention(
+                                    WorldContext.now(), widget.goalMap);
+                            final goalIds = (goalsRequiringAttention.values
+                                    .toList(growable: false)
+                                  ..sort(_toReviewComparator))
+                                .map((e) => e.id)
+                                .toList();
 
-                          return GoalListWidget(
-                            goalMap: widget.goalMap,
-                            goalIds: goalIds,
-                            onSelected: onSelected,
-                            onExpanded: onExpanded,
-                            depthLimit: 1,
-                          );
-                        default:
-                          final pendingGoalMap = getGoalsMatchingPredicate(
-                              worldContext,
-                              widget.goalMap,
-                              (goal) =>
-                                  getGoalStatus(worldContext, goal)?.status !=
-                                      GoalStatus.archived &&
-                                  getGoalStatus(worldContext, goal)?.status !=
-                                      GoalStatus.done);
-                          final rootGoalIds = pendingGoalMap.values
-                              .where((goal) => goal.parentId == null)
-                              .map((e) => e.id)
-                              .toList();
-                          return GoalListWidget(
-                            goalMap: pendingGoalMap,
-                            goalIds: rootGoalIds,
-                            onSelected: onSelected,
-                            onExpanded: onExpanded,
-                            showAddGoal: true,
-                          );
-                      }
-                    })),
-          ),
-          ToggleButtons(
-            direction: Axis.horizontal,
-            onPressed: (index) {
-              setState(() {
-                onSwitchMode(_displayModeOptions[index]);
-              });
-            },
-            isSelected: _getOneHot(),
-            children: const [
-              Text('Tree'),
-              Text('List'),
-              Text('To Review'),
-            ],
-          ),
-        ]),
-        selectedGoals.isNotEmpty
-            ? Positioned(
-                top: 50,
-                width: 400,
-                height: 50,
-                child: HoverToolbarWidget(
-                  onMerge: onMerge,
-                  onUnarchive: onUnarchive,
-                  onArchive: onArchive,
-                  onDone: onDone,
-                  onSnooze: onSnooze,
-                  onActive: onActive,
-                  onClearSelection: onClearSelection,
-                ),
-              )
-            : Container(),
-      ],
+                            return GoalListWidget(
+                              goalMap: widget.goalMap,
+                              goalIds: goalIds,
+                              onSelected: onSelected,
+                              onExpanded: onExpanded,
+                              onFocused: onFocused,
+                              depthLimit: 1,
+                            );
+                          default:
+                            final pendingGoalMap = getGoalsMatchingPredicate(
+                                worldContext,
+                                widget.goalMap,
+                                (goal) =>
+                                    getGoalStatus(worldContext, goal).status !=
+                                        GoalStatus.archived &&
+                                    getGoalStatus(worldContext, goal).status !=
+                                        GoalStatus.done);
+                            final rootGoalIds = pendingGoalMap.values
+                                .where((goal) => goal.parentId == null)
+                                .map((e) => e.id)
+                                .toList();
+                            return GoalListWidget(
+                              goalMap: pendingGoalMap,
+                              goalIds: rootGoalIds,
+                              onSelected: onSelected,
+                              onExpanded: onExpanded,
+                              onFocused: onFocused,
+                              showAddGoal: true,
+                            );
+                        }
+                      })),
+            ),
+            ToggleButtons(
+              direction: Axis.horizontal,
+              onPressed: (index) {
+                setState(() {
+                  onSwitchMode(_displayModeOptions[index]);
+                });
+              },
+              isSelected: _getOneHot(),
+              children: const [
+                Text('Tree'),
+                Text('List'),
+                Text('To Review'),
+              ],
+            ),
+          ]),
+          selectedGoals.isNotEmpty
+              ? Positioned(
+                  top: 50,
+                  width: 400,
+                  height: 50,
+                  child: HoverToolbarWidget(
+                    onMerge: onMerge,
+                    onUnarchive: onUnarchive,
+                    onArchive: onArchive,
+                    onDone: onDone,
+                    onSnooze: onSnooze,
+                    onActive: onActive,
+                    onClearSelection: onClearSelection,
+                  ),
+                )
+              : Container(),
+        ],
+      ),
     );
   }
 }
