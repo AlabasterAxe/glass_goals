@@ -2,13 +2,15 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show StateNotifier, StateNotifierProvider;
 
 final selectedGoalsProvider =
-    StateNotifierProvider<IdList, Set<String>>((ref) => IdList());
+    StateNotifierProvider<_IdSet, Set<String>>((ref) => _IdSet());
 
 final expandedGoalsProvider =
-    StateNotifierProvider<IdList, Set<String>>((ref) => IdList());
+    StateNotifierProvider<_IdSet, Set<String>>((ref) => _IdSet());
 
-class IdList extends StateNotifier<Set<String>> {
-  IdList() : super({});
+final focusedGoalProvider = StateNotifierProvider<_Id, String?>((ref) => _Id());
+
+class _IdSet extends StateNotifier<Set<String>> {
+  _IdSet() : super({});
   void add(String id) => state.add(id);
   void addAll(List<String> ids) => state.addAll(ids);
   void remove(String id) => state.remove(id);
@@ -22,5 +24,12 @@ class IdList extends StateNotifier<Set<String>> {
 
   void clear() {
     state.clear();
+  }
+}
+
+class _Id extends StateNotifier<String?> {
+  _Id() : super(null);
+  void set(String? id) {
+    state = id;
   }
 }

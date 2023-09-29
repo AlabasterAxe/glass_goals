@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart' show Firebase;
-import 'package:firebase_ui_auth/firebase_ui_auth.dart'
-    show AuthStateChangeAction, FirebaseUIAuth, SignInScreen, SignedIn;
 import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart'
     show GoogleProvider;
 
@@ -16,7 +14,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'app_context.dart' show AppContext;
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart'
-    show FirestorePersistenceService, SyncClient;
+    show InMemoryPersistenceService, SyncClient;
 
 import 'goal_viewer/goal_viewer.dart';
 
@@ -24,12 +22,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await Hive.initFlutter();
-
-  FirebaseUIAuth.configureProviders([
-    GoogleProvider(
-        clientId:
-            '114797465949-keupvd032s4to34t1bkftge1baoguld5.apps.googleusercontent.com'),
-  ]);
 
   runApp(const ProviderScope(child: WebGoals()));
 }
@@ -43,8 +35,15 @@ class WebGoals extends StatefulWidget {
 
 class _WebGoalsState extends State<WebGoals>
     with SingleTickerProviderStateMixin {
-  SyncClient syncClient =
-      SyncClient(persistenceService: FirestorePersistenceService());
+  SyncClient syncClient = SyncClient(
+      persistenceService: InMemoryPersistenceService(ops: [
+    {
+      'hlcTimestamp':
+          '001674571071065:00001:db86cca1-fa15-4f6d-b37e-0d19bfb8f95a',
+      'version': 2,
+      'delta': {'id': 'root', 'text': 'Test Root'}
+    }
+  ]));
 
   Future<void> appInit() async {
     await syncClient.init();
@@ -58,15 +57,8 @@ class _WebGoalsState extends State<WebGoals>
           Locale('en', 'US'),
           Locale('en', 'GB'),
         ],
-        initialRoute: '/sign-in',
+        initialRoute: '/home',
         routes: {
-          '/sign-in': (context) => SignInScreen(
-                actions: [
-                  AuthStateChangeAction<SignedIn>((context, state) {
-                    Navigator.pushReplacementNamed(context, '/home');
-                  })
-                ],
-              ),
           '/home': (context) => FutureBuilder<void>(
               future: appInit(),
               builder: (context, snapshot) {

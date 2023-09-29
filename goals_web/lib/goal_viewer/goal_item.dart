@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:goals_core/model.dart' show Goal, WorldContext, getGoalStatus;
 import 'package:goals_core/sync.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart' show DateFormat;
 
 import '../app_context.dart';
 import '../styles.dart';
 
-class GoalItemWidget extends StatefulWidget {
+class GoalItemWidget extends StatefulHookConsumerWidget {
   final Goal goal;
   final bool selected;
   final Function(bool? value) onSelected;
+  final Function(String id)? onFocused;
   final bool hovered;
   final bool focused;
   final Goal? parent;
@@ -18,13 +20,14 @@ class GoalItemWidget extends StatefulWidget {
     required this.goal,
     required this.selected,
     required this.onSelected,
+    required this.onFocused,
     required this.hovered,
     this.focused = false,
     this.parent,
   });
 
   @override
-  State<GoalItemWidget> createState() => _GoalItemWidgetState();
+  ConsumerState<GoalItemWidget> createState() => _GoalItemWidgetState();
 }
 
 String getRelativeDateString(DateTime now, DateTime? future) {
@@ -54,15 +57,15 @@ String getRelativeDateString(DateTime now, DateTime? future) {
 String getGoalStatusString(Goal goal) {
   final worldContext = WorldContext.now();
   final status = getGoalStatus(worldContext, goal);
-  switch (status?.status) {
+  switch (status.status) {
     case GoalStatus.active:
-      return 'Active: ${getRelativeDateString(worldContext.time, status!.endTime)}';
+      return 'Active: ${getRelativeDateString(worldContext.time, status.endTime)}';
     case GoalStatus.done:
       return 'Done';
     case GoalStatus.archived:
       return 'Archived';
     case GoalStatus.pending:
-      return 'On Hold: ${getRelativeDateString(worldContext.time, status!.endTime)}';
+      return 'On Hold: ${getRelativeDateString(worldContext.time, status.endTime)}';
     case null:
       return 'No status';
   }
@@ -70,7 +73,7 @@ String getGoalStatusString(Goal goal) {
 
 Color getGoalStatusColor(Goal goal) {
   final status = getGoalStatus(WorldContext.now(), goal);
-  switch (status?.status) {
+  switch (status.status) {
     case GoalStatus.active:
       return Colors.green;
     case GoalStatus.done:
@@ -84,7 +87,7 @@ Color getGoalStatusColor(Goal goal) {
   }
 }
 
-class _GoalItemWidgetState extends State<GoalItemWidget> {
+class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
   TextEditingController? _textController;
   bool _editing = false;
   final FocusNode _focusNode = FocusNode();
@@ -139,9 +142,15 @@ class _GoalItemWidgetState extends State<GoalItemWidget> {
                       _focusNode.requestFocus();
                     })
                   },
+                  onTap: () {
+                    widget.onFocused?.call(widget.goal.id);
+                  },
                   child: Text(
                       '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
-                      style: mainTextStyle),
+                      style: mainTextStyle.copyWith(
+                          fontWeight: widget.focused
+                              ? FontWeight.bold
+                              : FontWeight.normal)),
                 ),
           SizedBox(width: uiUnit(2)),
           // chip like container widget around text status widget:

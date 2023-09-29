@@ -1,13 +1,14 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart'
     show
+        AppBar,
         Colors,
         Dialog,
+        Drawer,
         IconButton,
         Icons,
+        ListTile,
+        Scaffold,
         TextButton,
-        ToggleButtons,
         Tooltip,
         showDatePicker,
         showDialog;
@@ -23,9 +24,11 @@ import 'package:goals_core/model.dart'
 import 'package:goals_core/sync.dart'
     show GoalDelta, GoalStatus, StatusLogEntry;
 import 'package:goals_web/app_context.dart';
+import 'package:goals_web/goal_viewer/goal_detail.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:multi_split_view/multi_split_view.dart';
 
 import 'goal_list.dart' show GoalListWidget;
 
@@ -204,9 +207,25 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   ];
   GoalView _selectedDisplayMode = GoalView.tree;
 
-  String? focusedGoalId;
   Future<void>? openBoxFuture;
   bool isInitted = false;
+  final _multiSplitViewController = MultiSplitViewController(areas: [
+    Area(
+      size: 250,
+      minimalSize: 200,
+      key: const ValueKey('viewSwitcher'),
+    ),
+    Area(
+      weight: 0.5,
+      minimalSize: 200,
+      key: const ValueKey('list'),
+    ),
+    Area(
+      weight: 0.5,
+      minimalSize: 200,
+      key: const ValueKey('detail'),
+    )
+  ]);
 
   onSelected(String goalId) {
     setState(() {
@@ -220,7 +239,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     setState(() {
       _selectedDisplayMode = mode;
       Hive.box('goals_web.ui')
-          .put('goalViewerDisplayMode', _selectedDisplayMode?.name);
+          .put('goalViewerDisplayMode', _selectedDisplayMode.name);
     });
   }
 
@@ -236,8 +255,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   onFocused(String? goalId) {
     setState(() {
-      focusedGoalId = goalId;
-      Hive.box('goals_web.ui').put('focusedGoal', focusedGoalId);
+      ref.read(focusedGoalProvider.notifier).set(goalId);
+      Hive.box('goals_web.ui').put('focusedGoal', goalId);
     });
   }
 
@@ -420,111 +439,180 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     return 0;
   }
 
+  _viewSwitcher() => ListView(
+        key: const ValueKey('viewSwitcher'),
+        // Important: Remove any padding from the ListView.
+        padding: EdgeInsets.zero,
+        children: [
+          ListTile(
+            title: const Text('Tree'),
+            selected: _selectedDisplayMode == GoalView.tree,
+            onTap: () {
+              // Update the state of the app
+              onSwitchMode(GoalView.tree);
+              // Then close the drawer
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            title: const Text('List'),
+            selected: _selectedDisplayMode == GoalView.list,
+            onTap: () {
+              // Update the state of the app
+              onSwitchMode(GoalView.list);
+              // Then close the drawer
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            title: const Text('To Review'),
+            selected: _selectedDisplayMode == GoalView.to_review,
+            onTap: () {
+              // Update the state of the app
+              onSwitchMode(GoalView.to_review);
+              // Then close the drawer
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      );
+
   @override
   Widget build(BuildContext context) {
     final selectedGoals = ref.watch(selectedGoalsProvider);
-    return Stack(
-      alignment: Alignment.center,
-      fit: StackFit.expand,
-      children: [
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(
-            child: SingleChildScrollView(
-                child: FutureBuilder<void>(
-                    future: openBoxFuture,
-                    builder: (context, snapshot) {
-                      final worldContext = WorldContext.now();
-                      if (snapshot.connectionState != ConnectionState.done) {
-                        return const Text('Loading...');
-                      }
-                      switch (_selectedDisplayMode) {
-                        case GoalView.list:
-                          final goalIds =
-                              (widget.goalMap.values.toList(growable: false)
-                                    ..sort((a, b) => a.text
-                                        .toLowerCase()
-                                        .compareTo(b.text.toLowerCase())))
-                                  .map((e) => e.id)
-                                  .toList();
-                          return GoalListWidget(
-                            goalMap: widget.goalMap,
-                            goalIds: goalIds,
-                            onSelected: onSelected,
-                            onExpanded: onExpanded,
-                            depthLimit: 1,
-                          );
-                        case GoalView.to_review:
-                          final goalsRequiringAttention =
-                              getGoalsRequiringAttention(
-                                  WorldContext.now(), widget.goalMap);
-                          final goalIds = (goalsRequiringAttention.values
-                                  .toList(growable: false)
-                                ..sort(_toReviewComparator))
-                              .map((e) => e.id)
-                              .toList();
+    final focusedGoal = ref.watch(focusedGoalProvider);
 
-                          return GoalListWidget(
-                            goalMap: widget.goalMap,
-                            goalIds: goalIds,
-                            onSelected: onSelected,
-                            onExpanded: onExpanded,
-                            depthLimit: 1,
-                          );
-                        default:
-                          final pendingGoalMap = getGoalsMatchingPredicate(
-                              worldContext,
-                              widget.goalMap,
-                              (goal) =>
-                                  getGoalStatus(worldContext, goal)?.status !=
-                                      GoalStatus.archived &&
-                                  getGoalStatus(worldContext, goal)?.status !=
-                                      GoalStatus.done);
-                          final rootGoalIds = pendingGoalMap.values
-                              .where((goal) => goal.parentId == null)
-                              .map((e) => e.id)
-                              .toList();
-                          return GoalListWidget(
-                            goalMap: pendingGoalMap,
-                            goalIds: rootGoalIds,
-                            onSelected: onSelected,
-                            onExpanded: onExpanded,
-                            showAddGoal: true,
-                          );
-                      }
-                    })),
-          ),
-          ToggleButtons(
-            direction: Axis.horizontal,
-            onPressed: (index) {
-              setState(() {
-                onSwitchMode(_displayModeOptions[index]);
-              });
-            },
-            isSelected: _getOneHot(),
-            children: const [
-              Text('Tree'),
-              Text('List'),
-              Text('To Review'),
-            ],
-          ),
-        ]),
-        selectedGoals.isNotEmpty
-            ? Positioned(
-                top: 50,
-                width: 400,
-                height: 50,
-                child: HoverToolbarWidget(
-                  onMerge: onMerge,
-                  onUnarchive: onUnarchive,
-                  onArchive: onArchive,
-                  onDone: onDone,
-                  onSnooze: onSnooze,
-                  onActive: onActive,
-                  onClearSelection: onClearSelection,
-                ),
-              )
-            : Container(),
-      ],
+    final children = <Widget>[];
+
+    final isNarrow = MediaQuery.of(context).size.width < 600;
+    if (!isNarrow) {
+      children.add(_viewSwitcher());
+    }
+
+    children.add(_listView());
+
+    if (!isNarrow && focusedGoal != null) {
+      children.add(_detailView());
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Glass Goals'),
+      ),
+      drawer: isNarrow
+          ? Drawer(
+              child: _viewSwitcher(),
+            )
+          : null,
+      body: Stack(
+        alignment: Alignment.center,
+        fit: StackFit.expand,
+        children: [
+          MultiSplitViewTheme(
+              data: MultiSplitViewThemeData(
+                  dividerPainter: DividerPainters.grooved1(
+                      color: Colors.indigo[100]!,
+                      highlightedColor: Colors.indigo[900]!)),
+              child: MultiSplitView(
+                controller: _multiSplitViewController,
+                children: children,
+              )),
+          selectedGoals.isNotEmpty
+              ? Positioned(
+                  top: 50,
+                  width: 400,
+                  height: 50,
+                  child: HoverToolbarWidget(
+                    onMerge: onMerge,
+                    onUnarchive: onUnarchive,
+                    onArchive: onArchive,
+                    onDone: onDone,
+                    onSnooze: onSnooze,
+                    onActive: onActive,
+                    onClearSelection: onClearSelection,
+                  ),
+                )
+              : Container(),
+        ],
+      ),
     );
+  }
+
+  Widget _listView() {
+    return SingleChildScrollView(
+        key: const ValueKey('list'),
+        child: FutureBuilder<void>(
+            future: openBoxFuture,
+            builder: (context, snapshot) {
+              final worldContext = WorldContext.now();
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Text('Loading...');
+              }
+              switch (_selectedDisplayMode) {
+                case GoalView.list:
+                  final goalIds = (widget.goalMap.values.toList(growable: false)
+                        ..sort((a, b) => a.text
+                            .toLowerCase()
+                            .compareTo(b.text.toLowerCase())))
+                      .map((e) => e.id)
+                      .toList();
+                  return GoalListWidget(
+                    goalMap: widget.goalMap,
+                    goalIds: goalIds,
+                    onSelected: onSelected,
+                    onExpanded: onExpanded,
+                    onFocused: onFocused,
+                    depthLimit: 1,
+                  );
+                case GoalView.to_review:
+                  final goalsRequiringAttention = getGoalsRequiringAttention(
+                      WorldContext.now(), widget.goalMap);
+                  final goalIds =
+                      (goalsRequiringAttention.values.toList(growable: false)
+                            ..sort(_toReviewComparator))
+                          .map((e) => e.id)
+                          .toList();
+
+                  return GoalListWidget(
+                    goalMap: widget.goalMap,
+                    goalIds: goalIds,
+                    onSelected: onSelected,
+                    onExpanded: onExpanded,
+                    onFocused: onFocused,
+                    depthLimit: 1,
+                  );
+                default:
+                  final pendingGoalMap = getGoalsMatchingPredicate(
+                      worldContext,
+                      widget.goalMap,
+                      (goal) =>
+                          getGoalStatus(worldContext, goal).status !=
+                              GoalStatus.archived &&
+                          getGoalStatus(worldContext, goal).status !=
+                              GoalStatus.done);
+                  final rootGoalIds = pendingGoalMap.values
+                      .where((goal) => goal.parentId == null)
+                      .map((e) => e.id)
+                      .toList();
+                  return GoalListWidget(
+                    goalMap: pendingGoalMap,
+                    goalIds: rootGoalIds,
+                    onSelected: onSelected,
+                    onExpanded: onExpanded,
+                    onFocused: onFocused,
+                    showAddGoal: true,
+                  );
+              }
+            }));
+  }
+
+  Widget _detailView() {
+    final focusedGoalId = ref.watch(focusedGoalProvider);
+    final focusedGoal = widget.goalMap[focusedGoalId];
+    if (focusedGoal == null) {
+      return Container();
+    }
+
+    return GoalDetail(key: const ValueKey('detail'), goal: focusedGoal);
   }
 }
