@@ -2,7 +2,7 @@ import 'dart:convert' show jsonDecode, jsonEncode;
 import 'package:goals_types_01/goals_types.dart' as goals_types_01;
 import 'package:equatable/equatable.dart' show Equatable;
 
-const TYPES_VERSION = 2;
+import 'version.dart' show TYPES_VERSION;
 
 enum GoalStatus {
   pending,
