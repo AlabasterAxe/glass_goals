@@ -17,6 +17,14 @@ const peggedMajorVersion = newPeggedVersion.split('.')[0];
 
 const new_package_name = `goals_types_${peggedMajorVersion}`;
 
+async function checkHasCleanGitStatus() {
+    const status = execSync(`git status --porcelain`).toString();
+    if (status.length > 0) {
+        console.error('Git status is not clean');
+        process.exit(1);
+    }
+}
+
 async function updatePubspec(newPubspec: any) {
    await promises.writeFile(typesPubspec, stringify(newPubspec));
 }
@@ -56,7 +64,7 @@ async function updateCurrentCode() {
     
     updatePubspec(pubspec);
 
-    await promises.writeFile(versionFile, stringify(newPubspec));
+    await promises.writeFile(versionFile, `const TYPES_VERSION = ${peggedMajorVersion+1};`);
 
     // commit
     execSync(`git commit -am "consume ${new_package_name}"`);
@@ -67,6 +75,7 @@ async function updateCurrentCode() {
 
 
 async function main() {
+    await checkHasCleanGitStatus();
     await publishPeggedVersion();
     await updateCurrentCode();
 }
