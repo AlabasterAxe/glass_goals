@@ -542,9 +542,11 @@ packages:
   multi_split_view:
     dependency: "direct main"
     description:
-      path: "../../multi_split_view"
-      relative: true
-    source: path
+      path: "."
+      ref: master
+      resolved-ref: "46f6d759430c1bea3a3d491149fde22915ff350d"
+      url: "https://github.com/AlabasterAxe/multi_split_view"
+    source: git
     version: "2.4.1"
   package_config:
     dependency: transitive
