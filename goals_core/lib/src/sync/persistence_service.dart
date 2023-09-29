@@ -122,3 +122,23 @@ class FirestorePersistenceService implements PersistenceService {
     await Future.wait(futures);
   }
 }
+
+class InMemoryPersistenceService implements PersistenceService {
+  List<Op> ops = [];
+
+  InMemoryPersistenceService({List<Map<String, dynamic>> ops = const []}) {
+    for (final op in ops) {
+      this.ops.add(Op.fromJsonMap(op));
+    }
+  }
+
+  @override
+  Future<LoadOpsResp> load({int? cursor}) async {
+    return LoadOpsResp(ops, 0);
+  }
+
+  @override
+  Future<void> save(Iterable<Op> ops) async {
+    this.ops.addAll(ops);
+  }
+}

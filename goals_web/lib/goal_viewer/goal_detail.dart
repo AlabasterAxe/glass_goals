@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:goals_core/model.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:goals_core/model.dart' show Goal;
+import 'package:goals_core/sync.dart' show NoteLogEntry;
+import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
 
 class GoalDetail extends StatelessWidget {
   final Goal goal;
@@ -7,6 +10,10 @@ class GoalDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(child: Text(goal.text));
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const AddNoteCard(),
+      for (final entry in goal.log.whereType<NoteLogEntry>())
+        Card(child: Markdown(data: entry.text))
+    ]);
   }
 }
