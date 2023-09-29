@@ -17,6 +17,8 @@ const peggedMajorVersion = newPeggedVersion.split('.')[0];
 
 const new_package_name = `goals_types_${peggedMajorVersion}`;
 
+const originalBranch = execSync(`git rev-parse --abbrev-ref HEAD`).toString().trim();
+
 async function checkHasCleanGitStatus() {
     const status = execSync(`git status --porcelain`).toString();
     if (status.length > 0) {
@@ -30,8 +32,11 @@ async function updatePubspec(newPubspec: any) {
 }
 
 async function publishPeggedVersion() {
+
+    execSync('git checkout master');
+
     // cut branch
-    execSync(`git checkout -b ${new_package_name}`);
+    execSync(`git switch -c ${new_package_name}`);
 
     // modify pubspec.yaml
     pubspec.name = new_package_name;
@@ -47,7 +52,7 @@ async function publishPeggedVersion() {
     // run pub publish
     execSync(`fvm dart pub publish`);
 
-    execSync(`git checkout -`);
+    execSync(`git checkout ${originalBranch}`);
 }
 
 async function updateCurrentCode() {
