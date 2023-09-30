@@ -14,7 +14,7 @@ const pubspec = parse(contents);
 const newPeggedVersion = pubspec.version;
 const peggedMajorVersion = Number(newPeggedVersion.split('.')[0]);
 
-const new_package_name = `goals_types_${peggedMajorVersion}`;
+const new_package_name = `goals_types_${peggedMajorVersion < 10 ? '0' : ''}${peggedMajorVersion}`;
 
 const originalBranch = execSync(`git rev-parse --abbrev-ref HEAD`).toString().trim();
 
