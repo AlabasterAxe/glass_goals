@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart'
+    show FirebaseAuth, Persistence;
 import 'package:firebase_core/firebase_core.dart' show Firebase;
 import 'package:firebase_ui_auth/firebase_ui_auth.dart'
     show AuthStateChangeAction, FirebaseUIAuth, SignInScreen, SignedIn;
@@ -46,8 +48,11 @@ class _WebGoalsState extends State<WebGoals>
   SyncClient syncClient =
       SyncClient(persistenceService: FirestorePersistenceService());
 
-  Future<void> appInit() async {
+  Future<void> appInit(context) async {
     await syncClient.init();
+    if (FirebaseAuth.instance.currentUser == null) {
+      Navigator.pushReplacementNamed(context, '/sign-in');
+    }
   }
 
   @override
@@ -58,7 +63,7 @@ class _WebGoalsState extends State<WebGoals>
           Locale('en', 'US'),
           Locale('en', 'GB'),
         ],
-        initialRoute: '/sign-in',
+        initialRoute: '/home',
         routes: {
           '/sign-in': (context) => SignInScreen(
                 actions: [
@@ -68,7 +73,7 @@ class _WebGoalsState extends State<WebGoals>
                 ],
               ),
           '/home': (context) => FutureBuilder<void>(
-              future: appInit(),
+              future: appInit(context),
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
                   return const Center(
