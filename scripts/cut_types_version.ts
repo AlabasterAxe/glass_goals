@@ -1,4 +1,3 @@
-
 import { parse, stringify } from 'yaml';
 import { join } from 'path';
 import { readFileSync, promises } from 'fs';
@@ -47,7 +46,7 @@ async function publishPeggedVersion() {
     execSync(`git commit -am "cut ${new_package_name}"`);
 
     // push
-    execSync(`git push`);
+    execSync(`git push -f`);
 
     execSync('cd goals_types');
 
