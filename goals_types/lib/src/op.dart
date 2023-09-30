@@ -40,12 +40,12 @@ abstract class GoalLogEntry extends Equatable {
           'Invalid data: $version is before first version: $FIRST_VERSION');
     }
 
-    if (!json is Map) {
+    if (json is! Map) {
       throw Exception('Invalid data: $json is not a map');
     }
 
     final type = json['type'];
-    if (!type) {
+    if (type == null) {
       throw Exception('Invalid data: $json is missing type');
     }
 
@@ -214,8 +214,7 @@ class GoalDelta extends Equatable {
       text: json[TEXT_FIELD_NAME],
       parentId: json[PARENT_ID_FIELD_NAME],
       logEntry: json[STATUS_LOG_ENTRY_FIELD_NAME] != null
-          ? StatusLogEntry.fromJsonMap(
-              json[STATUS_LOG_ENTRY_FIELD_NAME], version)
+          ? GoalLogEntry.fromJsonMap(json[STATUS_LOG_ENTRY_FIELD_NAME], version)
           : null,
     );
   }
@@ -256,7 +255,7 @@ class GoalDelta extends Equatable {
 class Op extends Equatable {
   final GoalDelta delta;
   final String hlcTimestamp;
-  final int version = 2;
+  final int version = TYPES_VERSION;
   const Op({
     required this.hlcTimestamp,
     required this.delta,

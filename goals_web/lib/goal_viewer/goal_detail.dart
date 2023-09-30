@@ -11,7 +11,7 @@ class GoalDetail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      const AddNoteCard(),
+      AddNoteCard(goalId: goal.id),
       for (final entry in goal.log.whereType<NoteLogEntry>())
         Card(child: Markdown(data: entry.text))
     ]);
