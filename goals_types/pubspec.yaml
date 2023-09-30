@@ -1,15 +1,12 @@
-name: goals_types
+name: goals_types_2
 description: Types for the glass goals app.
 version: 2.0.0
 repository: https://github.com/AlabasterAxe/glass_goals
-
 dependencies:
   equatable: ^2.0.5
   goals_types_01: 1.0.1
-
 environment:
-  sdk: '>=3.0.0 <4.0.0'
-
+  sdk: ">=3.0.0 <4.0.0"
 dev_dependencies:
   lints: ^2.0.0
   test: ^1.21.0
