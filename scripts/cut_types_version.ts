@@ -2,7 +2,7 @@ import { parse, stringify } from 'yaml';
 import { join } from 'path';
 import { readFileSync, promises } from 'fs';
 
-import { execSync } from 'child_process';
+import { execSync, exec } from 'child_process';
 
 const typesPubspec = join('goals_types', 'pubspec.yaml');
 const versionFile = join('goals_types', 'lib', 'src', 'version.dart');
@@ -48,8 +48,29 @@ async function publishPeggedVersion() {
     // push
     execSync(`git push -f`);
 
+    let resolver: () => void;
+    let rejecter: (err: any) => void;
+
+    const publishPromise = new Promise<void>((resolve, reject) => {
+        resolver = resolve;
+        rejecter = reject;
+    });
+
     // run pub publish
-    execSync(`cd goals_types && fvm dart pub publish -f`);
+    const proc = exec(`cd goals_types && fvm dart pub publish -f`, (err, stdout, stderr) => {
+        if (err) {
+            rejecter(err);
+        } else {
+            resolver();
+        }
+    });
+
+    // forward stdout to console
+    if (proc.stdout) {
+        proc.stdout.pipe(process.stdout);
+    }
+
+    await publishPromise;
 
     execSync(`git checkout ${originalBranch}`);
 }
