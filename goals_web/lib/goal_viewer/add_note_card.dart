@@ -52,10 +52,8 @@ class _AddNoteCardState extends State<AddNoteCard> {
                           extentOffset: _textController!.text.length);
                       AppContext.of(context).syncClient.modifyGoal(GoalDelta(
                           id: widget.goalId,
-                          statusLogEntry: NoteLogEntry(
-                              creationTime: DateTime.now(),
-                              text: newText)));
-                          ));
+                          logEntry: NoteLogEntry(
+                              creationTime: DateTime.now(), text: newText)));
                       setState(() {
                         _editing = false;
                       });

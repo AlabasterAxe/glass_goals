@@ -10,7 +10,7 @@ void main() {
           id: '1',
           text: 'foo',
           parentId: '0',
-          statusLogEntry: StatusLogEntry(
+          logEntry: StatusLogEntry(
               creationTime: DateTime(2023), status: GoalStatus.active)),
     );
 

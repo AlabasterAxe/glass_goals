@@ -22,7 +22,7 @@ void main() {
           hlcTimestamp: '0',
           delta: GoalDelta(
               id: '0',
-              statusLogEntry: StatusLogEntry(
+              logEntry: StatusLogEntry(
                   status: GoalStatus.active,
                   creationTime: DateTime(2020, 1, 1, 12),
                   startTime: DateTime(2020, 1, 1, 12),
@@ -48,7 +48,7 @@ void main() {
           hlcTimestamp: hlc.pack(),
           delta: GoalDelta(
               id: '0',
-              statusLogEntry: StatusLogEntry(
+              logEntry: StatusLogEntry(
                   status: GoalStatus.active,
                   creationTime: DateTime(2020, 1, 1, 12),
                   startTime: DateTime(2020, 1, 1, 12),
@@ -57,7 +57,7 @@ void main() {
           hlcTimestamp: hlc.increment().pack(),
           delta: GoalDelta(
               id: '0',
-              statusLogEntry: StatusLogEntry(
+              logEntry: StatusLogEntry(
                   creationTime: DateTime(2020, 1, 1, 12),
                   startTime: DateTime(2020, 1, 1, 13)))),
     ]);
@@ -81,7 +81,7 @@ void main() {
           hlcTimestamp: hlc.pack(),
           delta: GoalDelta(
               id: '0',
-              statusLogEntry: StatusLogEntry(
+              logEntry: StatusLogEntry(
                   status: GoalStatus.active,
                   creationTime: DateTime(2020, 1, 1, 12),
                   startTime: DateTime(2020, 1, 1, 12),
@@ -112,7 +112,7 @@ void main() {
           hlcTimestamp: tick(),
           delta: GoalDelta(
               id: '0',
-              statusLogEntry: StatusLogEntry(
+              logEntry: StatusLogEntry(
                   status: GoalStatus.active,
                   creationTime: DateTime(2020, 1, 1, 12),
                   startTime: DateTime(2020, 1, 1, 12),
@@ -121,7 +121,7 @@ void main() {
           hlcTimestamp: tick(),
           delta: GoalDelta(
               id: '0',
-              statusLogEntry: StatusLogEntry(
+              logEntry: StatusLogEntry(
                   creationTime: DateTime(2020, 1, 1, 13),
                   startTime: DateTime(2020, 1, 1, 13),
                   endTime: DateTime(2020, 1, 1, 14)))),
@@ -129,7 +129,7 @@ void main() {
           hlcTimestamp: tick(),
           delta: GoalDelta(
               id: '0',
-              statusLogEntry: StatusLogEntry(
+              logEntry: StatusLogEntry(
                   creationTime: DateTime(2020, 1, 1, 15),
                   startTime: DateTime(2020, 1, 1, 15),
                   endTime: DateTime(2020, 1, 1, 16)))),
@@ -137,7 +137,7 @@ void main() {
           hlcTimestamp: tick(),
           delta: GoalDelta(
               id: '0',
-              statusLogEntry: StatusLogEntry(
+              logEntry: StatusLogEntry(
                   creationTime: DateTime(2020, 1, 1, 17),
                   status: GoalStatus.pending,
                   startTime: DateTime(2020, 1, 1, 17),
