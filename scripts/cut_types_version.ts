@@ -40,7 +40,7 @@ async function publishPeggedVersion() {
     // modify pubspec.yaml
     pubspec.name = new_package_name;
     
-    updatePubspec(pubspec);
+    await updatePubspec(pubspec);
 
     // commit
     execSync(`git commit -am "cut ${new_package_name}"`);
@@ -66,7 +66,7 @@ async function updateCurrentCode() {
 
     pubspec.dependencies[new_package_name] = newPeggedVersion;
     
-    updatePubspec(pubspec);
+    await updatePubspec(pubspec);
 
     await promises.writeFile(versionFile, `const TYPES_VERSION = ${peggedMajorVersion+1};`);
 
