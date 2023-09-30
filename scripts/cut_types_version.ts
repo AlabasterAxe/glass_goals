@@ -48,12 +48,8 @@ async function publishPeggedVersion() {
     // push
     execSync(`git push -f`);
 
-    execSync('cd goals_types');
-
     // run pub publish
-    execSync(`fvm dart pub publish`);
-
-    execSync('cd -')
+    execSync(`cd goals_types && fvm dart pub publish`);
 
     execSync(`git checkout ${originalBranch}`);
 }
