@@ -12,7 +12,7 @@ const contents = readFileSync(typesPubspec, 'utf8');
 const pubspec = parse(contents);
 
 const newPeggedVersion = pubspec.version;
-const peggedMajorVersion = newPeggedVersion.split('.')[0];
+const peggedMajorVersion = Number(newPeggedVersion.split('.')[0]);
 
 const new_package_name = `goals_types_${peggedMajorVersion}`;
 
