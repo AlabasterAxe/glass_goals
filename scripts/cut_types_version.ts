@@ -36,7 +36,7 @@ async function publishPeggedVersion() {
     execSync('git checkout master');
 
     // cut branch
-    execSync(`git switch -c ${new_package_name}`);
+    execSync(`git checkout -B ${new_package_name}`);
 
     // modify pubspec.yaml
     pubspec.name = new_package_name;
