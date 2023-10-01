@@ -77,54 +77,52 @@ class _NoteCardState extends State<NoteCard> {
   Widget build(BuildContext context) {
     return CallbackShortcuts(
       bindings: macBindings,
-      child: Card(
-        child: Row(
-          children: [
-            Expanded(
-              child: _editing
-                  ? IntrinsicHeight(
-                      child: TextField(
-                        autocorrect: false,
-                        controller: _textController,
-                        decoration: null,
-                        maxLines: null,
-                        style: mainTextStyle,
-                        onTapOutside: (_) {
-                          _textController.text = widget.entry.text;
-                          setState(() {
-                            _editing = false;
-                          });
-                        },
-                        focusNode: _focusNode,
-                      ),
-                    )
-                  : MarkdownBody(data: _textController.text, selectable: true),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                IconButton(
-                    onPressed: () {
-                      setState(() {
-                        _editing = true;
-                        _focusNode.requestFocus();
-                      });
-                    },
-                    icon: const Icon(Icons.edit)),
-                IconButton(
-                    onPressed: () {
-                      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                          id: widget.goalId,
-                          logEntry: ArchiveNoteLogEntry(
-                              id: widget.entry.id,
-                              creationTime: DateTime.now())));
-                      widget.onRefresh();
-                    },
-                    icon: const Icon(Icons.delete)),
-              ],
-            ),
-          ],
-        ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _editing
+                ? IntrinsicHeight(
+                    child: TextField(
+                      autocorrect: false,
+                      controller: _textController,
+                      decoration: null,
+                      maxLines: null,
+                      style: mainTextStyle,
+                      onTapOutside: (_) {
+                        _textController.text = widget.entry.text;
+                        setState(() {
+                          _editing = false;
+                        });
+                      },
+                      focusNode: _focusNode,
+                    ),
+                  )
+                : MarkdownBody(data: _textController.text, selectable: true),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _editing = true;
+                      _focusNode.requestFocus();
+                    });
+                  },
+                  icon: const Icon(Icons.edit)),
+              IconButton(
+                  onPressed: () {
+                    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                        id: widget.goalId,
+                        logEntry: ArchiveNoteLogEntry(
+                            id: widget.entry.id,
+                            creationTime: DateTime.now())));
+                    widget.onRefresh();
+                  },
+                  icon: const Icon(Icons.delete)),
+            ],
+          ),
+        ],
       ),
     );
   }

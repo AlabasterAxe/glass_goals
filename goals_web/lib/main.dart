@@ -21,6 +21,7 @@ import 'package:goals_core/sync.dart'
     show FirestorePersistenceService, SyncClient;
 
 import 'goal_viewer/goal_viewer.dart';
+import 'styles.dart' show theme;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,6 +65,7 @@ class _WebGoalsState extends State<WebGoals>
           Locale('en', 'GB'),
         ],
         initialRoute: '/home',
+        theme: theme,
         routes: {
           '/sign-in': (context) => SignInScreen(
                 actions: [

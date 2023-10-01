@@ -52,6 +52,7 @@ dependencies:
       url: https://github.com/AlabasterAxe/multi_split_view
       ref: master
   flutter_markdown: ^0.6.17+3
+  google_fonts: ^6.1.0
 
 dev_dependencies:
   flutter_test:

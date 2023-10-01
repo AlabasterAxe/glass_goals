@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalMaterialLocalizations;
 import 'package:goals_web/firebase_options.dart';
+import 'styles.dart' show theme;
 
 import 'package:hive_flutter/hive_flutter.dart' show Hive, HiveX;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -51,6 +52,7 @@ class _WebGoalsState extends State<WebGoals>
   Widget build(BuildContext context) {
     return MaterialApp(
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        theme: theme,
         supportedLocales: const [
           Locale('en', 'US'),
           Locale('en', 'GB'),

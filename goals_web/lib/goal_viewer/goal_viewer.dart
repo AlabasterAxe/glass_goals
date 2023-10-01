@@ -30,6 +30,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 
+import '../styles.dart' show multiSplitViewThemeData;
 import 'goal_list.dart' show GoalListWidget;
 
 class DatePickerDialog extends StatefulWidget {
@@ -509,10 +510,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         fit: StackFit.expand,
         children: [
           MultiSplitViewTheme(
-              data: MultiSplitViewThemeData(
-                  dividerPainter: DividerPainters.grooved1(
-                      color: Colors.indigo[100]!,
-                      highlightedColor: Colors.indigo[900]!)),
+              data: multiSplitViewThemeData,
               child: MultiSplitView(
                 controller: _multiSplitViewController,
                 children: children,

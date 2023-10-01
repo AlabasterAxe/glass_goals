@@ -36,56 +36,54 @@ class _AddNoteCardState extends State<AddNoteCard> {
   Widget build(BuildContext context) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      child: Card(
-        child: Row(
-          children: [
-            _editing
-                ? SizedBox(
-                    width: 200,
-                    child: TextField(
-                      autocorrect: false,
-                      controller: _textController,
-                      decoration: null,
-                      style: mainTextStyle,
-                      onEditingComplete: () {
-                        final newText = _textController!.text;
-                        _textController!.text = _defaultText;
-                        _textController!.selection = TextSelection(
-                            baseOffset: 0,
-                            extentOffset: _textController!.text.length);
-                        AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                            id: widget.goalId,
-                            logEntry: NoteLogEntry(
-                                id: const Uuid().v4(),
-                                creationTime: DateTime.now(),
-                                text: newText)));
-                        setState(() {
-                          _editing = false;
-                        });
-                      },
-                      onTapOutside: (_) {
-                        _textController!.text = _defaultText;
-                        setState(() {
-                          _editing = false;
-                        });
-                      },
-                      focusNode: _focusNode,
-                    ))
-                : GestureDetector(
-                    onTap: () => {
+      child: Row(
+        children: [
+          _editing
+              ? SizedBox(
+                  width: 200,
+                  child: TextField(
+                    autocorrect: false,
+                    controller: _textController,
+                    decoration: null,
+                    style: mainTextStyle,
+                    onEditingComplete: () {
+                      final newText = _textController!.text;
+                      _textController!.text = _defaultText;
+                      _textController!.selection = TextSelection(
+                          baseOffset: 0,
+                          extentOffset: _textController!.text.length);
+                      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                          id: widget.goalId,
+                          logEntry: NoteLogEntry(
+                              id: const Uuid().v4(),
+                              creationTime: DateTime.now(),
+                              text: newText)));
                       setState(() {
-                        _editing = true;
-                        _focusNode.requestFocus();
-                        _textController!.selection = TextSelection(
-                            baseOffset: 0,
-                            extentOffset: _textController!.text.length);
-                      })
+                        _editing = false;
+                      });
                     },
-                    child: Text(_textController!.text,
-                        style: mainTextStyle.copyWith(color: Colors.black54)),
-                  ),
-          ],
-        ),
+                    onTapOutside: (_) {
+                      _textController!.text = _defaultText;
+                      setState(() {
+                        _editing = false;
+                      });
+                    },
+                    focusNode: _focusNode,
+                  ))
+              : GestureDetector(
+                  onTap: () => {
+                    setState(() {
+                      _editing = true;
+                      _focusNode.requestFocus();
+                      _textController!.selection = TextSelection(
+                          baseOffset: 0,
+                          extentOffset: _textController!.text.length);
+                    })
+                  },
+                  child: Text(_textController!.text,
+                      style: mainTextStyle.copyWith(color: Colors.black54)),
+                ),
+        ],
       ),
     );
   }
