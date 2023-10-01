@@ -54,6 +54,8 @@ abstract class GoalLogEntry extends Equatable {
         return NoteLogEntry.fromJsonMap(json, version);
       case 'status':
         return StatusLogEntry.fromJsonMap(json, version);
+      case 'deleteNote':
+        return ArchiveNoteLogEntry.fromJsonMap(json, version);
       default:
         throw Exception('Invalid data: $json has unknown type: $type');
     }
@@ -66,6 +68,9 @@ abstract class GoalLogEntry extends Equatable {
     if (entry is NoteLogEntry) {
       return NoteLogEntry.toJsonMap(entry);
     }
+    if (entry is ArchiveNoteLogEntry) {
+      return ArchiveNoteLogEntry.toJsonMap(entry);
+    }
     throw Exception('Unknown type: ${entry.runtimeType}');
   }
 }
@@ -73,13 +78,15 @@ abstract class GoalLogEntry extends Equatable {
 class NoteLogEntry extends GoalLogEntry {
   static const FIRST_VERSION = 3;
   final String text;
+  final String id;
   const NoteLogEntry({
     required super.creationTime,
     required this.text,
+    required this.id,
   });
 
   @override
-  List<Object?> get props => [creationTime, text];
+  List<Object?> get props => [id, creationTime, text];
 
   static NoteLogEntry fromJsonMap(dynamic json, int? version) {
     if (version != null && version > TYPES_VERSION) {
@@ -91,6 +98,7 @@ class NoteLogEntry extends GoalLogEntry {
           'Invalid data: $version is before first version: $FIRST_VERSION');
     }
     return NoteLogEntry(
+      id: json['id'],
       text: json['text'],
       creationTime: json['creationTime'] != null
           ? DateTime.parse(json['creationTime']).toLocal()
@@ -101,8 +109,45 @@ class NoteLogEntry extends GoalLogEntry {
   static Map<String, dynamic> toJsonMap(NoteLogEntry noteLogEntry) {
     return {
       'type': 'note',
+      'id': noteLogEntry.id,
       'text': noteLogEntry.text,
       'creationTime': noteLogEntry.creationTime.toUtc().toIso8601String(),
+    };
+  }
+}
+
+class ArchiveNoteLogEntry extends GoalLogEntry {
+  static const FIRST_VERSION = 3;
+  final String id;
+  const ArchiveNoteLogEntry({
+    required super.creationTime,
+    required this.id,
+  });
+
+  @override
+  List<Object?> get props => [id, creationTime];
+
+  static ArchiveNoteLogEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    return ArchiveNoteLogEntry(
+      id: json['id'],
+      creationTime: json['creationTime'] != null
+          ? DateTime.parse(json['creationTime']).toLocal()
+          : DateTime(2023, 1, 1),
+    );
+  }
+
+  static Map<String, dynamic> toJsonMap(ArchiveNoteLogEntry entry) {
+    return {
+      'type': 'archiveNote',
+      'creationTime': entry.creationTime.toUtc().toIso8601String(),
     };
   }
 }
