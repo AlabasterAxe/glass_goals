@@ -8,7 +8,8 @@ import 'package:goals_core/sync.dart'
     show ArchiveNoteLogEntry, GoalDelta, GoalLogEntry, NoteLogEntry;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
-import 'package:goals_web/styles.dart' show mainTextStyle;
+import 'package:goals_web/styles.dart' show mainTextStyle, uiUnit;
+import 'package:intl/intl.dart';
 
 class NoteCard extends StatefulWidget {
   final String goalId;
@@ -22,10 +23,6 @@ class NoteCard extends StatefulWidget {
 
   @override
   State<NoteCard> createState() => _NoteCardState();
-}
-
-class SaveNoteIntent extends Intent {
-  const SaveNoteIntent();
 }
 
 class _NoteCardState extends State<NoteCard> {
@@ -48,17 +45,6 @@ class _NoteCardState extends State<NoteCard> {
     super.dispose();
   }
 
-  late final macBindings = <ShortcutActivator, Function()>{
-    LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter): _saveNote,
-    LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
-        _saveNote,
-  };
-
-  late final everythingElseBindings = <ShortcutActivator, Function()>{
-    LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
-        _saveNote,
-  };
-
   _saveNote() {
     _textController.selection =
         TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
@@ -76,10 +62,50 @@ class _NoteCardState extends State<NoteCard> {
   @override
   Widget build(BuildContext context) {
     return CallbackShortcuts(
-      bindings: macBindings,
-      child: Row(
+      bindings: <ShortcutActivator, Function()>{
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter):
+            _saveNote,
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
+            _saveNote,
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(DateFormat('yyyy.MM.dd.').format(widget.entry.creationTime) +
+                  DateFormat('EE')
+                      .format(widget.entry.creationTime)
+                      .substring(0, 2)
+                      .toUpperCase()),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _editing = true;
+                          _focusNode.requestFocus();
+                        });
+                      },
+                      icon: const Icon(Icons.edit)),
+                  IconButton(
+                      onPressed: () {
+                        AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                            id: widget.goalId,
+                            logEntry: ArchiveNoteLogEntry(
+                                id: widget.entry.id,
+                                creationTime: DateTime.now())));
+                        widget.onRefresh();
+                      },
+                      icon: const Icon(Icons.delete)),
+                ],
+              ),
+            ],
+          ),
+          Padding(
+            padding: EdgeInsets.only(left: uiUnit(4)),
             child: _editing
                 ? IntrinsicHeight(
                     child: TextField(
@@ -97,30 +123,12 @@ class _NoteCardState extends State<NoteCard> {
                       focusNode: _focusNode,
                     ),
                   )
-                : MarkdownBody(data: _textController.text, selectable: true),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _editing = true;
-                      _focusNode.requestFocus();
-                    });
-                  },
-                  icon: const Icon(Icons.edit)),
-              IconButton(
-                  onPressed: () {
-                    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                        id: widget.goalId,
-                        logEntry: ArchiveNoteLogEntry(
-                            id: widget.entry.id,
-                            creationTime: DateTime.now())));
-                    widget.onRefresh();
-                  },
-                  icon: const Icon(Icons.delete)),
-            ],
+                : MarkdownBody(
+                    data: _textController.text,
+                    selectable: true,
+                    styleSheet: MarkdownStyleSheet(
+                      textScaleFactor: 1.4,
+                    )),
           ),
         ],
       ),
