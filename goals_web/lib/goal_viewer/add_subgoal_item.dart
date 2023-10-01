@@ -47,8 +47,7 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
             child: const Center(child: Icon(Icons.add, size: 18)),
           ),
           _editing
-              ? SizedBox(
-                  width: 200,
+              ? IntrinsicWidth(
                   child: TextField(
                     autocorrect: false,
                     controller: _textController,
@@ -75,7 +74,8 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
                       });
                     },
                     focusNode: _focusNode,
-                  ))
+                  ),
+                )
               : GestureDetector(
                   onTap: () => {
                     setState(() {

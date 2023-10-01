@@ -83,6 +83,7 @@ Comparator<Goal> activeGoalExpiringSoonestComparator(WorldContext context) {
 ///  - Show all active tasks
 ///  - Don't show tasks if any of their children are marked active
 ///  - Show tasks that don't currently have a setting (i.e. they were previously active and have become inactive)
+///  - don't show any tasks under a snoozed task.
 Map<String, Goal> getGoalsRequiringAttention(
     WorldContext context, Map<String, Goal> goalMap) {
   /// The logic for goals requiring attention is as follows:
@@ -96,10 +97,23 @@ Map<String, Goal> getGoalsRequiringAttention(
     return status.status == null || status.status == GoalStatus.active;
   });
 
+  final snoozedGoals = getGoalsMatchingPredicate(context, goalMap,
+      (Goal goal) => getGoalStatus(context, goal).status == GoalStatus.pending);
+
+  final transitivelySnoozedGoals = snoozedGoals.isNotEmpty
+      ? snoozedGoals.values
+          .map((goal) => getTransitiveSubGoals(goalMap, goal.id))
+          .reduce((value, element) => value..addAll(element))
+      : {};
+
   ///  - Don't show tasks if any of their children are marked active
   for (final goal in activeOrUncategorizedGoals.values) {
     if (goal.subGoals
         .any((g) => activeOrUncategorizedGoals.containsKey(g.id))) {
+      continue;
+    }
+
+    if (transitivelySnoozedGoals.containsKey(goal.id)) {
       continue;
     }
     result[goal.id] = goal;
