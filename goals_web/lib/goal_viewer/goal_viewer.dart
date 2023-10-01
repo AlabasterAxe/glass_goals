@@ -407,13 +407,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
   }
 
-  List<bool> _getOneHot() {
-    final List<bool> oneHot =
-        List<bool>.filled(_displayModeOptions.length, false);
-    oneHot[_displayModeOptions.indexOf(_selectedDisplayMode)] = true;
-    return oneHot;
-  }
-
   int _toReviewComparator(Goal goal1, Goal goal2) {
     final goal1Status = getGoalStatus(WorldContext.now(), goal1).status;
     final goal2Status = getGoalStatus(WorldContext.now(), goal2).status;
@@ -440,7 +433,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     return 0;
   }
 
-  _viewSwitcher() => ListView(
+  _viewSwitcher(bool closeDrawer) => ListView(
         key: const ValueKey('viewSwitcher'),
         // Important: Remove any padding from the ListView.
         padding: EdgeInsets.zero,
@@ -451,8 +444,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             onTap: () {
               // Update the state of the app
               onSwitchMode(GoalView.tree);
-              // Then close the drawer
-              Navigator.pop(context);
+              if (closeDrawer) {
+                Navigator.pop(context);
+              }
             },
           ),
           ListTile(
@@ -461,8 +455,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             onTap: () {
               // Update the state of the app
               onSwitchMode(GoalView.list);
-              // Then close the drawer
-              Navigator.pop(context);
+              if (closeDrawer) {
+                Navigator.pop(context);
+              }
             },
           ),
           ListTile(
@@ -471,8 +466,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             onTap: () {
               // Update the state of the app
               onSwitchMode(GoalView.to_review);
-              // Then close the drawer
-              Navigator.pop(context);
+              if (closeDrawer) {
+                Navigator.pop(context);
+              }
             },
           ),
         ],
@@ -487,7 +483,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
     final isNarrow = MediaQuery.of(context).size.width < 600;
     if (!isNarrow) {
-      children.add(_viewSwitcher());
+      children.add(_viewSwitcher(false));
     }
 
     children.add(_listView());
@@ -502,7 +498,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       ),
       drawer: isNarrow
           ? Drawer(
-              child: _viewSwitcher(),
+              child: _viewSwitcher(true),
             )
           : null,
       body: Stack(

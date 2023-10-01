@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalMaterialLocalizations;
 import 'package:goals_web/firebase_options.dart';
-import 'styles.dart' show theme;
 
 import 'package:hive_flutter/hive_flutter.dart' show Hive, HiveX;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
