@@ -1,0 +1,24 @@
+{
+  "name": "glass_goals",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "cut-types": "ts-node scripts/cut_types_version.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlabasterAxe/glass_goals.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AlabasterAxe/glass_goals/issues"
+  },
+  "homepage": "https://github.com/AlabasterAxe/glass_goals#readme",
+  "dependencies": {
+    "ts-node": "^10.9.1",
+    "yaml": "^2.3.2"
+  }
+}

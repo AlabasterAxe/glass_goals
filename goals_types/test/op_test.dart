@@ -10,7 +10,7 @@ void main() {
           id: '1',
           text: 'foo',
           parentId: '0',
-          statusLogEntry: StatusLogEntry(
+          logEntry: StatusLogEntry(
               creationTime: DateTime(2023), status: GoalStatus.active)),
     );
 
@@ -19,7 +19,7 @@ void main() {
     expect(
         json,
         equals(
-            '{"hlcTimestamp":"0","delta":{"id":"1","text":"foo","parentId":"0","statusLogEntry":{"status":"active","creationTime":"2023-01-01T05:00:00.000Z","startTime":null,"endTime":null}},"version":2}'));
+            '{"hlcTimestamp":"0","delta":{"id":"1","text":"foo","parentId":"0","logEntry":{"type":"status","status":"active","creationTime":"2023-01-01T05:00:00.000Z","startTime":null,"endTime":null}},"version":3}'));
 
     final op2 = Op.fromJson(json);
 

@@ -99,8 +99,8 @@ class SyncClient {
       goal.text = op.delta.text!;
     }
 
-    if (op.delta.statusLogEntry != null) {
-      goal.log.add(op.delta.statusLogEntry!);
+    if (op.delta.logEntry != null) {
+      goal.log.add(op.delta.logEntry!);
     }
 
     if (goal.parentId != null &&

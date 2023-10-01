@@ -55,7 +55,7 @@ class GoalCard extends StatelessWidget {
                                 .syncClient
                                 .modifyGoal(GoalDelta(
                                     id: goal.id,
-                                    statusLogEntry: StatusLogEntry(
+                                    logEntry: StatusLogEntry(
                                       status: GoalStatus.archived,
                                       creationTime: DateTime.now(),
                                     )));
@@ -65,7 +65,7 @@ class GoalCard extends StatelessWidget {
                                 .syncClient
                                 .modifyGoal(GoalDelta(
                                     id: goal.id,
-                                    statusLogEntry: StatusLogEntry(
+                                    logEntry: StatusLogEntry(
                                       status: GoalStatus.done,
                                       creationTime: DateTime.now(),
                                       startTime: DateTime.now(),
@@ -75,7 +75,7 @@ class GoalCard extends StatelessWidget {
                             AppContext.of(context).syncClient.modifyGoal(
                                 GoalDelta(
                                     id: goal.id,
-                                    statusLogEntry: StatusLogEntry(
+                                    logEntry: StatusLogEntry(
                                         status: GoalStatus.active,
                                         creationTime: DateTime.now(),
                                         startTime: DateTime.now(),

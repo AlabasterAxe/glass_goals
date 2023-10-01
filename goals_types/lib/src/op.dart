@@ -1,8 +1,8 @@
 import 'dart:convert' show jsonDecode, jsonEncode;
-import 'package:goals_types_01/goals_types.dart' as goals_types_01;
+import 'package:goals_types_02/goals_types.dart' as prev_goal_types;
 import 'package:equatable/equatable.dart' show Equatable;
 
-const TYPES_VERSION = 2;
+import 'version.dart' show TYPES_VERSION;
 
 enum GoalStatus {
   pending,
@@ -11,20 +11,146 @@ enum GoalStatus {
   archived,
 }
 
+fromPreviousGoalStatus(prev_goal_types.GoalStatus? status) {
+  switch (status) {
+    case prev_goal_types.GoalStatus.pending:
+      return GoalStatus.pending;
+    case prev_goal_types.GoalStatus.active:
+      return GoalStatus.active;
+    case prev_goal_types.GoalStatus.done:
+      return GoalStatus.done;
+    case prev_goal_types.GoalStatus.archived:
+      return GoalStatus.archived;
+    case null:
+      return null;
+  }
+}
+
 abstract class GoalLogEntry extends Equatable {
+  static const FIRST_VERSION = 3;
   final DateTime creationTime;
   const GoalLogEntry({required this.creationTime});
+  static GoalLogEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version == null || version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+
+    if (json is! Map) {
+      throw Exception('Invalid data: $json is not a map');
+    }
+
+    final type = json['type'];
+    if (type == null) {
+      throw Exception('Invalid data: $json is missing type');
+    }
+
+    switch (type) {
+      case 'note':
+        return NoteLogEntry.fromJsonMap(json, version);
+      case 'status':
+        return StatusLogEntry.fromJsonMap(json, version);
+      case 'archiveNote':
+        return ArchiveNoteLogEntry.fromJsonMap(json, version);
+      default:
+        throw Exception('Invalid data: $json has unknown type: $type');
+    }
+  }
+
+  static Map<String, dynamic> toJsonMap(GoalLogEntry entry) {
+    if (entry is StatusLogEntry) {
+      return StatusLogEntry.toJsonMap(entry);
+    }
+    if (entry is NoteLogEntry) {
+      return NoteLogEntry.toJsonMap(entry);
+    }
+    if (entry is ArchiveNoteLogEntry) {
+      return ArchiveNoteLogEntry.toJsonMap(entry);
+    }
+    throw Exception('Unknown type: ${entry.runtimeType}');
+  }
 }
 
 class NoteLogEntry extends GoalLogEntry {
+  static const FIRST_VERSION = 3;
   final String text;
+  final String id;
   const NoteLogEntry({
     required super.creationTime,
     required this.text,
+    required this.id,
   });
 
   @override
-  List<Object?> get props => [creationTime, text];
+  List<Object?> get props => [id, creationTime, text];
+
+  static NoteLogEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    return NoteLogEntry(
+      id: json['id'],
+      text: json['text'],
+      creationTime: json['creationTime'] != null
+          ? DateTime.parse(json['creationTime']).toLocal()
+          : DateTime(2023, 1, 1),
+    );
+  }
+
+  static Map<String, dynamic> toJsonMap(NoteLogEntry noteLogEntry) {
+    return {
+      'type': 'note',
+      'id': noteLogEntry.id,
+      'text': noteLogEntry.text,
+      'creationTime': noteLogEntry.creationTime.toUtc().toIso8601String(),
+    };
+  }
+}
+
+class ArchiveNoteLogEntry extends GoalLogEntry {
+  static const FIRST_VERSION = 3;
+  final String id;
+  const ArchiveNoteLogEntry({
+    required super.creationTime,
+    required this.id,
+  });
+
+  @override
+  List<Object?> get props => [id, creationTime];
+
+  static ArchiveNoteLogEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    return ArchiveNoteLogEntry(
+      id: json['id'],
+      creationTime: json['creationTime'] != null
+          ? DateTime.parse(json['creationTime']).toLocal()
+          : DateTime(2023, 1, 1),
+    );
+  }
+
+  static Map<String, dynamic> toJsonMap(ArchiveNoteLogEntry entry) {
+    return {
+      'type': 'archiveNote',
+      'id': entry.id,
+      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+    };
+  }
 }
 
 class StatusLogEntry extends GoalLogEntry {
@@ -73,22 +199,23 @@ class StatusLogEntry extends GoalLogEntry {
     return fromJsonMap(jsonDecode(json), version);
   }
 
-  static StatusLogEntry? fromActiveUntil(String? activeUntil) {
-    if (activeUntil == null) {
+  static StatusLogEntry? fromPrevious(
+      prev_goal_types.StatusLogEntry? legacyEntry) {
+    if (legacyEntry == null) {
       return null;
     }
-    final activeUntilDateTime = DateTime.parse(activeUntil);
-    final startTime = activeUntilDateTime.subtract(Duration(days: 1));
+
     return StatusLogEntry(
-      status: GoalStatus.active,
-      creationTime: startTime,
-      startTime: startTime,
-      endTime: activeUntilDateTime,
+      status: fromPreviousGoalStatus(legacyEntry.status),
+      creationTime: legacyEntry.creationTime,
+      startTime: legacyEntry.startTime,
+      endTime: legacyEntry.endTime,
     );
   }
 
   static Map<String, dynamic> toJsonMap(StatusLogEntry statusLogEntry) {
     return {
+      'type': 'status',
       'status': statusLogEntry.status?.name,
       'creationTime': statusLogEntry.creationTime.toUtc().toIso8601String(),
       'startTime': statusLogEntry.startTime?.toUtc().toIso8601String(),
@@ -104,14 +231,13 @@ class GoalDelta extends Equatable {
   static const ID_FIELD_NAME = 'id';
   static const TEXT_FIELD_NAME = 'text';
   static const PARENT_ID_FIELD_NAME = 'parentId';
-  static const STATUS_LOG_ENTRY_FIELD_NAME = 'statusLogEntry';
+  static const STATUS_LOG_ENTRY_FIELD_NAME = 'logEntry';
 
   final String id;
   final String? text;
   final String? parentId;
-  final StatusLogEntry? statusLogEntry;
-  const GoalDelta(
-      {required this.id, this.text, this.parentId, this.statusLogEntry});
+  final GoalLogEntry? logEntry;
+  const GoalDelta({required this.id, this.text, this.parentId, this.logEntry});
 
   static GoalDelta fromJson(String jsonString, int? version) {
     return fromJsonMap(jsonDecode(jsonString), version);
@@ -123,29 +249,28 @@ class GoalDelta extends Equatable {
     }
     if (version == null || version < TYPES_VERSION) {
       if (json is Map) {
-        return fromV1(goals_types_01.GoalDelta.fromJson(jsonEncode(json)));
+        return fromPrevious(
+            prev_goal_types.GoalDelta.fromJson(jsonEncode(json), version));
       } else {
-        return fromV1(goals_types_01.GoalDelta.fromJson(json));
+        return fromPrevious(prev_goal_types.GoalDelta.fromJson(json, version));
       }
     }
     return GoalDelta(
       id: json[ID_FIELD_NAME],
       text: json[TEXT_FIELD_NAME],
       parentId: json[PARENT_ID_FIELD_NAME],
-      statusLogEntry: json[STATUS_LOG_ENTRY_FIELD_NAME] != null
-          ? StatusLogEntry.fromJsonMap(
-              json[STATUS_LOG_ENTRY_FIELD_NAME], version)
+      logEntry: json[STATUS_LOG_ENTRY_FIELD_NAME] != null
+          ? GoalLogEntry.fromJsonMap(json[STATUS_LOG_ENTRY_FIELD_NAME], version)
           : null,
     );
   }
 
-  static GoalDelta fromV1(goals_types_01.GoalDelta legacyGoalDelta) {
+  static GoalDelta fromPrevious(prev_goal_types.GoalDelta legacyGoalDelta) {
     return GoalDelta(
         id: legacyGoalDelta.id,
         text: legacyGoalDelta.text,
         parentId: legacyGoalDelta.parentId,
-        statusLogEntry:
-            StatusLogEntry.fromActiveUntil(legacyGoalDelta.activeUntil));
+        logEntry: StatusLogEntry.fromPrevious(legacyGoalDelta.statusLogEntry));
   }
 
   static Map<String, dynamic> toJsonMap(GoalDelta delta) {
@@ -158,9 +283,9 @@ class GoalDelta extends Equatable {
     if (delta.parentId != null) {
       json[PARENT_ID_FIELD_NAME] = delta.parentId!;
     }
-    if (delta.statusLogEntry != null) {
+    if (delta.logEntry != null) {
       json[STATUS_LOG_ENTRY_FIELD_NAME] =
-          StatusLogEntry.toJsonMap(delta.statusLogEntry!);
+          GoalLogEntry.toJsonMap(delta.logEntry!);
     }
     return json;
   }
@@ -170,13 +295,13 @@ class GoalDelta extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, text, parentId, statusLogEntry];
+  List<Object?> get props => [id, text, parentId, logEntry];
 }
 
 class Op extends Equatable {
   final GoalDelta delta;
   final String hlcTimestamp;
-  final int version = 2;
+  final int version = TYPES_VERSION;
   const Op({
     required this.hlcTimestamp,
     required this.delta,

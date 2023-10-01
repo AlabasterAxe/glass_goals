@@ -272,7 +272,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
       goalDeltas.add(GoalDelta(
           id: goalId,
-          statusLogEntry: StatusLogEntry(
+          logEntry: StatusLogEntry(
             creationTime: DateTime.now(),
             status: GoalStatus.archived,
           )));
@@ -296,7 +296,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     for (final String goalId in ref.read(selectedGoalsProvider)) {
       goalDeltas.add(GoalDelta(
         id: goalId,
-        statusLogEntry: StatusLogEntry(
+        logEntry: StatusLogEntry(
             creationTime: DateTime.now(),
             status: GoalStatus.archived,
             endTime: DateTime.now()),
@@ -312,7 +312,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     for (final String goalId in ref.read(selectedGoalsProvider)) {
       goalDeltas.add(GoalDelta(
         id: goalId,
-        statusLogEntry: StatusLogEntry(
+        logEntry: StatusLogEntry(
             creationTime: DateTime.now(),
             status: GoalStatus.archived,
             startTime: DateTime.now()),
@@ -328,7 +328,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     for (final String goalId in ref.read(selectedGoalsProvider)) {
       goalDeltas.add(GoalDelta(
         id: goalId,
-        statusLogEntry: StatusLogEntry(
+        logEntry: StatusLogEntry(
             creationTime: DateTime.now(),
             status: GoalStatus.done,
             startTime: DateTime.now()),
@@ -344,7 +344,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     for (final String goalId in ref.read(selectedGoalsProvider)) {
       goalDeltas.add(GoalDelta(
         id: goalId,
-        statusLogEntry: StatusLogEntry(
+        logEntry: StatusLogEntry(
           creationTime: DateTime.now(),
           status: GoalStatus.pending,
           startTime: DateTime.now(),
@@ -368,7 +368,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     for (final String goalId in ref.read(selectedGoalsProvider)) {
       goalDeltas.add(GoalDelta(
         id: goalId,
-        statusLogEntry: StatusLogEntry(
+        logEntry: StatusLogEntry(
           creationTime: DateTime.now(),
           status: GoalStatus.active,
           startTime: DateTime.now(),

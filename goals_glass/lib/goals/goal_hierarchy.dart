@@ -96,7 +96,7 @@ class _GoalHierarchyState extends State<GoalHierarchy> {
             ...activeGoal.subGoals
                 .where((subGoal) => ![GoalStatus.archived, GoalStatus.done]
                     .contains(
-                        getGoalStatus(WorldContext.now(), subGoal)?.status))
+                        getGoalStatus(WorldContext.now(), subGoal).status))
                 .map((subGoal) => GoalCard(
                     key: ValueKey(subGoal.id),
                     goal: subGoal,
