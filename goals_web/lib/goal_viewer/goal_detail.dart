@@ -54,11 +54,6 @@ class _NoteCardState extends State<NoteCard> {
         _saveNote,
   };
 
-  late final everythingElseBindings = <ShortcutActivator, Function()>{
-    LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
-        _saveNote,
-  };
-
   _saveNote() {
     _textController.selection =
         TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
