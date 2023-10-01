@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show RawKeyDownEvent;
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/styles.dart';
 import 'package:uuid/uuid.dart';
@@ -50,9 +50,15 @@ class _AddNoteCardState extends State<AddNoteCard> {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: Card(
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, Function()>{
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter):
+            _createNote,
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
+            _createNote,
+      },
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
         child: Row(
           children: [
             Expanded(
