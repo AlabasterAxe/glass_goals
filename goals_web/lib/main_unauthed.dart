@@ -15,6 +15,7 @@ import 'package:goals_core/sync.dart'
     show InMemoryPersistenceService, SyncClient;
 
 import 'goal_viewer/goal_viewer.dart';
+import 'styles.dart' show theme;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
