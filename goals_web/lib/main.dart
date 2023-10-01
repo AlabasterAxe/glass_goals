@@ -34,7 +34,7 @@ void main() async {
             '114797465949-keupvd032s4to34t1bkftge1baoguld5.apps.googleusercontent.com'),
   ]);
 
-  runApp(DefaultTextStyle(child: const ProviderScope(child: WebGoals())));
+  runApp(const ProviderScope(child: WebGoals()));
 }
 
 class WebGoals extends StatefulWidget {
