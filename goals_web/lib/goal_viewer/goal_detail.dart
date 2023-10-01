@@ -35,52 +35,62 @@ class _NoteCardState extends State<NoteCard> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Row(
+      child: Stack(
         children: [
-          _editing
-              ? SizedBox(
-                  width: 200,
-                  child: TextField(
-                    autocorrect: false,
-                    controller: _textController,
-                    decoration: null,
-                    style: mainTextStyle,
-                    onEditingComplete: () {
-                      final newText = _textController!.text;
-                      _textController!.text = widget.entry.text;
-                      _textController!.selection = TextSelection(
-                          baseOffset: 0,
-                          extentOffset: _textController!.text.length);
-                      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                          id: widget.goalId,
-                          logEntry: NoteLogEntry(
-                              id: widget.entry.id,
-                              creationTime: DateTime.now(),
-                              text: newText)));
-                      setState(() {
-                        _editing = false;
-                      });
-                    },
-                    onTapOutside: (_) {
-                      _textController!.text = widget.entry.text;
-                      setState(() {
-                        _editing = false;
-                      });
-                    },
-                    focusNode: _focusNode,
-                  ))
-              : GestureDetector(
-                  onTap: () => {
-                    setState(() {
-                      _editing = true;
-                      _focusNode.requestFocus();
-                      _textController!.selection = TextSelection(
-                          baseOffset: 0,
-                          extentOffset: _textController!.text.length);
-                    })
-                  },
-                  child: MarkdownBody(data: _textController!.text),
-                ),
+          Align(
+              alignment: Alignment.topRight,
+              child: Row(
+                children: [
+                  ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _editing = true;
+                          _focusNode.requestFocus();
+                          _textController!.selection = TextSelection(
+                              baseOffset: 0,
+                              extentOffset: _textController!.text.length);
+                        });
+                      },
+                      icon: const Icon(Icons.edit),
+                      label: const Text("Edit"))
+                ],
+                mainAxisAlignment: MainAxisAlignment.end,
+              )),
+          Positioned.fill(
+            child: _editing
+                ? SizedBox(
+                    width: 200,
+                    child: TextField(
+                      autocorrect: false,
+                      controller: _textController,
+                      decoration: null,
+                      style: mainTextStyle,
+                      onEditingComplete: () {
+                        final newText = _textController!.text;
+                        _textController!.text = widget.entry.text;
+                        _textController!.selection = TextSelection(
+                            baseOffset: 0,
+                            extentOffset: _textController!.text.length);
+                        AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                            id: widget.goalId,
+                            logEntry: NoteLogEntry(
+                                id: widget.entry.id,
+                                creationTime: DateTime.now(),
+                                text: newText)));
+                        setState(() {
+                          _editing = false;
+                        });
+                      },
+                      onTapOutside: (_) {
+                        _textController!.text = widget.entry.text;
+                        setState(() {
+                          _editing = false;
+                        });
+                      },
+                      focusNode: _focusNode,
+                    ))
+                : MarkdownBody(data: _textController!.text, selectable: true),
+          ),
         ],
       ),
     );
@@ -116,7 +126,7 @@ class GoalDetail extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       AddNoteCard(goalId: goal.id),
       for (final entry in _computeNoteLog(goal.log))
-        Card(child: MarkdownBody(data: entry.text))
+        NoteCard(goalId: goal.id, entry: entry)
     ]);
   }
 }
