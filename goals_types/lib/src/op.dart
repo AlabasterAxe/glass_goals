@@ -54,7 +54,7 @@ abstract class GoalLogEntry extends Equatable {
         return NoteLogEntry.fromJsonMap(json, version);
       case 'status':
         return StatusLogEntry.fromJsonMap(json, version);
-      case 'deleteNote':
+      case 'archiveNote':
         return ArchiveNoteLogEntry.fromJsonMap(json, version);
       default:
         throw Exception('Invalid data: $json has unknown type: $type');
@@ -147,6 +147,7 @@ class ArchiveNoteLogEntry extends GoalLogEntry {
   static Map<String, dynamic> toJsonMap(ArchiveNoteLogEntry entry) {
     return {
       'type': 'archiveNote',
+      'id': entry.id,
       'creationTime': entry.creationTime.toUtc().toIso8601String(),
     };
   }

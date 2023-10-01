@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show RawKeyDownEvent;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/styles.dart';
 import 'package:uuid/uuid.dart';
@@ -16,7 +17,7 @@ class AddNoteCard extends StatefulWidget {
 class _AddNoteCardState extends State<AddNoteCard> {
   TextEditingController? _textController;
   bool _editing = false;
-  final _focusNode = FocusNode();
+  late final _focusNode = FocusNode();
 
   final _defaultText = "[New Note]";
 
