@@ -160,9 +160,8 @@ Map<String, Goal> getGoalsRequiringAttention(
       continue;
     }
 
-    // If a goal is a child of a snoozed goal, don't show it unless it's active.
-    if (transitivelySnoozedGoals.containsKey(goal.id) &&
-        getGoalStatus(context, goal).status != GoalStatus.active) {
+    // If a goal is a child of a snoozed goal.
+    if (transitivelySnoozedGoals.containsKey(goal.id)) {
       continue;
     }
     result[goal.id] = goal;
@@ -176,11 +175,16 @@ Map<String, Goal> getGoalsRequiringAttention(
   }
 
   // fill all parents up to that ancestor
+  final goalsToAdd = <String>{};
   for (final goal in result.values) {
     getGoalsToAncestor(goalMap, goal.id, ancestorId: latestCommonAncestor)
         .forEach((g) {
-      result[g.id] = g;
+      goalsToAdd.add(g.id);
     });
+  }
+
+  for (final goalId in goalsToAdd) {
+    result[goalId] = goalMap[goalId]!;
   }
 
   return result;

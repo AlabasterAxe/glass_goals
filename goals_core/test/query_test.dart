@@ -165,4 +165,101 @@ void main() {
             .status,
         GoalStatus.active);
   });
+
+  test('getGoalsRequiringAttention, clustering', () async {
+    final client = SyncClient();
+
+    Hive.init(".");
+    await client.init();
+
+    final Map<String, Goal> goals = testGoals();
+    var hlc = HLC.now("test");
+
+    tick() {
+      hlc = hlc.increment();
+      return hlc.pack();
+    }
+
+    client.applyOps(goals, [
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(id: '0'),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(id: '1', parentId: '0'),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(id: '2', parentId: '0'),
+      ),
+    ]);
+
+    final requiringAttention = getGoalsRequiringAttention(
+        WorldContext(time: DateTime(2020, 1, 1, 14, 30)), goals);
+
+    expect(requiringAttention, contains('0'));
+    expect(requiringAttention, contains('1'));
+    expect(requiringAttention, contains('2'));
+  });
+
+  test('getGoalsRequiringAttention, subclustering', () async {
+    final client = SyncClient();
+
+    Hive.init(".");
+    await client.init();
+
+    final Map<String, Goal> goals = {};
+    var hlc = HLC.now("test");
+
+    tick() {
+      hlc = hlc.increment();
+      return hlc.pack();
+    }
+
+    client.applyOps(goals, [
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'root',
+            logEntry: StatusLogEntry(
+                status: GoalStatus.pending,
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'child',
+            parentId: 'root',
+            logEntry: StatusLogEntry(
+                status: GoalStatus.active,
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-1',
+            parentId: 'child',
+            logEntry: StatusLogEntry(
+                status: GoalStatus.active,
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-2',
+            parentId: 'child',
+            logEntry: StatusLogEntry(
+                status: GoalStatus.active,
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+    ]);
+
+    final requiringAttention = getGoalsRequiringAttention(
+        WorldContext(time: DateTime(2020, 1, 1, 14, 30)), goals);
+
+    expect(requiringAttention, contains('child'));
+    expect(requiringAttention, contains('sub-child-1'));
+    expect(requiringAttention, contains('sub-child-2'));
+  });
 }
