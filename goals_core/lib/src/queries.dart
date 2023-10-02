@@ -176,11 +176,16 @@ Map<String, Goal> getGoalsRequiringAttention(
   }
 
   // fill all parents up to that ancestor
+  final goalsToAdd = <String>{};
   for (final goal in result.values) {
     getGoalsToAncestor(goalMap, goal.id, ancestorId: latestCommonAncestor)
         .forEach((g) {
-      result[g.id] = g;
+      goalsToAdd.add(g.id);
     });
+  }
+
+  for (final goalId in goalsToAdd) {
+    result[goalId] = goalMap[goalId]!;
   }
 
   return result;
