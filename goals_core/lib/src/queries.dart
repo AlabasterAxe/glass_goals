@@ -160,9 +160,8 @@ Map<String, Goal> getGoalsRequiringAttention(
       continue;
     }
 
-    // If a goal is a child of a snoozed goal, don't show it unless it's active.
-    if (transitivelySnoozedGoals.containsKey(goal.id) &&
-        getGoalStatus(context, goal).status != GoalStatus.active) {
+    // If a goal is a child of a snoozed goal.
+    if (transitivelySnoozedGoals.containsKey(goal.id)) {
       continue;
     }
     result[goal.id] = goal;

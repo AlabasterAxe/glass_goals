@@ -209,7 +209,7 @@ void main() {
     Hive.init(".");
     await client.init();
 
-    final Map<String, Goal> goals = testGoals();
+    final Map<String, Goal> goals = {};
     var hlc = HLC.now("test");
 
     tick() {
@@ -220,23 +220,46 @@ void main() {
     client.applyOps(goals, [
       Op(
         hlcTimestamp: tick(),
-        delta: GoalDelta(id: 'root'),
+        delta: GoalDelta(
+            id: 'root',
+            logEntry: StatusLogEntry(
+                status: GoalStatus.pending,
+                creationTime: DateTime(2020, 1, 1, 12))),
       ),
       Op(
         hlcTimestamp: tick(),
-        delta: GoalDelta(id: 'child', parentId: 'root'),
+        delta: GoalDelta(
+            id: 'child',
+            parentId: 'root',
+            logEntry: StatusLogEntry(
+                status: GoalStatus.active,
+                creationTime: DateTime(2020, 1, 1, 12))),
       ),
       Op(
         hlcTimestamp: tick(),
-        delta: GoalDelta(id: '2', parentId: 'root'),
+        delta: GoalDelta(
+            id: 'sub-child-1',
+            parentId: 'child',
+            logEntry: StatusLogEntry(
+                status: GoalStatus.active,
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-2',
+            parentId: 'child',
+            logEntry: StatusLogEntry(
+                status: GoalStatus.active,
+                creationTime: DateTime(2020, 1, 1, 12))),
       ),
     ]);
 
     final requiringAttention = getGoalsRequiringAttention(
         WorldContext(time: DateTime(2020, 1, 1, 14, 30)), goals);
 
-    expect(requiringAttention, contains('0'));
-    expect(requiringAttention, contains('1'));
-    expect(requiringAttention, contains('2'));
+    expect(requiringAttention, contains('child'));
+    expect(requiringAttention, contains('sub-child-1'));
+    expect(requiringAttention, contains('sub-child-2'));
   });
 }

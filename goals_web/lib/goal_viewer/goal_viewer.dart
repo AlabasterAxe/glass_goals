@@ -568,7 +568,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       .toList();
 
                   return GoalListWidget(
-                    goalMap: widget.goalMap,
+                    goalMap: goalsRequiringAttention,
                     goalIds: rootGoalIds,
                     onSelected: onSelected,
                     onExpanded: onExpanded,
