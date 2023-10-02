@@ -1,4 +1,5 @@
 import 'package:goals_types/goals_types.dart';
+import 'package:collection/collection.dart' show IterableZip;
 
 import '../model.dart' show Goal, WorldContext;
 
@@ -79,6 +80,52 @@ Comparator<Goal> activeGoalExpiringSoonestComparator(WorldContext context) {
   };
 }
 
+Iterable<Goal> getGoalsToAncestor(Map<String, Goal> goalMap, String goalId,
+    {String? ancestorId}) {
+  final result = <Goal>[];
+  var currentGoal = goalMap[goalId];
+  while (currentGoal != null && currentGoal.id != ancestorId) {
+    result.add(currentGoal);
+    currentGoal =
+        currentGoal.parentId != null ? goalMap[currentGoal.parentId!] : null;
+  }
+  return result.reversed;
+}
+
+List<Goal> findCommonPrefix(
+    Iterable<Goal> ancestryA, Iterable<Goal> ancestryB) {
+  final result = <Goal>[];
+  for (final [ancestorA, ancestorB] in IterableZip([ancestryA, ancestryB])) {
+    if (ancestorA.id == ancestorB.id) {
+      result.add(ancestorA);
+    } else {
+      break;
+    }
+  }
+  return result;
+}
+
+String? findLatestCommonAncestor(
+    Map<String, Goal> goalMap, Iterable<Goal> goals) {
+  if (goals.isEmpty) {
+    return null;
+  }
+
+  Iterable<Goal>? commonAncestryOverlap;
+
+  for (final goal in goals) {
+    final goalToRoot = getGoalsToAncestor(goalMap, goal.id);
+
+    if (commonAncestryOverlap == null) {
+      commonAncestryOverlap = goalToRoot;
+      continue;
+    }
+
+    commonAncestryOverlap = findCommonPrefix(commonAncestryOverlap, goalToRoot);
+  }
+  return commonAncestryOverlap?.lastOrNull?.id;
+}
+
 /// The logic for goals requiring attention is as follows:
 ///  - Show all active tasks
 ///  - Don't show tasks if any of their children are marked active
@@ -113,10 +160,27 @@ Map<String, Goal> getGoalsRequiringAttention(
       continue;
     }
 
-    if (transitivelySnoozedGoals.containsKey(goal.id)) {
+    // If a goal is a child of a snoozed goal, don't show it unless it's active.
+    if (transitivelySnoozedGoals.containsKey(goal.id) &&
+        getGoalStatus(context, goal).status != GoalStatus.active) {
       continue;
     }
     result[goal.id] = goal;
+  }
+
+  // find latest common ancestor of all goals
+  final latestCommonAncestor = findLatestCommonAncestor(goalMap, result.values);
+
+  if (latestCommonAncestor != null) {
+    result[latestCommonAncestor] = goalMap[latestCommonAncestor]!;
+  }
+
+  // fill all parents up to that ancestor
+  for (final goal in result.values) {
+    getGoalsToAncestor(goalMap, goal.id, ancestorId: latestCommonAncestor)
+        .forEach((g) {
+      result[g.id] = g;
+    });
   }
 
   return result;

@@ -58,7 +58,7 @@ void main() {
           delta: GoalDelta(
               id: '0',
               logEntry: StatusLogEntry(
-                  creationTime: DateTime(2020, 1, 1, 12),
+                  creationTime: DateTime(2020, 1, 1, 13),
                   startTime: DateTime(2020, 1, 1, 13)))),
     ]);
 

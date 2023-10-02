@@ -561,19 +561,18 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                 case GoalView.to_review:
                   final goalsRequiringAttention = getGoalsRequiringAttention(
                       WorldContext.now(), widget.goalMap);
-                  final goalIds =
-                      (goalsRequiringAttention.values.toList(growable: false)
-                            ..sort(_toReviewComparator))
-                          .map((e) => e.id)
-                          .toList();
+                  final rootGoalIds = goalsRequiringAttention.values
+                      .where((goal) =>
+                          !goalsRequiringAttention.containsKey(goal.parentId))
+                      .map((e) => e.id)
+                      .toList();
 
                   return GoalListWidget(
                     goalMap: widget.goalMap,
-                    goalIds: goalIds,
+                    goalIds: rootGoalIds,
                     onSelected: onSelected,
                     onExpanded: onExpanded,
                     onFocused: onFocused,
-                    depthLimit: 1,
                   );
                 default:
                   final pendingGoalMap = getGoalsMatchingPredicate(
