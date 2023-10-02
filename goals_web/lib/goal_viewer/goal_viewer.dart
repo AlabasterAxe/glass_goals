@@ -33,6 +33,12 @@ import 'package:multi_split_view/multi_split_view.dart';
 import '../styles.dart' show multiSplitViewThemeData;
 import 'goal_list.dart' show GoalListWidget;
 
+class ViewerArgs {
+  final String? focusedGoalId;
+
+  ViewerArgs(this.focusedGoalId);
+}
+
 class DatePickerDialog extends StatefulWidget {
   final Widget title;
   const DatePickerDialog({
@@ -190,22 +196,17 @@ class HoverToolbarWidget extends StatelessWidget {
   }
 }
 
-class GoalViewer extends StatefulHookConsumerWidget {
+class GoalViewerPage extends StatefulHookConsumerWidget {
   final Map<String, Goal> goalMap;
-  const GoalViewer({super.key, required this.goalMap});
+  const GoalViewerPage({super.key, required this.goalMap});
 
   @override
-  ConsumerState<GoalViewer> createState() => _GoalViewerState();
+  ConsumerState<GoalViewerPage> createState() => _GoalViewerState();
 }
 
 enum GoalView { tree, list, to_review }
 
-class _GoalViewerState extends ConsumerState<GoalViewer> {
-  final List<GoalView> _displayModeOptions = <GoalView>[
-    GoalView.tree,
-    GoalView.list,
-    GoalView.to_review
-  ];
+class _GoalViewerState extends ConsumerState<GoalViewerPage> with RouteAware {
   GoalView _selectedDisplayMode = GoalView.tree;
 
   Future<void>? openBoxFuture;
@@ -227,6 +228,19 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       key: const ValueKey('detail'),
     )
   ]);
+
+  void _handleFocusedGoalUpdate(
+      String? prevFocusedGoalId, String? newFocusedGoalId) {
+    if (prevFocusedGoalId == newFocusedGoalId || newFocusedGoalId == null) {
+      return;
+    }
+
+    Navigator.pushNamed(
+      context,
+      '/home',
+      arguments: ViewerArgs(newFocusedGoalId),
+    );
+  }
 
   onSelected(String goalId) {
     setState(() {
@@ -476,6 +490,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String?>(focusedGoalProvider, _handleFocusedGoalUpdate,
+        onError: (err, stackTrace) {
+      print('Error: $err');
+      print(stackTrace);
+    });
+
     final selectedGoals = ref.watch(selectedGoalsProvider);
     final focusedGoal = ref.watch(focusedGoalProvider);
 
@@ -486,9 +506,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       children.add(_viewSwitcher(false));
     }
 
-    children.add(_listView());
+    if (focusedGoal == null || !isNarrow) {
+      children.add(_listView());
+    }
 
-    if (!isNarrow && focusedGoal != null) {
+    if (focusedGoal != null) {
       children.add(_detailView());
     }
 
@@ -602,11 +624,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   Widget _detailView() {
     final focusedGoalId = ref.watch(focusedGoalProvider);
-    final focusedGoal = widget.goalMap[focusedGoalId];
-    if (focusedGoal == null) {
+    if (focusedGoalId == null) {
       return Container();
     }
 
-    return GoalDetail(key: const ValueKey('detail'), goal: focusedGoal);
+    return GoalDetail(key: const ValueKey('detail'), goalId: focusedGoalId);
   }
 }

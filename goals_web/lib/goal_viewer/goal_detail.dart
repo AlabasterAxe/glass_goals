@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -136,9 +135,10 @@ class _NoteCardState extends State<NoteCard> {
   }
 }
 
+@RoutePage(name: 'goalDetail')
 class GoalDetail extends StatefulWidget {
-  final Goal goal;
-  const GoalDetail({super.key, required this.goal});
+  final String goalId;
+  const GoalDetail({super.key, required this.goalId});
 
   @override
   State<GoalDetail> createState() => _GoalDetailState();
@@ -167,14 +167,26 @@ class _GoalDetailState extends State<GoalDetail> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      AddNoteCard(goalId: widget.goal.id),
-      for (final entry in _computeNoteLog(widget.goal.log))
-        NoteCard(
-            key: ValueKey(entry.id),
-            goalId: widget.goal.id,
-            entry: entry,
-            onRefresh: () => setState(() {})),
-    ]);
+    return StreamBuilder<Map<String, Goal>>(
+        stream: AppContext.of(context).syncClient.stateSubject,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(
+                child: SizedBox(
+                    width: 20, height: 20, child: CircularProgressIndicator()));
+          }
+          final goal = snapshot.requireData[widget.goalId]!;
+          return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AddNoteCard(goalId: goal.id),
+                for (final entry in _computeNoteLog(goal.log))
+                  NoteCard(
+                      key: ValueKey(entry.id),
+                      goalId: goal.id,
+                      entry: entry,
+                      onRefresh: () => setState(() {})),
+              ]);
+        });
   }
 }

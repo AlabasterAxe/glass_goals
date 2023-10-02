@@ -1,5 +1,5 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart'
     show CircularProgressIndicator, MaterialApp, Scaffold;
@@ -23,6 +23,7 @@ import 'package:flutter_localizations/flutter_localizations.dart'
 import 'package:goals_core/model.dart';
 import 'package:goals_core/sync.dart';
 
+import 'app.gr.dart';
 import 'app_context.dart';
 import 'goal_viewer/goal_viewer.dart';
 import 'styles.dart';
@@ -40,6 +41,16 @@ class WebGoals extends StatefulWidget {
   State<WebGoals> createState() => _WebGoalsState();
 }
 
+@AutoRouterConfig()
+class AppRouter extends $AppRouter {
+  @override
+  List<AutoRoute> get routes => [
+        AutoRoute(page: Home.page, initial: true),
+        AutoRoute(page: SignIn.page),
+        AutoRoute(page: GoalDetail.page),
+      ];
+}
+
 class _WebGoalsState extends State<WebGoals>
     with SingleTickerProviderStateMixin {
   late SyncClient syncClient =
@@ -55,39 +66,30 @@ class _WebGoalsState extends State<WebGoals>
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        localizationsDelegates: GlobalMaterialLocalizations.delegates,
-        supportedLocales: const [
-          Locale('en', 'US'),
-          Locale('en', 'GB'),
-        ],
-        initialRoute: '/home',
-        theme: theme,
-        routes: {
-          '/sign-in': (context) => SignInScreen(
-                actions: [
-                  AuthStateChangeAction<SignedIn>((context, state) {
-                    Navigator.pushReplacementNamed(context, '/home');
-                  })
+    return FutureBuilder<void>(
+        future: appInit(context),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(
+                child: SizedBox(
+                    width: 20, height: 20, child: CircularProgressIndicator()));
+          }
+          return AppContext(
+              syncClient: syncClient,
+              child: MaterialApp.router(
+                localizationsDelegates: GlobalMaterialLocalizations.delegates,
+                supportedLocales: const [
+                  Locale('en', 'US'),
+                  Locale('en', 'GB'),
                 ],
-              ),
-          '/home': (context) => FutureBuilder<void>(
-              future: appInit(context),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Center(
-                      child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator()));
-                }
-                return AppContext(
-                    syncClient: syncClient, child: const GoalsHome());
-              }),
+                routerConfig: AppRouter().config(),
+                theme: theme,
+              ));
         });
   }
 }
 
+@RoutePage(name: 'home')
 class GoalsHome extends StatelessWidget {
   const GoalsHome({
     Key? key,
@@ -106,7 +108,7 @@ class GoalsHome extends StatelessWidget {
                       height: 20,
                       child: CircularProgressIndicator()));
             }
-            return GoalViewer(goalMap: snapshot.requireData);
+            return GoalViewerPage(goalMap: snapshot.requireData);
           }),
     );
   }
