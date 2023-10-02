@@ -136,15 +136,15 @@ class _NoteCardState extends State<NoteCard> {
 }
 
 @RoutePage(name: 'goalDetail')
-class GoalDetail extends StatefulWidget {
+class GoalDetailView extends StatefulWidget {
   final String goalId;
-  const GoalDetail({super.key, required this.goalId});
+  const GoalDetailView({super.key, @PathParam('goalId') required this.goalId});
 
   @override
-  State<GoalDetail> createState() => _GoalDetailState();
+  State<GoalDetailView> createState() => _GoalDetailViewState();
 }
 
-class _GoalDetailState extends State<GoalDetail> {
+class _GoalDetailViewState extends State<GoalDetailView> {
   List<NoteLogEntry> _computeNoteLog(List<GoalLogEntry> log) {
     Map<String, NoteLogEntry> entries = {};
     log.sort((a, b) => a.creationTime.compareTo(b.creationTime));

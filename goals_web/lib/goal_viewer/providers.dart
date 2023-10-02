@@ -1,5 +1,6 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show StateNotifier, StateNotifierProvider;
+import 'package:rxdart/subjects.dart' show BehaviorSubject, Subject;
 
 final selectedGoalsProvider =
     StateNotifierProvider<_IdSet, Set<String>>((ref) => _IdSet());
@@ -7,7 +8,7 @@ final selectedGoalsProvider =
 final expandedGoalsProvider =
     StateNotifierProvider<_IdSet, Set<String>>((ref) => _IdSet());
 
-final focusedGoalProvider = StateNotifierProvider<_Id, String?>((ref) => _Id());
+final Subject<String?> focusedGoalSubject = BehaviorSubject.seeded(null);
 
 class _IdSet extends StateNotifier<Set<String>> {
   _IdSet() : super({});
@@ -24,12 +25,5 @@ class _IdSet extends StateNotifier<Set<String>> {
 
   void clear() {
     state.clear();
-  }
-}
-
-class _Id extends StateNotifier<String?> {
-  _Id() : super(null);
-  void set(String? id) {
-    state = id;
   }
 }

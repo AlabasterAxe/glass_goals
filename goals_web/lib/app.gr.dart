@@ -20,10 +20,12 @@ abstract class $AppRouter extends _i4.RootStackRouter {
   @override
   final Map<String, _i4.PageFactory> pagesMap = {
     GoalDetail.name: (routeData) {
-      final args = routeData.argsAs<GoalDetailArgs>();
+      final pathParams = routeData.inheritedPathParams;
+      final args = routeData.argsAs<GoalDetailArgs>(
+          orElse: () => GoalDetailArgs(goalId: pathParams.getString('goalId')));
       return _i4.AutoRoutePage<dynamic>(
         routeData: routeData,
-        child: _i1.GoalDetail(
+        child: _i1.GoalDetailView(
           key: args.key,
           goalId: args.goalId,
         ),
@@ -45,7 +47,7 @@ abstract class $AppRouter extends _i4.RootStackRouter {
 }
 
 /// generated route for
-/// [_i1.GoalDetail]
+/// [_i1.GoalDetailView]
 class GoalDetail extends _i4.PageRouteInfo<GoalDetailArgs> {
   GoalDetail({
     _i5.Key? key,
@@ -57,6 +59,7 @@ class GoalDetail extends _i4.PageRouteInfo<GoalDetailArgs> {
             key: key,
             goalId: goalId,
           ),
+          rawPathParams: {'goalId': goalId},
           initialChildren: children,
         );
 

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart'
     show
         AppBar,
@@ -24,12 +27,12 @@ import 'package:goals_core/model.dart'
 import 'package:goals_core/sync.dart'
     show GoalDelta, GoalStatus, StatusLogEntry;
 import 'package:goals_web/app_context.dart';
-import 'package:goals_web/goal_viewer/goal_detail.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 
+import '../app.gr.dart';
 import '../styles.dart' show multiSplitViewThemeData;
 import 'goal_list.dart' show GoalListWidget;
 
@@ -210,6 +213,8 @@ class _GoalViewerState extends ConsumerState<GoalViewerPage> with RouteAware {
   GoalView _selectedDisplayMode = GoalView.tree;
 
   Future<void>? openBoxFuture;
+  String? prevFocusedGoalId;
+  late StreamSubscription focusedGoalSubscription;
   bool isInitted = false;
   final _multiSplitViewController = MultiSplitViewController(areas: [
     Area(
@@ -229,17 +234,32 @@ class _GoalViewerState extends ConsumerState<GoalViewerPage> with RouteAware {
     )
   ]);
 
-  void _handleFocusedGoalUpdate(
-      String? prevFocusedGoalId, String? newFocusedGoalId) {
-    if (prevFocusedGoalId == newFocusedGoalId || newFocusedGoalId == null) {
+  void _handleFocusedGoalUpdate(String? newFocusedGoalId) {
+    if (prevFocusedGoalId == newFocusedGoalId) {
       return;
     }
+    print('Focused goal changed from $prevFocusedGoalId to $newFocusedGoalId');
 
-    Navigator.pushNamed(
-      context,
-      '/home',
-      arguments: ViewerArgs(newFocusedGoalId),
-    );
+    if (newFocusedGoalId == null) {
+      context.router.pop();
+    } else if (prevFocusedGoalId == null) {
+      context.router.push(GoalDetail(goalId: newFocusedGoalId));
+    } else {
+      context.router.popAndPush(GoalDetail(goalId: newFocusedGoalId));
+    }
+  }
+
+  @override
+  initState() {
+    super.initState();
+    focusedGoalSubscription =
+        focusedGoalSubject.asBroadcastStream().listen(_handleFocusedGoalUpdate);
+  }
+
+  @override
+  dispose() {
+    focusedGoalSubscription.cancel();
+    super.dispose();
   }
 
   onSelected(String goalId) {
@@ -270,7 +290,7 @@ class _GoalViewerState extends ConsumerState<GoalViewerPage> with RouteAware {
 
   onFocused(String? goalId) {
     setState(() {
-      ref.read(focusedGoalProvider.notifier).set(goalId);
+      focusedGoalSubject.add(goalId);
       Hive.box('goals_web.ui').put('focusedGoal', goalId);
     });
   }
@@ -490,68 +510,65 @@ class _GoalViewerState extends ConsumerState<GoalViewerPage> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<String?>(focusedGoalProvider, _handleFocusedGoalUpdate,
-        onError: (err, stackTrace) {
-      print('Error: $err');
-      print(stackTrace);
-    });
-
     final selectedGoals = ref.watch(selectedGoalsProvider);
-    final focusedGoal = ref.watch(focusedGoalProvider);
 
-    final children = <Widget>[];
+    return StreamBuilder<String?>(
+        stream: focusedGoalSubject,
+        builder: (context, focusedGoalSnapshot) {
+          final children = <Widget>[];
 
-    final isNarrow = MediaQuery.of(context).size.width < 600;
-    if (!isNarrow) {
-      children.add(_viewSwitcher(false));
-    }
+          final isNarrow = MediaQuery.of(context).size.width < 600;
+          if (!isNarrow) {
+            children.add(_viewSwitcher(false));
+          }
+          final focusedGoalId = focusedGoalSnapshot.data;
 
-    if (focusedGoal == null || !isNarrow) {
-      children.add(_listView());
-    }
+          if (focusedGoalId == null || !isNarrow) {
+            children.add(_listView());
+          }
 
-    if (focusedGoal != null) {
-      children.add(_detailView());
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Glass Goals'),
-      ),
-      drawer: isNarrow
-          ? Drawer(
-              child: _viewSwitcher(true),
-            )
-          : null,
-      body: Stack(
-        alignment: Alignment.center,
-        fit: StackFit.expand,
-        children: [
-          MultiSplitViewTheme(
-              data: multiSplitViewThemeData,
-              child: MultiSplitView(
-                controller: _multiSplitViewController,
-                children: children,
-              )),
-          selectedGoals.isNotEmpty
-              ? Positioned(
-                  top: 50,
-                  width: 400,
-                  height: 50,
-                  child: HoverToolbarWidget(
-                    onMerge: onMerge,
-                    onUnarchive: onUnarchive,
-                    onArchive: onArchive,
-                    onDone: onDone,
-                    onSnooze: onSnooze,
-                    onActive: onActive,
-                    onClearSelection: onClearSelection,
-                  ),
-                )
-              : Container(),
-        ],
-      ),
-    );
+          if (focusedGoalId != null) {
+            children.add(_detailView());
+          }
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Glass Goals'),
+            ),
+            drawer: isNarrow
+                ? Drawer(
+                    child: _viewSwitcher(true),
+                  )
+                : null,
+            body: Stack(
+              alignment: Alignment.center,
+              fit: StackFit.expand,
+              children: [
+                MultiSplitViewTheme(
+                    data: multiSplitViewThemeData,
+                    child: MultiSplitView(
+                      controller: _multiSplitViewController,
+                      children: children,
+                    )),
+                selectedGoals.isNotEmpty
+                    ? Positioned(
+                        top: 50,
+                        width: 400,
+                        height: 50,
+                        child: HoverToolbarWidget(
+                          onMerge: onMerge,
+                          onUnarchive: onUnarchive,
+                          onArchive: onArchive,
+                          onDone: onDone,
+                          onSnooze: onSnooze,
+                          onActive: onActive,
+                          onClearSelection: onClearSelection,
+                        ),
+                      )
+                    : Container(),
+              ],
+            ),
+          );
+        });
   }
 
   Widget _listView() {
@@ -623,11 +640,6 @@ class _GoalViewerState extends ConsumerState<GoalViewerPage> with RouteAware {
   }
 
   Widget _detailView() {
-    final focusedGoalId = ref.watch(focusedGoalProvider);
-    if (focusedGoalId == null) {
-      return Container();
-    }
-
-    return GoalDetail(key: const ValueKey('detail'), goalId: focusedGoalId);
+    return const AutoRouter(key: ValueKey('detail'));
   }
 }

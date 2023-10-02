@@ -11,6 +11,7 @@ import 'package:flutter/widgets.dart'
         FutureBuilder,
         Locale,
         Navigator,
+        Route,
         SingleTickerProviderStateMixin,
         SizedBox,
         State,
@@ -22,6 +23,7 @@ import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalMaterialLocalizations;
 import 'package:goals_core/model.dart';
 import 'package:goals_core/sync.dart';
+import 'package:goals_web/goal_viewer/providers.dart';
 
 import 'app.gr.dart';
 import 'app_context.dart';
@@ -41,13 +43,54 @@ class WebGoals extends StatefulWidget {
   State<WebGoals> createState() => _WebGoalsState();
 }
 
+class MyObserver extends AutoRouterObserver {
+  _routeChanged(Route<dynamic>? route) {
+    if (route?.settings.name != null &&
+        route!.settings.name!.contains('goalDetail')) {
+      final goalId = route.settings.name!.split('/').last;
+      focusedGoalSubject.add(goalId);
+    } else {
+      focusedGoalSubject.add(null);
+    }
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _routeChanged(route);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _routeChanged(route);
+  }
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _routeChanged(route);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    _routeChanged(newRoute);
+  }
+
+  @override
+  void didStartUserGesture(
+      Route<dynamic> route, Route<dynamic>? previousRoute) {}
+}
+
 @AutoRouterConfig()
 class AppRouter extends $AppRouter {
   @override
   List<AutoRoute> get routes => [
-        AutoRoute(page: Home.page, initial: true),
-        AutoRoute(page: SignIn.page),
-        AutoRoute(page: GoalDetail.page),
+        AutoRoute(page: Home.page, initial: true, path: '/home', children: [
+          CustomRoute(
+              page: GoalDetail.page,
+              path: 'goal/:goalId',
+              durationInMilliseconds: 0,
+              reverseDurationInMilliseconds: 0),
+        ]),
+        AutoRoute(page: SignIn.page, path: '/sign-in'),
       ];
 }
 
