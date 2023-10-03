@@ -17,7 +17,6 @@ import 'package:goals_core/model.dart'
     show
         Goal,
         WorldContext,
-        activeGoalExpiringSoonestComparator,
         getGoalStatus,
         getGoalsMatchingPredicate,
         getGoalsRequiringAttention;
@@ -32,6 +31,7 @@ import 'package:multi_split_view/multi_split_view.dart';
 
 import '../styles.dart' show multiSplitViewThemeData;
 import 'goal_list.dart' show GoalListWidget;
+import 'dart:html';
 
 class DatePickerDialog extends StatefulWidget {
   final Widget title;
@@ -201,11 +201,6 @@ class GoalViewer extends StatefulHookConsumerWidget {
 enum GoalView { tree, list, to_review }
 
 class _GoalViewerState extends ConsumerState<GoalViewer> {
-  final List<GoalView> _displayModeOptions = <GoalView>[
-    GoalView.tree,
-    GoalView.list,
-    GoalView.to_review
-  ];
   GoalView _selectedDisplayMode = GoalView.tree;
 
   Future<void>? openBoxFuture;
@@ -382,11 +377,28 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     ref.read(selectedGoalsProvider.notifier).clear();
   }
 
+  _handlePopState(_) {
+    final focusedGoalId = ref.read(focusedGoalProvider);
+    if (_parseUrlGoalId() != focusedGoalId) {
+      ref.read(focusedGoalProvider.notifier).set(_parseUrlGoalId());
+    }
+  }
+
+  String? _parseUrlGoalId() {
+    final parts = window.location.href.split('/');
+    if (parts.length >= 3 && parts[parts.length - 2] == 'goal') {
+      return parts[parts.length - 1];
+    }
+    return null;
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
     if (!isInitted) {
+      ref.read(focusedGoalProvider.notifier).set(_parseUrlGoalId());
+      window.addEventListener('popstate', _handlePopState);
       setState(() {
         openBoxFuture = Hive.openBox('goals_web.ui').then((box) {
           ref.read(selectedGoalsProvider.notifier).addAll(
@@ -407,30 +419,21 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
   }
 
-  int _toReviewComparator(Goal goal1, Goal goal2) {
-    final goal1Status = getGoalStatus(WorldContext.now(), goal1).status;
-    final goal2Status = getGoalStatus(WorldContext.now(), goal2).status;
-    final cmptor = activeGoalExpiringSoonestComparator(WorldContext.now());
-    if (goal1Status == goal2Status) {
-      if (goal1Status == GoalStatus.active) {
-        return cmptor(goal1, goal2);
-      }
-      final goal1Parent = widget.goalMap[goal1.parentId];
-      final goal2Parent = widget.goalMap[goal2.parentId];
-      if (goal1Parent != null && goal2Parent != null) {
-        return goal1Parent.text.compareTo(goal2Parent.text);
-      } else if (goal1Parent != null && goal2Parent == null) {
-        return goal1Parent.text.compareTo(goal2.text);
-      } else if (goal2Parent != null && goal1Parent == null) {
-        return goal1.text.compareTo(goal2Parent.text);
-      }
-      return goal1.text.compareTo(goal2.text);
-    } else if (goal1Status == GoalStatus.active && goal2Status == null) {
-      return 1;
-    } else if (goal2Status == GoalStatus.active && goal1Status == null) {
-      return -1;
+  @override
+  dispose() {
+    window.removeEventListener('popstate', _handlePopState);
+    super.dispose();
+  }
+
+  _handleFocusedGoalChange(prevGoalId, newGoalId) {
+    if (prevGoalId == newGoalId) {
+      return;
     }
-    return 0;
+    if (newGoalId == null) {
+      window.history.pushState(null, 'home', '/home');
+    } else if (!window.location.href.endsWith('goal/$newGoalId')) {
+      window.history.pushState(null, 'home', '/home/goal/$newGoalId');
+    }
   }
 
   _viewSwitcher(bool closeDrawer) => ListView(
@@ -478,6 +481,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   Widget build(BuildContext context) {
     final selectedGoals = ref.watch(selectedGoalsProvider);
     final focusedGoal = ref.watch(focusedGoalProvider);
+    ref.listen(focusedGoalProvider, _handleFocusedGoalChange);
 
     final children = <Widget>[];
 
@@ -486,17 +490,33 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       children.add(_viewSwitcher(false));
     }
 
-    children.add(_listView());
+    if (!isNarrow || focusedGoal == null) {
+      children.add(_listView());
+    }
 
-    if (!isNarrow && focusedGoal != null) {
+    if (focusedGoal != null) {
       children.add(_detailView());
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Glass Goals'),
-      ),
-      drawer: isNarrow
+          title: const Text('Glass Goals'),
+          leading: isNarrow
+              ? focusedGoal != null
+                  ? IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () {
+                        ref.read(focusedGoalProvider.notifier).set(null);
+                      })
+                  : Builder(builder: (context) {
+                      return IconButton(
+                          icon: const Icon(Icons.menu),
+                          onPressed: () {
+                            Scaffold.of(context).openDrawer();
+                          });
+                    })
+              : null),
+      drawer: isNarrow && focusedGoal == null
           ? Drawer(
               child: _viewSwitcher(true),
             )
@@ -505,12 +525,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         alignment: Alignment.center,
         fit: StackFit.expand,
         children: [
-          MultiSplitViewTheme(
-              data: multiSplitViewThemeData,
-              child: MultiSplitView(
-                controller: _multiSplitViewController,
-                children: children,
-              )),
+          children.length == 1
+              ? Positioned.fill(child: children[0])
+              : MultiSplitViewTheme(
+                  data: multiSplitViewThemeData,
+                  child: MultiSplitView(
+                    controller: _multiSplitViewController,
+                    children: children,
+                  )),
           selectedGoals.isNotEmpty
               ? Positioned(
                   top: 50,
