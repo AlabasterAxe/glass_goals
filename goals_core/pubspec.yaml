@@ -21,6 +21,7 @@ dependencies:
   goals_types: 
     path:
       ../goals_types
+  collection: ^1.17.2
 
 dev_dependencies:
   flutter_test:
