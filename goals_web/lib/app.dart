@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart'
-    show CircularProgressIndicator, MaterialApp, Scaffold;
+    show CircularProgressIndicator, MaterialApp, MaterialPageRoute, Scaffold;
 import 'package:flutter/widgets.dart'
     show
         BuildContext,
@@ -63,28 +63,35 @@ class _WebGoalsState extends State<WebGoals>
         ],
         initialRoute: '/home',
         theme: theme,
-        routes: {
-          '/sign-in': (context) => SignInScreen(
-                actions: [
-                  AuthStateChangeAction<SignedIn>((context, state) {
-                    Navigator.pushReplacementNamed(context, '/home');
-                  })
-                ],
-              ),
-          '/home': (context) => FutureBuilder<void>(
-              future: appInit(context),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Center(
-                      child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator()));
-                }
-                return AppContext(
-                    syncClient: syncClient, child: const GoalsHome());
-              }),
-        });
+        onGenerateRoute: (settings) {
+          if (settings.name != null && settings.name!.startsWith('/sign-in')) {
+            return MaterialPageRoute(
+                builder: (context) => SignInScreen(
+                      actions: [
+                        AuthStateChangeAction<SignedIn>((context, state) {
+                          Navigator.pushReplacementNamed(context, '/home');
+                        })
+                      ],
+                    ));
+          } else if (settings.name != null &&
+              settings.name!.startsWith('/home')) {
+            return MaterialPageRoute(
+                builder: (context) => FutureBuilder<void>(
+                    future: appInit(context),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return const Center(
+                            child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator()));
+                      }
+                      return AppContext(
+                          syncClient: syncClient, child: const GoalsHome());
+                    }));
+          }
+        },
+        routes: {});
   }
 }
 

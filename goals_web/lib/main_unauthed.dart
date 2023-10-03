@@ -4,6 +4,7 @@ import 'package:goals_core/sync.dart' show InMemoryPersistenceService;
 import 'package:goals_web/firebase_options.dart';
 import 'package:hive_flutter/hive_flutter.dart' show Hive, HiveX;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart' show usePathUrlStrategy;
 
 import 'app.dart';
 
@@ -12,6 +13,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await Hive.initFlutter();
 
+  usePathUrlStrategy();
   runApp(ProviderScope(
       child: WebGoals(
           shouldAuthenticate: false,
