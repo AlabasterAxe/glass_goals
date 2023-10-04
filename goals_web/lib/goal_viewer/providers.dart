@@ -1,3 +1,4 @@
+import 'package:goals_core/model.dart' show WorldContext;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show StateNotifier, StateNotifierProvider;
 
@@ -8,6 +9,14 @@ final expandedGoalsProvider =
     StateNotifierProvider<_IdSet, Set<String>>((ref) => _IdSet());
 
 final focusedGoalProvider = StateNotifierProvider<_Id, String?>((ref) => _Id());
+
+final worldContextProvider = StateNotifierProvider<_WorldContext, WorldContext>(
+    (ref) => _WorldContext());
+
+class _WorldContext extends StateNotifier<WorldContext> {
+  _WorldContext() : super(WorldContext.now());
+  void poke(String id) => state = WorldContext.now();
+}
 
 class _IdSet extends StateNotifier<Set<String>> {
   _IdSet() : super({});

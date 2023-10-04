@@ -6,6 +6,7 @@ import 'package:intl/intl.dart' show DateFormat;
 
 import '../app_context.dart';
 import '../styles.dart';
+import 'providers.dart' show worldContextProvider;
 
 class GoalItemWidget extends StatefulHookConsumerWidget {
   final Goal goal;
@@ -54,25 +55,24 @@ String getRelativeDateString(DateTime now, DateTime? future) {
   return 'Today';
 }
 
-String getGoalStatusString(Goal goal) {
-  final worldContext = WorldContext.now();
-  final status = getGoalStatus(worldContext, goal);
+String getGoalStatusString(WorldContext context, Goal goal) {
+  final status = getGoalStatus(context, goal);
   switch (status.status) {
     case GoalStatus.active:
-      return 'Active: ${getRelativeDateString(worldContext.time, status.endTime)}';
+      return 'Active: ${getRelativeDateString(context.time, status.endTime)}';
     case GoalStatus.done:
       return 'Done';
     case GoalStatus.archived:
       return 'Archived';
     case GoalStatus.pending:
-      return 'On Hold: ${getRelativeDateString(worldContext.time, status.endTime)}';
+      return 'On Hold: ${getRelativeDateString(context.time, status.endTime)}';
     case null:
       return 'No status';
   }
 }
 
-Color getGoalStatusColor(Goal goal) {
-  final status = getGoalStatus(WorldContext.now(), goal);
+Color getGoalStatusColor(WorldContext context, Goal goal) {
+  final status = getGoalStatus(context, goal);
   switch (status.status) {
     case GoalStatus.active:
       return Colors.green;
@@ -105,6 +105,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final worldContext = ref.watch(worldContextProvider);
     return Container(
       color: widget.hovered ? Colors.grey.shade300 : Colors.transparent,
       child: Row(
@@ -156,13 +157,13 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
           // chip like container widget around text status widget:
           Container(
             decoration: BoxDecoration(
-              color: getGoalStatusColor(widget.goal),
+              color: getGoalStatusColor(worldContext, widget.goal),
               borderRadius: BorderRadius.circular(10000.0),
             ),
             padding:
                 EdgeInsets.symmetric(horizontal: uiUnit(2), vertical: uiUnit()),
             child: Text(
-              getGoalStatusString(widget.goal),
+              getGoalStatusString(worldContext, widget.goal),
               style: smallTextStyle.copyWith(color: Colors.white),
             ),
           ),

@@ -1,17 +1,7 @@
+import 'dart:html';
+
 import 'package:flutter/material.dart'
-    show
-        AppBar,
-        Colors,
-        Dialog,
-        Drawer,
-        IconButton,
-        Icons,
-        ListTile,
-        Scaffold,
-        TextButton,
-        Tooltip,
-        showDatePicker,
-        showDialog;
+    show AppBar, Drawer, IconButton, Icons, ListTile, Scaffold;
 import 'package:flutter/widgets.dart';
 import 'package:goals_core/model.dart'
     show
@@ -31,8 +21,6 @@ import 'package:multi_split_view/multi_split_view.dart';
 
 import '../styles.dart' show multiSplitViewThemeData;
 import 'goal_list.dart' show GoalListWidget;
-import 'dart:html';
-
 import 'hover_actions.dart';
 
 class GoalViewer extends StatefulHookConsumerWidget {
@@ -326,6 +314,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   Widget build(BuildContext context) {
     final selectedGoals = ref.watch(selectedGoalsProvider);
     final focusedGoal = ref.watch(focusedGoalProvider);
+    final worldContext = ref.watch(worldContextProvider);
     ref.listen(focusedGoalProvider, _handleFocusedGoalChange);
 
     final children = <Widget>[];
@@ -336,7 +325,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     if (!isNarrow || focusedGoal == null) {
-      children.add(_listView());
+      children.add(_listView(worldContext));
     }
 
     if (focusedGoal != null) {
@@ -383,7 +372,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                   top: 50,
                   width: 400,
                   height: 50,
-                  child: HoverToolbarWidget(
+                  child: HoverActionsWidget(
                     onMerge: onMerge,
                     onUnarchive: onUnarchive,
                     onArchive: onArchive,
@@ -391,6 +380,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                     onSnooze: onSnooze,
                     onActive: onActive,
                     onClearSelection: onClearSelection,
+                    goalMap: widget.goalMap,
                   ),
                 )
               : Container(),
@@ -399,13 +389,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     );
   }
 
-  Widget _listView() {
+  Widget _listView(WorldContext worldContext) {
     return SingleChildScrollView(
         key: const ValueKey('list'),
         child: FutureBuilder<void>(
             future: openBoxFuture,
             builder: (context, snapshot) {
-              final worldContext = WorldContext.now();
               if (snapshot.connectionState != ConnectionState.done) {
                 return const Text('Loading...');
               }
@@ -426,8 +415,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                     depthLimit: 1,
                   );
                 case GoalView.to_review:
-                  final goalsRequiringAttention = getGoalsRequiringAttention(
-                      WorldContext.now(), widget.goalMap);
+                  final goalsRequiringAttention =
+                      getGoalsRequiringAttention(worldContext, widget.goalMap);
                   final rootGoalIds = goalsRequiringAttention.values
                       .where((goal) =>
                           !goalsRequiringAttention.containsKey(goal.parentId))
