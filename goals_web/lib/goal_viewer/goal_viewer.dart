@@ -66,19 +66,18 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   onSwitchMode(GoalView mode) {
     setState(() {
-      _selectedDisplayMode = mode;
+      ref.read(selectedGoalsProvider.notifier).clear();
       Hive.box('goals_web.ui')
           .put('goalViewerDisplayMode', _selectedDisplayMode.name);
+      _selectedDisplayMode = mode;
     });
   }
 
   onExpanded(String goalId, {bool? expanded}) {
     setState(() {
-      setState(() {
-        ref.read(expandedGoalsProvider.notifier).toggle(goalId);
-        Hive.box('goals_web.ui')
-            .put('expandedGoals', ref.read(expandedGoalsProvider).toList());
-      });
+      ref.read(expandedGoalsProvider.notifier).toggle(goalId);
+      Hive.box('goals_web.ui')
+          .put('expandedGoals', ref.read(expandedGoalsProvider).toList());
     });
   }
 
@@ -116,8 +115,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       }
     }
 
-    syncClient.modifyGoals(goalDeltas);
-    ref.read(selectedGoalsProvider.notifier).clear();
+    setState(() {
+      syncClient.modifyGoals(goalDeltas);
+      ref.read(selectedGoalsProvider.notifier).clear();
+    });
   }
 
   onUnarchive() {
@@ -126,14 +127,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       goalDeltas.add(GoalDelta(
         id: goalId,
         logEntry: StatusLogEntry(
-            creationTime: DateTime.now(),
-            status: GoalStatus.archived,
-            endTime: DateTime.now()),
+            creationTime: DateTime.now(), startTime: DateTime.now()),
       ));
     }
 
-    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    ref.read(selectedGoalsProvider.notifier).clear();
+    setState(() {
+      AppContext.of(context).syncClient.modifyGoals(goalDeltas);
+      ref.read(selectedGoalsProvider.notifier).clear();
+    });
   }
 
   onArchive() {
@@ -148,8 +149,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       ));
     }
 
-    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    ref.read(selectedGoalsProvider.notifier).clear();
+    setState(() {
+      AppContext.of(context).syncClient.modifyGoals(goalDeltas);
+      ref.read(selectedGoalsProvider.notifier).clear();
+    });
   }
 
   onDone() {
@@ -164,8 +167,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       ));
     }
 
-    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    ref.read(selectedGoalsProvider.notifier).clear();
+    setState(() {
+      AppContext.of(context).syncClient.modifyGoals(goalDeltas);
+      ref.read(selectedGoalsProvider.notifier).clear();
+    });
   }
 
   onSnooze(DateTime? endDate) {
@@ -182,8 +187,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       ));
     }
 
-    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    ref.read(selectedGoalsProvider.notifier).clear();
+    setState(() {
+      AppContext.of(context).syncClient.modifyGoals(goalDeltas);
+      ref.read(selectedGoalsProvider.notifier).clear();
+    });
   }
 
   onClearSelection() {
@@ -206,8 +213,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       ));
     }
 
-    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    ref.read(selectedGoalsProvider.notifier).clear();
+    setState(() {
+      AppContext.of(context).syncClient.modifyGoals(goalDeltas);
+      ref.read(selectedGoalsProvider.notifier).clear();
+    });
   }
 
   _handlePopState(_) {
@@ -314,7 +323,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedGoals = ref.watch(selectedGoalsProvider);
     final focusedGoal = ref.watch(focusedGoalProvider);
     final worldContext = ref.watch(worldContextProvider);
     ref.listen(focusedGoalProvider, _handleFocusedGoalChange);

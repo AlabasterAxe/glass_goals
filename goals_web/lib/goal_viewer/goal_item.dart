@@ -6,11 +6,11 @@ import 'package:intl/intl.dart' show DateFormat;
 
 import '../app_context.dart';
 import '../styles.dart';
-import 'providers.dart' show expandedGoalsProvider, worldContextProvider;
+import 'providers.dart'
+    show expandedGoalsProvider, selectedGoalsProvider, worldContextProvider;
 
 class GoalItemWidget extends StatefulHookConsumerWidget {
   final Goal goal;
-  final bool selected;
   final Function(bool? value) onSelected;
   final Function(String id, {bool expanded}) onExpanded;
   final Function(String id)? onFocused;
@@ -23,7 +23,6 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
   const GoalItemWidget({
     super.key,
     required this.goal,
-    required this.selected,
     required this.onSelected,
     required this.onExpanded,
     required this.onFocused,
@@ -115,6 +114,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
   Widget build(BuildContext context) {
     final isExpanded =
         ref.watch(expandedGoalsProvider).contains(widget.goal.id);
+    final isSelected =
+        ref.watch(selectedGoalsProvider).contains(widget.goal.id);
     final worldContext = ref.watch(worldContextProvider);
     return MouseRegion(
       onHover: (event) {
@@ -133,7 +134,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
           mainAxisSize: MainAxisSize.max,
           children: [
             Checkbox(
-                value: widget.selected,
+                value: isSelected,
                 onChanged: widget.onSelected,
                 visualDensity: VisualDensity.standard),
             _editing
@@ -197,7 +198,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                         ? Icons.arrow_right
                         : Icons.add)),
             const Spacer(),
-            (widget.selected || _hovering) ? widget.hoverActions : Container(),
+            (isSelected || _hovering) ? widget.hoverActions : Container(),
           ],
         ),
       ),

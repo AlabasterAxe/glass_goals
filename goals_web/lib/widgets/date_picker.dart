@@ -17,6 +17,8 @@ import 'package:flutter/widgets.dart'
         Text,
         Widget;
 
+final FOREVER = DateTime(2200);
+
 class DatePickerDialog extends StatefulWidget {
   final Widget title;
   const DatePickerDialog({
@@ -41,7 +43,9 @@ class _DatePickerDialogState extends State<DatePickerDialog> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   TextButton(
-                      onPressed: Navigator.of(context).pop,
+                      onPressed: () {
+                        Navigator.of(context).pop(FOREVER);
+                      },
                       child: const Text('Forever')),
                   IconButton(
                       onPressed: () async {

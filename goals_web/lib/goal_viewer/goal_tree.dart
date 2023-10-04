@@ -120,7 +120,6 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
             ),
             child: GoalItemWidget(
               goal: rootGoal,
-              selected: isSelected,
               onSelected: (value) {
                 widget.onSelected(rootGoal.id);
               },

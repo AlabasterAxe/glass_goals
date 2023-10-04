@@ -178,7 +178,9 @@ class StatusLogEntry extends GoalLogEntry {
           'Invalid data: $version is before first version: $FIRST_VERSION');
     }
     return StatusLogEntry(
-      status: GoalStatus.values.byName(json['status']),
+      status: json['status'] != null
+          ? GoalStatus.values.byName(json['status'])
+          : null,
       creationTime: json['creationTime'] != null
           ? DateTime.parse(json['creationTime']).toLocal()
           : DateTime(2023, 1, 1),

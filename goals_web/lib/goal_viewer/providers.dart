@@ -15,7 +15,7 @@ final worldContextProvider = StateNotifierProvider<_WorldContext, WorldContext>(
 
 class _WorldContext extends StateNotifier<WorldContext> {
   _WorldContext() : super(WorldContext.now());
-  void poke(String id) => state = WorldContext.now();
+  void poke() => state = WorldContext.now();
 }
 
 class _IdSet extends StateNotifier<Set<String>> {

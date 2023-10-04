@@ -52,7 +52,7 @@ class HoverActionsWidget extends ConsumerWidget {
           message: 'Merge',
           child: IconButton(
             icon: const Icon(Icons.merge),
-            onPressed: onMerge,
+            onPressed: selectedGoals.length > 1 ? onMerge : null,
           ),
         ),
         allArchived
@@ -80,7 +80,9 @@ class HoverActionsWidget extends ConsumerWidget {
                 builder: (context) =>
                     const DatePickerDialog(title: Text('Active Until?')),
               );
-              onActive(date);
+              if (date != null) {
+                onActive(date);
+              }
             },
           ),
         ),
@@ -94,7 +96,9 @@ class HoverActionsWidget extends ConsumerWidget {
                 builder: (context) =>
                     const DatePickerDialog(title: Text('Snooze Until?')),
               );
-              onSnooze(date);
+              if (date != null) {
+                onSnooze(date);
+              }
             },
           ),
         ),
@@ -103,13 +107,6 @@ class HoverActionsWidget extends ConsumerWidget {
           child: IconButton(
             icon: const Icon(Icons.done),
             onPressed: onDone,
-          ),
-        ),
-        Tooltip(
-          message: 'Clear Selection',
-          child: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: onClearSelection,
           ),
         ),
       ],
