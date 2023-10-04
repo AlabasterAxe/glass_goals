@@ -83,6 +83,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   onFocused(String? goalId) {
     setState(() {
+      if (goalId != null) {
+        ref.read(selectedGoalsProvider.notifier)
+          ..clear()
+          ..add(goalId);
+      }
+
       ref.read(focusedGoalProvider.notifier).set(goalId);
       Hive.box('goals_web.ui').put('focusedGoal', goalId);
     });

@@ -1,16 +1,24 @@
+import 'dart:ui' show Locale;
+
 import 'package:flutter/material.dart'
-    show IconButton, Icons, Tooltip, showDialog;
+    show
+        IconButton,
+        Icons,
+        MenuAnchor,
+        MenuController,
+        MenuItemButton,
+        Tooltip,
+        showDatePicker;
 import 'package:flutter/rendering.dart' show MainAxisSize;
 import 'package:flutter/widgets.dart'
     show BuildContext, Icon, Row, Text, Widget;
 import 'package:goals_core/model.dart' show Goal, getGoalStatus;
 import 'package:goals_core/sync.dart' show GoalStatus;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show ConsumerWidget, WidgetRef;
-import '../widgets/date_picker.dart' show DatePickerDialog;
+    show ConsumerState, ConsumerStatefulWidget;
 import 'providers.dart';
 
-class HoverActionsWidget extends ConsumerWidget {
+class HoverActionsWidget extends ConsumerStatefulWidget {
   final Function() onMerge;
   final Function() onUnarchive;
   final Function() onArchive;
@@ -32,14 +40,22 @@ class HoverActionsWidget extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HoverActionsWidget> createState() => _HoverActionsWidgetState();
+}
+
+class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
+  final _snoozeMenuController = MenuController();
+  final _activateMenuController = MenuController();
+
+  @override
+  Widget build(BuildContext context) {
     final selectedGoals = ref.watch(selectedGoalsProvider);
     final worldContext = ref.watch(worldContextProvider);
 
     bool allArchived = true;
     for (final selectedGoalId in selectedGoals) {
-      if (goalMap.containsKey(selectedGoalId) &&
-          getGoalStatus(worldContext, goalMap[selectedGoalId]!).status !=
+      if (widget.goalMap.containsKey(selectedGoalId) &&
+          getGoalStatus(worldContext, widget.goalMap[selectedGoalId]!).status !=
               GoalStatus.archived) {
         allArchived = false;
         break;
@@ -52,7 +68,7 @@ class HoverActionsWidget extends ConsumerWidget {
           message: 'Merge',
           child: IconButton(
             icon: const Icon(Icons.merge),
-            onPressed: selectedGoals.length > 1 ? onMerge : null,
+            onPressed: selectedGoals.length > 1 ? widget.onMerge : null,
           ),
         ),
         allArchived
@@ -60,53 +76,112 @@ class HoverActionsWidget extends ConsumerWidget {
                 message: 'Unarchive',
                 child: IconButton(
                   icon: const Icon(Icons.unarchive),
-                  onPressed: onUnarchive,
+                  onPressed: widget.onUnarchive,
                 ),
               )
             : Tooltip(
                 message: 'Archive',
                 child: IconButton(
                   icon: const Icon(Icons.archive),
-                  onPressed: onArchive,
+                  onPressed: widget.onArchive,
                 ),
               ),
         Tooltip(
           message: 'Activate',
-          child: IconButton(
-            icon: const Icon(Icons.directions_run),
-            onPressed: () async {
-              final DateTime? date = await showDialog(
-                context: context,
-                builder: (context) =>
-                    const DatePickerDialog(title: Text('Active Until?')),
-              );
-              if (date != null) {
-                onActive(date);
-              }
-            },
+          child: MenuAnchor(
+            controller: _activateMenuController,
+            menuChildren: [
+              MenuItemButton(
+                child: const Text('An hour'),
+                onPressed: () => widget
+                    .onActive(DateTime.now().add(const Duration(hours: 1))),
+              ),
+              MenuItemButton(
+                child: const Text('A day'),
+                onPressed: () => widget
+                    .onActive(DateTime.now().add(const Duration(days: 1))),
+              ),
+              MenuItemButton(
+                child: const Text('A week'),
+                onPressed: () => widget
+                    .onActive(DateTime.now().add(const Duration(days: 7))),
+              ),
+              MenuItemButton(
+                  child: const Text('Custom...'),
+                  onPressed: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2100),
+                      locale: const Locale('en', 'GB'),
+                    );
+                    if (date != null) {
+                      widget.onSnooze(date);
+                    }
+                  }),
+              MenuItemButton(
+                child: const Text('Forever'),
+                onPressed: () => widget.onActive(null),
+              ),
+            ],
+            child: IconButton(
+              icon: const Icon(Icons.directions_run),
+              onPressed: () {
+                _activateMenuController.open();
+              },
+            ),
           ),
         ),
         Tooltip(
           message: 'Snooze',
-          child: IconButton(
-            icon: const Icon(Icons.snooze),
-            onPressed: () async {
-              final DateTime? date = await showDialog(
-                context: context,
-                builder: (context) =>
-                    const DatePickerDialog(title: Text('Snooze Until?')),
-              );
-              if (date != null) {
-                onSnooze(date);
-              }
-            },
+          child: MenuAnchor(
+            controller: _snoozeMenuController,
+            menuChildren: [
+              MenuItemButton(
+                child: const Text('Tomorrow'),
+                onPressed: () {
+                  widget.onSnooze(DateTime.now().add(const Duration(days: 1)));
+                },
+              ),
+              MenuItemButton(
+                child: const Text('Next week'),
+                onPressed: () {
+                  widget.onSnooze(DateTime.now().add(const Duration(days: 7)));
+                },
+              ),
+              MenuItemButton(
+                  child: const Text('Custom...'),
+                  onPressed: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2100),
+                      locale: const Locale('en', 'GB'),
+                    );
+                    if (date != null) {
+                      widget.onSnooze(date);
+                    }
+                  }),
+              MenuItemButton(
+                child: const Text('Forever'),
+                onPressed: () => widget.onSnooze(null),
+              ),
+            ],
+            child: IconButton(
+              icon: const Icon(Icons.snooze),
+              onPressed: () {
+                _snoozeMenuController.open();
+              },
+            ),
           ),
         ),
         Tooltip(
           message: 'Mark Done',
           child: IconButton(
             icon: const Icon(Icons.done),
-            onPressed: onDone,
+            onPressed: widget.onDone,
           ),
         ),
       ],
