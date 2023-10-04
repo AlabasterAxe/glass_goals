@@ -2,7 +2,8 @@ import 'package:flutter/material.dart'
     show IconButton, Icons, Tooltip, showDialog;
 import 'package:flutter/widgets.dart'
     show BuildContext, Icon, MainAxisAlignment, Row, Text, Widget;
-import 'package:goals_core/model.dart' show Goal;
+import 'package:goals_core/model.dart' show Goal, getGoalStatus;
+import 'package:goals_core/sync.dart' show GoalStatus;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
 import '../widgets/date_picker.dart' show DatePickerDialog;
@@ -32,6 +33,17 @@ class HoverActionsWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedGoals = ref.watch(selectedGoalsProvider);
+    final worldContext = ref.watch(worldContextProvider);
+
+    bool allArchived = true;
+    for (final selectedGoalId in selectedGoals) {
+      if (goalMap.containsKey(selectedGoalId) &&
+          getGoalStatus(worldContext, goalMap[selectedGoalId]!).status !=
+              GoalStatus.archived) {
+        allArchived = false;
+        break;
+      }
+    }
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
@@ -42,20 +54,21 @@ class HoverActionsWidget extends ConsumerWidget {
             onPressed: onMerge,
           ),
         ),
-        Tooltip(
-          message: 'Unarchive',
-          child: IconButton(
-            icon: const Icon(Icons.unarchive),
-            onPressed: onUnarchive,
-          ),
-        ),
-        Tooltip(
-          message: 'Archive',
-          child: IconButton(
-            icon: const Icon(Icons.archive),
-            onPressed: onArchive,
-          ),
-        ),
+        allArchived
+            ? Tooltip(
+                message: 'Unarchive',
+                child: IconButton(
+                  icon: const Icon(Icons.unarchive),
+                  onPressed: onUnarchive,
+                ),
+              )
+            : Tooltip(
+                message: 'Archive',
+                child: IconButton(
+                  icon: const Icon(Icons.archive),
+                  onPressed: onArchive,
+                ),
+              ),
         Tooltip(
           message: 'Activate',
           child: IconButton(
