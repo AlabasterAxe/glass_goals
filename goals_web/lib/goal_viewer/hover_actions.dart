@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart'
     show IconButton, Icons, Tooltip, showDialog;
+import 'package:flutter/rendering.dart' show MainAxisSize;
 import 'package:flutter/widgets.dart'
-    show BuildContext, Icon, MainAxisAlignment, Row, Text, Widget;
+    show BuildContext, Icon, Row, Text, Widget;
 import 'package:goals_core/model.dart' show Goal, getGoalStatus;
 import 'package:goals_core/sync.dart' show GoalStatus;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
@@ -45,7 +46,7 @@ class HoverActionsWidget extends ConsumerWidget {
       }
     }
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Tooltip(
           message: 'Merge',

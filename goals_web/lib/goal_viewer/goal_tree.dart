@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart'
         Container,
         DragTarget,
         Draggable,
+        Expanded,
         Padding,
         Row,
         SizedBox,
@@ -17,10 +18,12 @@ import 'package:flutter/widgets.dart'
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
+import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../app_context.dart';
+import '../styles.dart' show uiUnit;
 import 'goal_item.dart' show GoalItemWidget;
 
 class GoalTreeWidget extends StatefulHookConsumerWidget {
@@ -31,6 +34,7 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
   final Function(String goalId, {bool expanded}) onExpanded;
   final int? depthLimit;
   final bool showParentName;
+  final Widget hoverActions;
   const GoalTreeWidget({
     super.key,
     required this.goalMap,
@@ -40,6 +44,7 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
     this.onFocused,
     this.depthLimit,
     this.showParentName = false,
+    required this.hoverActions,
   });
 
   @override
@@ -114,53 +119,48 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                         color: Colors.white)),
               ),
             ),
-            child: Row(
-              children: [
-                GoalItemWidget(
-                  goal: rootGoal,
-                  selected: isSelected,
-                  onSelected: (value) {
-                    widget.onSelected(rootGoal.id);
-                  },
-                  onFocused: widget.onFocused,
-                  focused: isFocused,
-                  hovered: hovered && !dragging,
-                  parent: widget.showParentName
-                      ? widget.goalMap[rootGoal.parentId]
-                      : null,
-                ),
-                IconButton(
-                    onPressed: () => widget.onExpanded(rootGoal.id),
-                    icon: Icon(isExpanded
-                        ? Icons.arrow_drop_down
-                        : hasRenderableChildren
-                            ? Icons.arrow_right
-                            : Icons.add)),
-              ],
+            child: GoalItemWidget(
+              goal: rootGoal,
+              selected: isSelected,
+              onSelected: (value) {
+                widget.onSelected(rootGoal.id);
+              },
+              onFocused: widget.onFocused,
+              focused: isFocused,
+              hovered: hovered && !dragging,
+              parent: widget.showParentName
+                  ? widget.goalMap[rootGoal.parentId]
+                  : null,
+              hoverActions: widget.hoverActions,
+              hasRenderableChildren: hasRenderableChildren,
+              onExpanded: widget.onExpanded,
             ),
           ),
         ),
         isExpanded && (widget.depthLimit == null || widget.depthLimit! > 0)
             ? Row(children: [
-                const SizedBox(width: 20),
-                Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (final subGoal in rootGoal.subGoals)
-                        widget.goalMap.containsKey(subGoal.id)
-                            ? GoalTreeWidget(
-                                goalMap: widget.goalMap,
-                                rootGoalId: subGoal.id,
-                                onSelected: widget.onSelected,
-                                onFocused: widget.onFocused,
-                                onExpanded: widget.onExpanded,
-                                depthLimit: widget.depthLimit == null
-                                    ? null
-                                    : widget.depthLimit! - 1,
-                              )
-                            : null,
-                      AddSubgoalItemWidget(parentId: rootGoal.id),
-                    ].where((element) => element != null).toList().cast())
+                SizedBox(width: uiUnit(5)),
+                Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final subGoal in rootGoal.subGoals)
+                          widget.goalMap.containsKey(subGoal.id)
+                              ? GoalTreeWidget(
+                                  goalMap: widget.goalMap,
+                                  rootGoalId: subGoal.id,
+                                  onSelected: widget.onSelected,
+                                  onFocused: widget.onFocused,
+                                  onExpanded: widget.onExpanded,
+                                  depthLimit: widget.depthLimit == null
+                                      ? null
+                                      : widget.depthLimit! - 1,
+                                  hoverActions: widget.hoverActions,
+                                )
+                              : null,
+                        AddSubgoalItemWidget(parentId: rootGoal.id),
+                      ].where((element) => element != null).toList().cast()),
+                )
               ])
             : Container()
       ],

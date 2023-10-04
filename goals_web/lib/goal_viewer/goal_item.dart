@@ -1,30 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:goals_core/model.dart' show Goal, WorldContext, getGoalStatus;
 import 'package:goals_core/sync.dart';
+import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart' show DateFormat;
 
 import '../app_context.dart';
 import '../styles.dart';
-import 'providers.dart' show worldContextProvider;
+import 'providers.dart' show expandedGoalsProvider, worldContextProvider;
 
 class GoalItemWidget extends StatefulHookConsumerWidget {
   final Goal goal;
   final bool selected;
   final Function(bool? value) onSelected;
+  final Function(String id, {bool expanded}) onExpanded;
   final Function(String id)? onFocused;
   final bool hovered;
   final bool focused;
   final Goal? parent;
+  final Widget hoverActions;
+  final bool hasRenderableChildren;
+
   const GoalItemWidget({
     super.key,
     required this.goal,
     required this.selected,
     required this.onSelected,
+    required this.onExpanded,
     required this.onFocused,
     required this.hovered,
     this.focused = false,
     this.parent,
+    required this.hoverActions,
+    required this.hasRenderableChildren,
   });
 
   @override
@@ -105,10 +113,13 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final isExpanded =
+        ref.watch(expandedGoalsProvider).contains(widget.goal.id);
     final worldContext = ref.watch(worldContextProvider);
     return Container(
       color: widget.hovered ? Colors.grey.shade300 : Colors.transparent,
       child: Row(
+        mainAxisSize: MainAxisSize.max,
         children: [
           Checkbox(
               value: widget.selected,
@@ -167,6 +178,14 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
               style: smallTextStyle.copyWith(color: Colors.white),
             ),
           ),
+          IconButton(
+              onPressed: () => widget.onExpanded(widget.goal.id),
+              icon: Icon(isExpanded
+                  ? Icons.arrow_drop_down
+                  : widget.hasRenderableChildren
+                      ? Icons.arrow_right
+                      : Icons.add)),
+          widget.hoverActions,
         ],
       ),
     );

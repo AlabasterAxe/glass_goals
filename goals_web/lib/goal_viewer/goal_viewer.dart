@@ -407,13 +407,21 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       .map((e) => e.id)
                       .toList();
                   return GoalListWidget(
-                    goalMap: widget.goalMap,
-                    goalIds: goalIds,
-                    onSelected: onSelected,
-                    onExpanded: onExpanded,
-                    onFocused: onFocused,
-                    depthLimit: 1,
-                  );
+                      goalMap: widget.goalMap,
+                      goalIds: goalIds,
+                      onSelected: onSelected,
+                      onExpanded: onExpanded,
+                      onFocused: onFocused,
+                      depthLimit: 1,
+                      hoverActions: HoverActionsWidget(
+                          onMerge: onMerge,
+                          onUnarchive: onUnarchive,
+                          onArchive: onArchive,
+                          onDone: onDone,
+                          onSnooze: onSnooze,
+                          onActive: onActive,
+                          onClearSelection: onClearSelection,
+                          goalMap: widget.goalMap));
                 case GoalView.to_review:
                   final goalsRequiringAttention =
                       getGoalsRequiringAttention(worldContext, widget.goalMap);
@@ -429,6 +437,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                     onSelected: onSelected,
                     onExpanded: onExpanded,
                     onFocused: onFocused,
+                    hoverActions: HoverActionsWidget(
+                        onMerge: onMerge,
+                        onUnarchive: onUnarchive,
+                        onArchive: onArchive,
+                        onDone: onDone,
+                        onSnooze: onSnooze,
+                        onActive: onActive,
+                        onClearSelection: onClearSelection,
+                        goalMap: widget.goalMap),
                   );
                 default:
                   final pendingGoalMap = getGoalsMatchingPredicate(
@@ -450,6 +467,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                     onExpanded: onExpanded,
                     onFocused: onFocused,
                     showAddGoal: true,
+                    hoverActions: HoverActionsWidget(
+                        onMerge: onMerge,
+                        onUnarchive: onUnarchive,
+                        onArchive: onArchive,
+                        onDone: onDone,
+                        onSnooze: onSnooze,
+                        onActive: onActive,
+                        onClearSelection: onClearSelection,
+                        goalMap: widget.goalMap),
                   );
               }
             }));
