@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' show Colors, Icon, IconButton, Icons;
+import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/painting.dart' show TextDecoration, TextStyle;
 import 'package:flutter/rendering.dart'
     show BoxDecoration, BoxShape, CrossAxisAlignment, EdgeInsets;
@@ -18,7 +18,6 @@ import 'package:flutter/widgets.dart'
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
-import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 

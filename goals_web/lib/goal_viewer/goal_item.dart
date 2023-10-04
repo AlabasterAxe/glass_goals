@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:goals_core/model.dart' show Goal, WorldContext, getGoalStatus;
 import 'package:goals_core/sync.dart';
-import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart' show DateFormat;
 
@@ -99,6 +98,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
   TextEditingController? _textController;
   bool _editing = false;
   final FocusNode _focusNode = FocusNode();
+  bool _hovering = false;
 
   @override
   void didChangeDependencies() {
@@ -116,77 +116,90 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     final isExpanded =
         ref.watch(expandedGoalsProvider).contains(widget.goal.id);
     final worldContext = ref.watch(worldContextProvider);
-    return Container(
-      color: widget.hovered ? Colors.grey.shade300 : Colors.transparent,
-      child: Row(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          Checkbox(
-              value: widget.selected,
-              onChanged: widget.onSelected,
-              visualDensity: VisualDensity.standard),
-          _editing
-              ? IntrinsicWidth(
-                  child: TextField(
-                    autocorrect: false,
-                    controller: _textController,
-                    decoration: null,
-                    style: mainTextStyle,
-                    onEditingComplete: () {
-                      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                          id: widget.goal.id, text: _textController!.text));
+    return MouseRegion(
+      onHover: (event) {
+        setState(() {
+          _hovering = true;
+        });
+      },
+      onExit: (event) {
+        setState(() {
+          _hovering = false;
+        });
+      },
+      child: Container(
+        color: widget.hovered ? Colors.grey.shade300 : Colors.transparent,
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Checkbox(
+                value: widget.selected,
+                onChanged: widget.onSelected,
+                visualDensity: VisualDensity.standard),
+            _editing
+                ? IntrinsicWidth(
+                    child: TextField(
+                      autocorrect: false,
+                      controller: _textController,
+                      decoration: null,
+                      style: mainTextStyle,
+                      onEditingComplete: () {
+                        AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                            id: widget.goal.id, text: _textController!.text));
+                        setState(() {
+                          _editing = false;
+                        });
+                      },
+                      onTapOutside: (_) {
+                        setState(() {
+                          _editing = false;
+                        });
+                      },
+                      focusNode: _focusNode,
+                    ),
+                  )
+                : GestureDetector(
+                    onDoubleTap: () => {
                       setState(() {
-                        _editing = false;
-                      });
+                        _editing = true;
+                        _focusNode.requestFocus();
+                      })
                     },
-                    onTapOutside: (_) {
-                      setState(() {
-                        _editing = false;
-                      });
+                    onTap: () {
+                      widget.onFocused?.call(widget.goal.id);
                     },
-                    focusNode: _focusNode,
+                    child: Text(
+                        '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
+                        style: mainTextStyle.copyWith(
+                            fontWeight: widget.focused
+                                ? FontWeight.bold
+                                : FontWeight.normal)),
                   ),
-                )
-              : GestureDetector(
-                  onDoubleTap: () => {
-                    setState(() {
-                      _editing = true;
-                      _focusNode.requestFocus();
-                    })
-                  },
-                  onTap: () {
-                    widget.onFocused?.call(widget.goal.id);
-                  },
-                  child: Text(
-                      '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
-                      style: mainTextStyle.copyWith(
-                          fontWeight: widget.focused
-                              ? FontWeight.bold
-                              : FontWeight.normal)),
-                ),
-          SizedBox(width: uiUnit(2)),
-          // chip like container widget around text status widget:
-          Container(
-            decoration: BoxDecoration(
-              color: getGoalStatusColor(worldContext, widget.goal),
-              borderRadius: BorderRadius.circular(10000.0),
+            SizedBox(width: uiUnit(2)),
+            // chip like container widget around text status widget:
+            Container(
+              decoration: BoxDecoration(
+                color: getGoalStatusColor(worldContext, widget.goal),
+                borderRadius: BorderRadius.circular(10000.0),
+              ),
+              padding: EdgeInsets.symmetric(
+                  horizontal: uiUnit(2), vertical: uiUnit()),
+              child: Text(
+                getGoalStatusString(worldContext, widget.goal),
+                style: smallTextStyle.copyWith(color: Colors.white),
+              ),
             ),
-            padding:
-                EdgeInsets.symmetric(horizontal: uiUnit(2), vertical: uiUnit()),
-            child: Text(
-              getGoalStatusString(worldContext, widget.goal),
-              style: smallTextStyle.copyWith(color: Colors.white),
-            ),
-          ),
-          IconButton(
-              onPressed: () => widget.onExpanded(widget.goal.id),
-              icon: Icon(isExpanded
-                  ? Icons.arrow_drop_down
-                  : widget.hasRenderableChildren
-                      ? Icons.arrow_right
-                      : Icons.add)),
-          widget.hoverActions,
-        ],
+            IconButton(
+                onPressed: () => widget.onExpanded(widget.goal.id),
+                icon: Icon(isExpanded
+                    ? Icons.arrow_drop_down
+                    : widget.hasRenderableChildren
+                        ? Icons.arrow_right
+                        : Icons.add)),
+            const Spacer(),
+            (widget.selected || _hovering) ? widget.hoverActions : Container(),
+          ],
+        ),
       ),
     );
   }

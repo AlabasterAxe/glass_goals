@@ -234,18 +234,20 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       window.addEventListener('popstate', _handlePopState);
       setState(() {
         openBoxFuture = Hive.openBox('goals_web.ui').then((box) {
-          ref.read(selectedGoalsProvider.notifier).addAll(
-              (box.get('selectedGoals', defaultValue: <String>[])
-                      as List<dynamic>)
-                  .cast<String>());
-          ref.read(expandedGoalsProvider.notifier).addAll(
-              (box.get('expandedGoals', defaultValue: <String>[])
-                      as List<dynamic>)
-                  .cast<String>());
+          if (mounted) {
+            ref.read(selectedGoalsProvider.notifier).addAll(
+                (box.get('selectedGoals', defaultValue: <String>[])
+                        as List<dynamic>)
+                    .cast<String>());
+            ref.read(expandedGoalsProvider.notifier).addAll(
+                (box.get('expandedGoals', defaultValue: <String>[])
+                        as List<dynamic>)
+                    .cast<String>());
 
-          final modeString = box.get('goalViewerDisplayMode',
-              defaultValue: GoalView.tree.name);
-          _selectedDisplayMode = GoalView.values.byName(modeString);
+            final modeString = box.get('goalViewerDisplayMode',
+                defaultValue: GoalView.tree.name);
+            _selectedDisplayMode = GoalView.values.byName(modeString);
+          }
         });
         isInitted = true;
       });
@@ -355,37 +357,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               child: _viewSwitcher(true),
             )
           : null,
-      body: Stack(
-        alignment: Alignment.center,
-        fit: StackFit.expand,
-        children: [
-          children.length == 1
-              ? Positioned.fill(child: children[0])
-              : MultiSplitViewTheme(
-                  data: multiSplitViewThemeData,
-                  child: MultiSplitView(
-                    controller: _multiSplitViewController,
-                    children: children,
-                  )),
-          selectedGoals.isNotEmpty
-              ? Positioned(
-                  top: 50,
-                  width: 400,
-                  height: 50,
-                  child: HoverActionsWidget(
-                    onMerge: onMerge,
-                    onUnarchive: onUnarchive,
-                    onArchive: onArchive,
-                    onDone: onDone,
-                    onSnooze: onSnooze,
-                    onActive: onActive,
-                    onClearSelection: onClearSelection,
-                    goalMap: widget.goalMap,
-                  ),
-                )
-              : Container(),
-        ],
-      ),
+      body: children.length == 1
+          ? Positioned.fill(child: children[0])
+          : MultiSplitViewTheme(
+              data: multiSplitViewThemeData,
+              child: MultiSplitView(
+                controller: _multiSplitViewController,
+                children: children,
+              )),
     );
   }
 
