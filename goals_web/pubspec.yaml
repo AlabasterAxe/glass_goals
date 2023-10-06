@@ -78,6 +78,6 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-assets:
+  assets:
     # not checked into repository
-    - logo.svg
+    - assets/logo.svg
