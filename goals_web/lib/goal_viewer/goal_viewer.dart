@@ -362,7 +362,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               child: Padding(
                 padding: EdgeInsets.all(uiUnit(2)),
                 child: SvgPicture.asset(
-                  'logo.svg',
+                  'assets/logo.svg',
                 ),
               ),
             ),
