@@ -3,6 +3,7 @@ import 'dart:html';
 import 'package:flutter/material.dart'
     show AppBar, Drawer, IconButton, Icons, ListTile, Scaffold;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:goals_core/model.dart'
     show
         Goal,
@@ -19,7 +20,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 
-import '../styles.dart' show multiSplitViewThemeData;
+import '../styles.dart' show multiSplitViewThemeData, uiUnit;
 import 'goal_list.dart' show GoalListWidget;
 import 'hover_actions.dart';
 
@@ -40,7 +41,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   bool isInitted = false;
   final _multiSplitViewController = MultiSplitViewController(areas: [
     Area(
-      size: 250,
+      size: 200,
       minimalSize: 200,
       key: const ValueKey('viewSwitcher'),
     ),
@@ -286,45 +287,48 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
   }
 
-  _viewSwitcher(bool closeDrawer) => ListView(
+  _viewSwitcher(bool closeDrawer) => SizedBox(
         key: const ValueKey('viewSwitcher'),
-        // Important: Remove any padding from the ListView.
-        padding: EdgeInsets.zero,
-        children: [
-          ListTile(
-            title: const Text('Tree'),
-            selected: _selectedDisplayMode == GoalView.tree,
-            onTap: () {
-              // Update the state of the app
-              onSwitchMode(GoalView.tree);
-              if (closeDrawer) {
-                Navigator.pop(context);
-              }
-            },
-          ),
-          ListTile(
-            title: const Text('List'),
-            selected: _selectedDisplayMode == GoalView.list,
-            onTap: () {
-              // Update the state of the app
-              onSwitchMode(GoalView.list);
-              if (closeDrawer) {
-                Navigator.pop(context);
-              }
-            },
-          ),
-          ListTile(
-            title: const Text('To Review'),
-            selected: _selectedDisplayMode == GoalView.to_review,
-            onTap: () {
-              // Update the state of the app
-              onSwitchMode(GoalView.to_review);
-              if (closeDrawer) {
-                Navigator.pop(context);
-              }
-            },
-          ),
-        ],
+        width: 200,
+        child: ListView(
+          // Important: Remove any padding from the ListView.
+          padding: EdgeInsets.zero,
+          children: [
+            ListTile(
+              title: const Text('Tree'),
+              selected: _selectedDisplayMode == GoalView.tree,
+              onTap: () {
+                // Update the state of the app
+                onSwitchMode(GoalView.tree);
+                if (closeDrawer) {
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            ListTile(
+              title: const Text('List'),
+              selected: _selectedDisplayMode == GoalView.list,
+              onTap: () {
+                // Update the state of the app
+                onSwitchMode(GoalView.list);
+                if (closeDrawer) {
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            ListTile(
+              title: const Text('To Review'),
+              selected: _selectedDisplayMode == GoalView.to_review,
+              onTap: () {
+                // Update the state of the app
+                onSwitchMode(GoalView.to_review);
+                if (closeDrawer) {
+                  Navigator.pop(context);
+                }
+              },
+            ),
+          ],
+        ),
       );
 
   @override
@@ -350,29 +354,45 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
     return Scaffold(
       appBar: AppBar(
-          title: const Text('Glass Goals'),
-          leading: isNarrow
-              ? focusedGoal != null
-                  ? IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () {
-                        ref.read(focusedGoalProvider.notifier).set(null);
-                      })
-                  : Builder(builder: (context) {
-                      return IconButton(
-                          icon: const Icon(Icons.menu),
-                          onPressed: () {
-                            Scaffold.of(context).openDrawer();
-                          });
+        title: Row(
+          children: [
+            SizedBox(
+              width: uiUnit(12),
+              height: uiUnit(12),
+              child: Padding(
+                padding: EdgeInsets.all(uiUnit(2)),
+                child: SvgPicture.asset(
+                  'logo.svg',
+                ),
+              ),
+            ),
+            const Text('Glass Goals'),
+          ],
+        ),
+        centerTitle: false,
+        leading: isNarrow
+            ? focusedGoal != null
+                ? IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () {
+                      ref.read(focusedGoalProvider.notifier).set(null);
                     })
-              : null),
+                : Builder(builder: (context) {
+                    return IconButton(
+                        icon: const Icon(Icons.menu),
+                        onPressed: () {
+                          Scaffold.of(context).openDrawer();
+                        });
+                  })
+            : null,
+      ),
       drawer: isNarrow && focusedGoal == null
           ? Drawer(
               child: _viewSwitcher(true),
             )
           : null,
       body: children.length == 1
-          ? Positioned.fill(child: children[0])
+          ? children[0]
           : MultiSplitViewTheme(
               data: multiSplitViewThemeData,
               child: MultiSplitView(

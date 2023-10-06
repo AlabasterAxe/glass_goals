@@ -48,6 +48,4 @@ final defaultFont = TextStyle(
 final multiSplitViewThemeData = MultiSplitViewThemeData(
     dividerThickness: uiUnit(2),
     dividerPainter: DividerPainters.dashed(
-        size: 1000000000000,
-        thickness: 2.1,
-        color: darkElementColor.withOpacity(0.3)));
+        size: 1000000000000, thickness: 2, color: darkElementColor));
