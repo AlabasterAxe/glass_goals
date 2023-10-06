@@ -82,3 +82,4 @@ assets:
     # not checked into repository
     - assets/local/sheet_creds.json
     - assets/logo.png
+    - assets/logo.svg
