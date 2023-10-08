@@ -13,11 +13,16 @@ class NoteCard extends StatefulWidget {
   final String goalId;
   final NoteLogEntry entry;
   final Function() onRefresh;
-  const NoteCard(
-      {super.key,
-      required this.goalId,
-      required this.entry,
-      required this.onRefresh});
+  final bool editable;
+  final String? goalText;
+  const NoteCard({
+    super.key,
+    required this.goalId,
+    required this.entry,
+    required this.onRefresh,
+    required this.editable,
+    this.goalText,
+  });
 
   @override
   State<NoteCard> createState() => _NoteCardState();
@@ -72,38 +77,49 @@ class _NoteCardState extends State<NoteCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(DateFormat('yyyy.MM.dd.').format(widget.entry.creationTime) +
-                  DateFormat('EE')
-                      .format(widget.entry.creationTime)
-                      .substring(0, 2)
-                      .toUpperCase()),
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _editing = true;
-                          _focusNode.requestFocus();
-                        });
-                      },
-                      icon: const Icon(Icons.edit)),
-                  IconButton(
-                      onPressed: () {
-                        AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                            id: widget.goalId,
-                            logEntry: ArchiveNoteLogEntry(
-                                id: widget.entry.id,
-                                creationTime: DateTime.now())));
-                        widget.onRefresh();
-                      },
-                      icon: const Icon(Icons.delete)),
+                  Text(DateFormat('yyyy.MM.dd.')
+                          .format(widget.entry.creationTime) +
+                      DateFormat('EE')
+                          .format(widget.entry.creationTime)
+                          .substring(0, 2)
+                          .toUpperCase()),
+                  widget.goalText != null
+                      ? Text(' - ${widget.goalText!}')
+                      : Container()
                 ],
               ),
+              widget.editable
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _editing = true;
+                                _focusNode.requestFocus();
+                              });
+                            },
+                            icon: const Icon(Icons.edit)),
+                        IconButton(
+                            onPressed: () {
+                              AppContext.of(context).syncClient.modifyGoal(
+                                  GoalDelta(
+                                      id: widget.goalId,
+                                      logEntry: ArchiveNoteLogEntry(
+                                          id: widget.entry.id,
+                                          creationTime: DateTime.now())));
+                              widget.onRefresh();
+                            },
+                            icon: const Icon(Icons.delete)),
+                      ],
+                    )
+                  : Container(),
             ],
           ),
           Padding(
-            padding: EdgeInsets.only(left: uiUnit(4)),
+            padding: EdgeInsets.only(left: uiUnit(4), bottom: uiUnit(4)),
             child: _editing
                 ? IntrinsicHeight(
                     child: TextField(
@@ -142,36 +158,59 @@ class GoalDetail extends StatefulWidget {
   State<GoalDetail> createState() => _GoalDetailState();
 }
 
+class DetailViewLogEntryItem {
+  final String goalId;
+  final String goalText;
+  final GoalLogEntry entry;
+  const DetailViewLogEntryItem(
+      {required this.goalId, required this.goalText, required this.entry});
+}
+
 class _GoalDetailState extends State<GoalDetail> {
-  List<NoteLogEntry> _computeNoteLog(List<GoalLogEntry> log) {
-    Map<String, NoteLogEntry> entries = {};
-    log.sort((a, b) => a.creationTime.compareTo(b.creationTime));
-    for (final entry in log) {
+  List<DetailViewLogEntryItem> _computeNoteLog(
+      List<DetailViewLogEntryItem> log) {
+    Map<String, DetailViewLogEntryItem> items = {};
+    log.sort((a, b) => a.entry.creationTime.compareTo(b.entry.creationTime));
+    for (final item in log) {
+      final entry = item.entry;
       if (entry is NoteLogEntry) {
-        final originalNoteDate = entries[entry.id]?.creationTime;
-        entries[entry.id] = NoteLogEntry(
-            creationTime: originalNoteDate ?? entry.creationTime,
-            text: entry.text,
-            id: entry.id);
+        final originalNoteDate = items[entry.id]?.entry.creationTime;
+        items[entry.id] = DetailViewLogEntryItem(
+            entry: NoteLogEntry(
+              id: entry.id,
+              creationTime: originalNoteDate ?? entry.creationTime,
+              text: entry.text,
+            ),
+            goalId: item.goalId,
+            goalText: item.goalText);
       } else if (entry is ArchiveNoteLogEntry) {
-        entries.remove(entry.id);
+        items.remove(entry.id);
       }
     }
 
-    final entriesList = entries.values.toList();
-    entriesList.sort((a, b) => b.creationTime.compareTo(a.creationTime));
-    return entriesList;
+    return items.values.toList()
+      ..sort((a, b) => b.entry.creationTime.compareTo(a.entry.creationTime));
   }
 
   @override
   Widget build(BuildContext context) {
+    final List<DetailViewLogEntryItem> logItems = [];
+    for (final goal in [...widget.goal.subGoals, widget.goal]) {
+      logItems.addAll(goal.log.map((entry) => DetailViewLogEntryItem(
+          goalId: goal.id, goalText: goal.text, entry: entry)));
+    }
+    final textTheme = Theme.of(context).textTheme;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text(widget.goal.text, style: textTheme.headlineMedium),
+      SizedBox(height: uiUnit(2)),
       AddNoteCard(goalId: widget.goal.id),
-      for (final entry in _computeNoteLog(widget.goal.log))
+      for (final entry in _computeNoteLog(logItems))
         NoteCard(
-            key: ValueKey(entry.id),
+            key: ValueKey((entry.entry as NoteLogEntry).id),
             goalId: widget.goal.id,
-            entry: entry,
+            entry: entry.entry as NoteLogEntry,
+            editable: entry.goalId == widget.goal.id,
+            goalText: entry.goalId != widget.goal.id ? entry.goalText : null,
             onRefresh: () => setState(() {})),
     ]);
   }

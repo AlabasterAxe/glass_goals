@@ -504,6 +504,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       return Container();
     }
 
-    return GoalDetail(key: const ValueKey('detail'), goal: focusedGoal);
+    return GoalDetail(
+      key: const ValueKey('detail'),
+      goal: focusedGoal,
+    );
   }
 }
