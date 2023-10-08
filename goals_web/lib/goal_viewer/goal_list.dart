@@ -1,11 +1,12 @@
+import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/widgets.dart'
     show BuildContext, Column, Container, StatelessWidget, Widget;
 import 'package:goals_core/model.dart' show Goal;
-import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
 
+import 'add_subgoal_item.dart';
 import 'goal_tree.dart' show GoalTreeWidget;
 
-class GoalListWidget extends StatelessWidget {
+class GoalListWidget extends StatefulWidget {
   final Map<String, Goal> goalMap;
   final List<String> goalIds;
   final Function(String goalId) onSelected;
@@ -27,20 +28,32 @@ class GoalListWidget extends StatelessWidget {
   });
 
   @override
+  State<GoalListWidget> createState() => _GoalListWidgetState();
+}
+
+class _GoalListWidgetState extends State<GoalListWidget> {
+  bool _addingGoal = false;
+  @override
   Widget build(BuildContext context) => Column(
         children: [
-          for (final goalId in goalIds)
+          for (final goalId in widget.goalIds)
             GoalTreeWidget(
-              goalMap: goalMap,
+              goalMap: widget.goalMap,
               rootGoalId: goalId,
-              onSelected: onSelected,
-              onExpanded: onExpanded,
-              onFocused: onFocused,
-              depthLimit: depthLimit,
+              onSelected: widget.onSelected,
+              onExpanded: widget.onExpanded,
+              onFocused: widget.onFocused,
+              depthLimit: widget.depthLimit,
               showParentName: true,
-              hoverActions: hoverActions,
+              hoverActions: widget.hoverActions,
+              onEnter: () {
+                print("!!!");
+                setState(() {
+                  _addingGoal = true;
+                });
+              },
             ),
-          showAddGoal ? const AddSubgoalItemWidget() : Container(),
+          _addingGoal ? const AddSubgoalItemWidget() : Container(),
         ],
       );
 }

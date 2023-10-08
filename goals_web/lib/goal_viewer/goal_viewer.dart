@@ -36,6 +36,7 @@ enum GoalView { tree, list, to_review }
 
 class _GoalViewerState extends ConsumerState<GoalViewer> {
   GoalView _selectedDisplayMode = GoalView.tree;
+  bool showAddGoal = false;
 
   Future<void>? openBoxFuture;
   bool isInitted = false;
@@ -482,7 +483,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                     onSelected: onSelected,
                     onExpanded: onExpanded,
                     onFocused: onFocused,
-                    showAddGoal: true,
                     hoverActions: HoverActionsWidget(
                         onMerge: onMerge,
                         onUnarchive: onUnarchive,

@@ -31,6 +31,7 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
   final Function(String goalId) onSelected;
   final Function(String goalId)? onFocused;
   final Function(String goalId, {bool expanded}) onExpanded;
+  final Function()? onEnter;
   final int? depthLimit;
   final bool showParentName;
   final Widget hoverActions;
@@ -40,6 +41,7 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
     required this.rootGoalId,
     required this.onSelected,
     required this.onExpanded,
+    this.onEnter,
     this.onFocused,
     this.depthLimit,
     this.showParentName = false,
@@ -53,6 +55,7 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
 class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
   bool hovered = false;
   bool dragging = false;
+  bool addSubGoal = false;
 
   moveGoals(String newParentId, Set<String> goalIds) {
     final List<GoalDelta> goalDeltas = [];
@@ -132,6 +135,7 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
               hoverActions: widget.hoverActions,
               hasRenderableChildren: hasRenderableChildren,
               onExpanded: widget.onExpanded,
+              onEnter: widget.onEnter,
             ),
           ),
         ),
@@ -150,13 +154,20 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                                   onSelected: widget.onSelected,
                                   onFocused: widget.onFocused,
                                   onExpanded: widget.onExpanded,
+                                  onEnter: () {
+                                    setState(() {
+                                      addSubGoal = true;
+                                    });
+                                  },
                                   depthLimit: widget.depthLimit == null
                                       ? null
                                       : widget.depthLimit! - 1,
                                   hoverActions: widget.hoverActions,
                                 )
                               : null,
-                        AddSubgoalItemWidget(parentId: rootGoal.id),
+                        addSubGoal
+                            ? AddSubgoalItemWidget(parentId: rootGoal.id)
+                            : null,
                       ].where((element) => element != null).toList().cast()),
                 )
               ])
