@@ -35,6 +35,7 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
   final int? depthLimit;
   final bool showParentName;
   final Widget hoverActions;
+  final bool showAddSubgoal;
   const GoalTreeWidget({
     super.key,
     required this.goalMap,
@@ -45,6 +46,7 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
     this.onFocused,
     this.depthLimit,
     this.showParentName = false,
+    this.showAddSubgoal = false,
     required this.hoverActions,
   });
 

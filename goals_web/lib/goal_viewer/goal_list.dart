@@ -47,13 +47,22 @@ class _GoalListWidgetState extends State<GoalListWidget> {
               showParentName: true,
               hoverActions: widget.hoverActions,
               onEnter: () {
-                print("!!!");
                 setState(() {
                   _addingGoal = true;
                 });
               },
             ),
-          _addingGoal ? const AddSubgoalItemWidget() : Container(),
+          _addingGoal
+              ? AddSubgoalItemWidget(onDismiss: () {
+                  setState(() {
+                    _addingGoal = false;
+                  });
+                }, onTab: () {
+                  setState(() {
+                    _addingGoal = false;
+                  });
+                })
+              : Container(),
         ],
       );
 }

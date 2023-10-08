@@ -21,6 +21,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 
 import '../styles.dart' show multiSplitViewThemeData, uiUnit;
+import 'goal_item.dart';
 import 'goal_list.dart' show GoalListWidget;
 import 'hover_actions.dart';
 
@@ -32,11 +33,23 @@ class GoalViewer extends StatefulHookConsumerWidget {
   ConsumerState<GoalViewer> createState() => _GoalViewerState();
 }
 
+class TreeItem {
+  final int depth;
+  final String? parentId;
+  final Widget widget;
+
+  TreeItem({
+    this.parentId,
+    required this.widget,
+    required this.depth,
+  });
+}
+
 enum GoalView { tree, list, to_review }
 
 class _GoalViewerState extends ConsumerState<GoalViewer> {
   GoalView _selectedDisplayMode = GoalView.tree;
-  bool showAddGoal = false;
+  List<String> focusedGoalPath = [];
 
   Future<void>? openBoxFuture;
   bool isInitted = false;
@@ -59,6 +72,54 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       flex: true,
     )
   ]);
+
+  List<TreeItem> _getTreeItems(
+      Map<String, Goal> goalMap, Iterable<String> rootIds,
+      {int? maxDepth, int depth = 0, List<String> path = const []}) {
+    final expandedGoals = ref.read(expandedGoalsProvider);
+    final List<TreeItem> treeItems = [];
+
+    if (maxDepth != null && depth >= maxDepth) {
+      return treeItems;
+    }
+
+    for (final goalId in rootIds) {
+      final goal = goalMap[goalId];
+      if (goal == null) {
+        continue;
+      }
+
+      treeItems.add(TreeItem(
+        parentId: goal.parentId,
+        widget: GoalItemWidget(
+          goal: goal,
+          onSelected: (selected) {
+            onSelected(goalId);
+          },
+          onExpanded: onExpanded,
+          onFocused: onFocused,
+          hoverActions: HoverActionsWidget(
+              onMerge: onMerge,
+              onUnarchive: onUnarchive,
+              onArchive: onArchive,
+              onDone: onDone,
+              onSnooze: onSnooze,
+              onActive: onActive,
+              onClearSelection: onClearSelection,
+              goalMap: widget.goalMap),
+          hasRenderableChildren: goal.subGoals.isNotEmpty,
+          hovered: false,
+        ),
+        depth: depth,
+      ));
+
+      if (goal.subGoals.isNotEmpty && expandedGoals.contains(goal.id)) {
+        treeItems.addAll(_getTreeItems(goalMap, goal.subGoals.map((e) => e.id),
+            maxDepth: maxDepth, depth: depth + 1, path: [...path, goal.id]));
+      }
+    }
+    return treeItems;
+  }
 
   onSelected(String goalId) {
     setState(() {
@@ -448,21 +509,18 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       .map((e) => e.id)
                       .toList();
 
-                  return GoalListWidget(
-                    goalMap: goalsRequiringAttention,
-                    goalIds: rootGoalIds,
-                    onSelected: onSelected,
-                    onExpanded: onExpanded,
-                    onFocused: onFocused,
-                    hoverActions: HoverActionsWidget(
-                        onMerge: onMerge,
-                        onUnarchive: onUnarchive,
-                        onArchive: onArchive,
-                        onDone: onDone,
-                        onSnooze: onSnooze,
-                        onActive: onActive,
-                        onClearSelection: onClearSelection,
-                        goalMap: widget.goalMap),
+                  final items =
+                      _getTreeItems(goalsRequiringAttention, rootGoalIds);
+
+                  return Column(
+                    children: [
+                      for (final item in items)
+                        Padding(
+                          padding: EdgeInsets.only(
+                              left: uiUnit(5) * item.depth.toDouble()),
+                          child: item.widget,
+                        ),
+                    ],
                   );
                 default:
                   final pendingGoalMap = getGoalsMatchingPredicate(
@@ -477,21 +535,18 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       .where((goal) => goal.parentId == null)
                       .map((e) => e.id)
                       .toList();
-                  return GoalListWidget(
-                    goalMap: pendingGoalMap,
-                    goalIds: rootGoalIds,
-                    onSelected: onSelected,
-                    onExpanded: onExpanded,
-                    onFocused: onFocused,
-                    hoverActions: HoverActionsWidget(
-                        onMerge: onMerge,
-                        onUnarchive: onUnarchive,
-                        onArchive: onArchive,
-                        onDone: onDone,
-                        onSnooze: onSnooze,
-                        onActive: onActive,
-                        onClearSelection: onClearSelection,
-                        goalMap: widget.goalMap),
+
+                  final items = _getTreeItems(pendingGoalMap, rootGoalIds);
+
+                  return Column(
+                    children: [
+                      for (final item in items)
+                        Padding(
+                          padding: EdgeInsets.only(
+                              left: uiUnit(5) * item.depth.toDouble()),
+                          child: item.widget,
+                        ),
+                    ],
                   );
               }
             }));

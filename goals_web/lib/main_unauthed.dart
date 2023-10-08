@@ -23,6 +23,12 @@ void main() async {
                   '001674571071065:00001:db86cca1-fa15-4f6d-b37e-0d19bfb8f95a',
               'version': 2,
               'delta': {'id': 'root', 'text': 'Test Root'}
+            },
+            {
+              'hlcTimestamp':
+                  '001674571071065:00001:db86cca1-fa15-4f6d-b37e-0d19bfb8f95a',
+              'version': 2,
+              'delta': {'id': 'child', 'text': 'Test Child', 'parentId': 'root'}
             }
           ]))));
 }

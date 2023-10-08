@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:goals_core/sync.dart';
 import 'package:uuid/uuid.dart' show Uuid;
 
@@ -7,9 +8,15 @@ import '../styles.dart';
 
 class AddSubgoalItemWidget extends StatefulWidget {
   final String? parentId;
+  final Function()? onEnter;
+  final Function()? onDismiss;
+  final Function()? onTab;
   const AddSubgoalItemWidget({
     super.key,
     this.parentId,
+    this.onEnter,
+    this.onDismiss,
+    this.onTab,
   });
 
   @override
@@ -18,78 +25,69 @@ class AddSubgoalItemWidget extends StatefulWidget {
 
 class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
   TextEditingController? _textController;
-  bool _editing = false;
   final _focusNode = FocusNode();
 
-  String get _defaultText =>
-      widget.parentId == null ? "[New Goal]" : "[New Subgoal]";
+  @override
+  void initState() {
+    super.initState();
+
+    _focusNode.requestFocus();
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
     if (_textController == null) {
-      _textController = TextEditingController(text: _defaultText);
+      _textController = TextEditingController(text: "");
     } else {
-      _textController!.text = _defaultText;
+      _textController!.text = "";
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: Row(
-        children: [
-          SizedBox(
-            width: uiUnit(10),
-            height: uiUnit(10),
-            child: const Center(child: Icon(Icons.add, size: 18)),
-          ),
-          _editing
-              ? IntrinsicWidth(
-                  child: TextField(
-                    autocorrect: false,
-                    controller: _textController,
-                    decoration: null,
-                    style: mainTextStyle,
-                    onEditingComplete: () {
-                      final newText = _textController!.text;
-                      _textController!.text = _defaultText;
-                      _textController!.selection = TextSelection(
-                          baseOffset: 0,
-                          extentOffset: _textController!.text.length);
-                      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                          id: const Uuid().v4(),
-                          text: newText,
-                          parentId: widget.parentId));
-                      setState(() {
-                        _editing = false;
-                      });
-                    },
-                    onTapOutside: (_) {
-                      _textController!.text = _defaultText;
-                      setState(() {
-                        _editing = false;
-                      });
-                    },
-                    focusNode: _focusNode,
-                  ),
-                )
-              : GestureDetector(
-                  onTap: () => {
-                    setState(() {
-                      _editing = true;
-                      _focusNode.requestFocus();
-                      _textController!.selection = TextSelection(
-                          baseOffset: 0,
-                          extentOffset: _textController!.text.length);
-                    })
-                  },
-                  child: Text(_textController!.text,
-                      style: mainTextStyle.copyWith(color: Colors.black54)),
-                ),
-        ],
+    return CallbackShortcuts(
+      bindings: {
+        LogicalKeySet(LogicalKeyboardKey.escape): () {
+          widget.onDismiss?.call();
+        },
+        LogicalKeySet(LogicalKeyboardKey.tab): () {
+          widget.onTab?.call();
+        },
+      },
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Row(
+          children: [
+            SizedBox(
+              width: uiUnit(10),
+              height: uiUnit(10),
+              child: const Center(child: Icon(Icons.add, size: 18)),
+            ),
+            IntrinsicWidth(
+              child: TextField(
+                autocorrect: false,
+                controller: _textController,
+                decoration: null,
+                style: mainTextStyle,
+                onEditingComplete: () {
+                  final newText = _textController!.text;
+                  _textController!.text = "";
+                  AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                      id: const Uuid().v4(),
+                      text: newText,
+                      parentId: widget.parentId));
+                  widget.onEnter?.call();
+                },
+                onTapOutside: (_) {
+                  widget.onDismiss?.call();
+                },
+                focusNode: _focusNode,
+              ),
+            )
+          ],
+        ),
       ),
     );
   }

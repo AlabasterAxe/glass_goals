@@ -3,15 +3,18 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show StateNotifier, StateNotifierProvider;
 
 final selectedGoalsProvider =
-    StateNotifierProvider<_IdSet, Set<String>>((ref) => _IdSet());
+    StateNotifierProvider<_IdList, Set<String>>((ref) => _IdList());
 
 final expandedGoalsProvider =
-    StateNotifierProvider<_IdSet, Set<String>>((ref) => _IdSet());
+    StateNotifierProvider<_IdList, Set<String>>((ref) => _IdList());
 
 final focusedGoalProvider = StateNotifierProvider<_Id, String?>((ref) => _Id());
 
 final worldContextProvider = StateNotifierProvider<_WorldContext, WorldContext>(
     (ref) => _WorldContext());
+
+final focusPathProvider =
+    StateNotifierProvider<_IdList, Set<String>>((ref) => _IdList());
 
 class _WorldContext extends StateNotifier<WorldContext> {
   _WorldContext() : super(WorldContext.now());
@@ -20,6 +23,24 @@ class _WorldContext extends StateNotifier<WorldContext> {
 
 class _IdSet extends StateNotifier<Set<String>> {
   _IdSet() : super({});
+  void add(String id) => state.add(id);
+  void addAll(List<String> ids) => state.addAll(ids);
+  void remove(String id) => state.remove(id);
+  void toggle(String id) {
+    if (state.contains(id)) {
+      state.remove(id);
+    } else {
+      state.add(id);
+    }
+  }
+
+  void clear() {
+    state.clear();
+  }
+}
+
+class _IdList extends StateNotifier<Set<String>> {
+  _IdList() : super({});
   void add(String id) => state.add(id);
   void addAll(List<String> ids) => state.addAll(ids);
   void remove(String id) => state.remove(id);
