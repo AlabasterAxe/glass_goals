@@ -49,11 +49,13 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       weight: 0.5,
       minimalSize: 200,
       key: const ValueKey('list'),
+      flex: true,
     ),
     Area(
       weight: 0.5,
       minimalSize: 200,
       key: const ValueKey('detail'),
+      flex: true,
     )
   ]);
 
@@ -360,7 +362,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               width: uiUnit(12),
               height: uiUnit(12),
               child: Padding(
-                padding: EdgeInsets.all(uiUnit(2)),
+                padding:
+                    EdgeInsets.fromLTRB(0, uiUnit(2), uiUnit(2), uiUnit(2)),
                 child: SvgPicture.asset(
                   'assets/logo.svg',
                 ),

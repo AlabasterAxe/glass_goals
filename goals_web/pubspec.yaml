@@ -48,6 +48,7 @@ dependencies:
   firebase_core: ^2.16.0
   firebase_ui_oauth_google: ^1.2.11
   multi_split_view: 
+    # path: ../../multi_split_view
     git: 
       url: https://github.com/AlabasterAxe/multi_split_view
       ref: master

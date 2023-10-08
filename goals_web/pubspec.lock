@@ -560,7 +560,7 @@ packages:
     description:
       path: "."
       ref: master
-      resolved-ref: "46f6d759430c1bea3a3d491149fde22915ff350d"
+      resolved-ref: "98604e34b72f164d55e8e5e18e7040db8a881e8c"
       url: "https://github.com/AlabasterAxe/multi_split_view"
     source: git
     version: "2.4.1"
