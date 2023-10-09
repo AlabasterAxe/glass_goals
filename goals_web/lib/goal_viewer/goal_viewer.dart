@@ -445,7 +445,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                   final rootGoalIds = goalsRequiringAttention.values
                       .where((goal) {
                         for (final superGoal in goal.superGoals) {
-                          if (goalsRequiringAttention.containsKey(superGoal)) {
+                          if (goalsRequiringAttention
+                              .containsKey(superGoal.id)) {
                             return false;
                           }
                         }
