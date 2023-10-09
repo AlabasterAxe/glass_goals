@@ -219,7 +219,7 @@ class SetParentLogEntry extends GoalLogEntry {
           'Invalid data: $version is before first version: $FIRST_VERSION');
     }
     return SetParentLogEntry(
-      parentId: json['id'],
+      parentId: json['parentId'],
       creationTime: json['creationTime'] != null
           ? DateTime.parse(json['creationTime']).toLocal()
           : DateTime(2023, 1, 1),
@@ -229,7 +229,7 @@ class SetParentLogEntry extends GoalLogEntry {
   static Map<String, dynamic> toJsonMap(SetParentLogEntry entry) {
     return {
       'type': 'setParent',
-      'parent': entry.parentId,
+      'parentId': entry.parentId,
       'creationTime': entry.creationTime.toUtc().toIso8601String(),
     };
   }
@@ -358,7 +358,7 @@ class GoalDelta extends Equatable {
           id: legacyGoalDelta.id,
           text: legacyGoalDelta.text,
           logEntry: SetParentLogEntry(
-              creationTime: DateTime.now(),
+              creationTime: DateTime(2023, 1, 1),
               parentId: legacyGoalDelta.parentId!));
     } else {
       return GoalDelta(id: legacyGoalDelta.id, text: legacyGoalDelta.text);

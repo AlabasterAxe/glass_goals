@@ -1,17 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goals_core/model.dart' show Goal;
-import 'package:goals_types/goals_types.dart' show Op, GoalDelta;
+import 'package:goals_types/goals_types.dart'
+    show GoalDelta, Op, SetParentLogEntry;
 import 'package:goals_core/src/sync/sync_client.dart' show SyncClient;
+import 'package:hive/hive.dart';
+import 'package:hlc/hlc.dart';
 
 Map<String, Goal> testGoals() {
   final subGoal = Goal(
     id: '2',
     text: 'bar',
-    parentId: '0',
   );
 
-  final testRootGoal =
-      Goal(id: '0', text: 'root', parentId: null, subGoals: [subGoal]);
+  subGoal.log
+      .add(SetParentLogEntry(parentId: '0', creationTime: DateTime.now()));
+
+  final testRootGoal = Goal(id: '0', text: 'root', subGoals: [subGoal]);
 
   final goals = <String, Goal>{};
   for (final goal in [testRootGoal, subGoal]) {
@@ -22,14 +26,22 @@ Map<String, Goal> testGoals() {
 }
 
 void main() {
-  test('add subgoal', () {
+  test('add subgoal', () async {
     final client = SyncClient();
+
+    Hive.init(".");
+    await client.init();
+    var hlc = HLC.now("test");
     final goals = testGoals();
     client.applyOp(
         goals,
-        const Op(
-            hlcTimestamp: '0',
-            delta: GoalDelta(id: '1', text: 'foo', parentId: '0')));
+        Op(
+            hlcTimestamp: hlc.pack(),
+            delta: GoalDelta(
+                id: '1',
+                text: 'foo',
+                logEntry: SetParentLogEntry(
+                    parentId: '0', creationTime: DateTime.now()))));
     expect(goals['0']!.subGoals.length, equals(2));
 
     expect(goals['0']!.subGoals[1].text, equals('foo'));
@@ -38,11 +50,16 @@ void main() {
   test('add subsubgoal', () {
     final client = SyncClient();
     final goals = testGoals();
+    var hlc = HLC.now("test");
     client.applyOp(
         goals,
-        const Op(
-            hlcTimestamp: '0',
-            delta: GoalDelta(id: '3', text: 'foo', parentId: '2')));
+        Op(
+            hlcTimestamp: hlc.pack(),
+            delta: GoalDelta(
+                id: '3',
+                text: 'foo',
+                logEntry: SetParentLogEntry(
+                    parentId: '0', creationTime: DateTime.now()))));
     expect(goals['0']!.subGoals.length, equals(1));
 
     expect(goals['0']!.subGoals[0].text, equals('bar'));
@@ -57,24 +74,39 @@ void main() {
     final goals = testGoals();
     client.applyOp(
         goals,
-        const Op(
+        Op(
             hlcTimestamp: '0',
-            delta: GoalDelta(id: '2', text: 'foo', parentId: '0')));
+            delta: GoalDelta(
+                id: '2',
+                text: 'foo',
+                logEntry: SetParentLogEntry(
+                    parentId: '0', creationTime: DateTime.now()))));
     expect(goals['0']!.subGoals.length, equals(1));
 
     expect(goals['0']!.subGoals[0].text, equals('foo'));
   });
 
-  test('applies 2 ops', () {
+  test('applies 2 ops', () async {
     final client = SyncClient();
     final goals = testGoals();
+    Hive.init(".");
+    await client.init();
+    var hlc = HLC.now("test");
     client.applyOps(goals, [
-      const Op(
-          hlcTimestamp: '0',
-          delta: GoalDelta(id: '3', text: 'foo', parentId: '2')),
-      const Op(
-          hlcTimestamp: '1',
-          delta: GoalDelta(id: '4', text: 'baz', parentId: '3')),
+      Op(
+          hlcTimestamp: hlc.pack(),
+          delta: GoalDelta(
+              id: '3',
+              text: 'foo',
+              logEntry: SetParentLogEntry(
+                  parentId: '2', creationTime: DateTime.now()))),
+      Op(
+          hlcTimestamp: hlc.increment().pack(),
+          delta: GoalDelta(
+              id: '4',
+              text: 'baz',
+              logEntry: SetParentLogEntry(
+                  parentId: '3', creationTime: DateTime.now()))),
     ]);
 
     final parentGoal = goals['3']!;
@@ -104,9 +136,13 @@ void main() {
     final goals = testGoals();
     client.applyOp(
       goals,
-      const Op(
+      Op(
           hlcTimestamp: '0',
-          delta: GoalDelta(id: '3', text: 'foo', parentId: '2')),
+          delta: GoalDelta(
+              id: '3',
+              text: 'foo',
+              logEntry: SetParentLogEntry(
+                  parentId: '2', creationTime: DateTime.now()))),
     );
 
     final parentGoal = goals['2']!;
@@ -118,15 +154,19 @@ void main() {
 
     client.applyOp(
       goals,
-      const Op(
+      Op(
           hlcTimestamp: '1',
-          delta: GoalDelta(id: '3', text: 'foo', parentId: '0')),
+          delta: GoalDelta(
+              id: '3',
+              text: 'foo',
+              logEntry: SetParentLogEntry(
+                  parentId: '0', creationTime: DateTime.now()))),
     );
 
     expect(parentGoal.subGoals.length, equals(0));
     final newParentGoal = goals['0']!;
 
     expect(newParentGoal.subGoals, contains(childGoal));
-    expect(childGoal.parentId, equals('0'));
+    expect(childGoal.superGoals[0].id, equals('0'));
   });
 }

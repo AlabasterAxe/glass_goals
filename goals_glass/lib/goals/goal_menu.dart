@@ -82,7 +82,6 @@ class GoalMenu extends StatelessWidget {
           AppContext.of(context).syncClient.modifyGoal(
                 GoalDelta(
                   id: const Uuid().v4(),
-                  parentId: goal.id,
                   text: text,
                   logEntry: StatusLogEntry(
                     status: GoalStatus.active,

@@ -106,8 +106,13 @@ class SyncClient {
         return;
       }
 
+      for (final superGoal in goal.superGoals) {
+        superGoal.removeSubGoal(goal.id);
+      }
+
       goal.superGoals.clear();
       goal.superGoals.add(newSuperGoal);
+      newSuperGoal.addOrReplaceSubGoal(goal);
     }
   }
 
