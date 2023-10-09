@@ -88,6 +88,9 @@ class GoogleSheetsPersistenceService implements PersistenceService {
 class FirestorePersistenceService implements PersistenceService {
   final db = FirebaseFirestore.instance;
   final seenOps = <String>{};
+  final bool readonly;
+
+  FirestorePersistenceService({this.readonly = false});
 
   @override
   Future<LoadOpsResp> load({int? cursor}) async {
@@ -109,6 +112,9 @@ class FirestorePersistenceService implements PersistenceService {
 
   @override
   Future<void> save(Iterable<Op> ops) async {
+    if (readonly) {
+      return;
+    }
     final futures = <Future>[];
 
     for (final op in ops) {

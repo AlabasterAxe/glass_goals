@@ -7,13 +7,22 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:goals_web/main.dart';
+import 'package:goals_core/sync.dart';
+import 'package:goals_web/app.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const WebGoals());
+    await tester.pumpWidget(WebGoals(
+      persistenceService: InMemoryPersistenceService(ops: [
+        {
+          'hlcTimestamp':
+              '001674571071065:00001:db86cca1-fa15-4f6d-b37e-0d19bfb8f95a',
+          'version': 2,
+          'delta': {'id': 'root', 'text': 'Test Root'}
+        }
+      ]),
+    ));
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

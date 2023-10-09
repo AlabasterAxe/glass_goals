@@ -13,7 +13,7 @@ jobs:
         with:
           flutter-version: '3.13.5'
           channel: 'stable'
-      - run: cd goals_web && flutter build web
+      - run: cd goals_web && flutter build web -t lib/main_readonly.dart
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
