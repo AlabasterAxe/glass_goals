@@ -95,7 +95,7 @@ class SyncClient {
 
   void _evaluateSuperGoals(
       Map<String, Goal> goalMap, Goal goal, GoalLogEntry? entry) {
-    if (entry is SetParentLogEntry) {
+    if (entry is SetParentLogEntry && entry.parentId != null) {
       final newSuperGoal = goalMap[entry.parentId];
       if (newSuperGoal == null) {
         throw Exception('Parent goal not found: ${entry.parentId}');
@@ -166,17 +166,14 @@ class SyncClient {
     final Set<String> localOps =
         Set.from(_getOpsFromBox('ops').map((op) => op.hlcTimestamp));
 
-    try {
-      final result = await persistenceService!.load(cursor: cursor);
-      appBox.put('syncCursor', result.cursor);
-      for (Op op in result.ops) {
-        if (!localOps.contains(op.hlcTimestamp)) {
-          ops.add(Op.toJson(op));
-        }
+    final result = await persistenceService!.load(cursor: cursor);
+    appBox.put('syncCursor', result.cursor);
+    for (Op op in result.ops) {
+      if (!localOps.contains(op.hlcTimestamp)) {
+        ops.add(Op.toJson(op));
       }
-    } catch (e) {
-      log('Fetch failed', error: e);
     }
+
     final Iterable<Op> unsyncedOps = _getOpsFromBox('unsyncedOps');
     if (unsyncedOps.isNotEmpty) {
       try {

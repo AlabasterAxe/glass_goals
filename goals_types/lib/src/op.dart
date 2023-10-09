@@ -56,6 +56,8 @@ abstract class GoalLogEntry extends Equatable {
         return StatusLogEntry.fromJsonMap(json, version);
       case 'archiveNote':
         return ArchiveNoteLogEntry.fromJsonMap(json, version);
+      case 'setParent':
+        return SetParentLogEntry.fromJsonMap(json, version);
       default:
         throw Exception('Invalid data: $json has unknown type: $type');
     }
@@ -70,6 +72,9 @@ abstract class GoalLogEntry extends Equatable {
     }
     if (entry is ArchiveNoteLogEntry) {
       return ArchiveNoteLogEntry.toJsonMap(entry);
+    }
+    if (entry is SetParentLogEntry) {
+      return SetParentLogEntry.toJsonMap(entry);
     }
     throw Exception('Unknown type: ${entry.runtimeType}');
   }
@@ -343,22 +348,21 @@ class GoalDelta extends Equatable {
   }
 
   static GoalDelta fromPrevious(prev_goal_types.GoalDelta legacyGoalDelta) {
-    if (legacyGoalDelta.parentId != null) {
-      if (legacyGoalDelta.logEntry != null) {
-        throw Exception(
-            'Invalid data: GoalDelta cannot have both parentId and logEntry');
-      }
+    if (legacyGoalDelta.logEntry != null) {
+      return GoalDelta(
+          id: legacyGoalDelta.id,
+          text: legacyGoalDelta.text,
+          logEntry: GoalLogEntry.fromPrevious(legacyGoalDelta.logEntry));
+    } else if (legacyGoalDelta.parentId != null) {
       return GoalDelta(
           id: legacyGoalDelta.id,
           text: legacyGoalDelta.text,
           logEntry: SetParentLogEntry(
               creationTime: DateTime.now(),
               parentId: legacyGoalDelta.parentId!));
+    } else {
+      return GoalDelta(id: legacyGoalDelta.id, text: legacyGoalDelta.text);
     }
-    return GoalDelta(
-        id: legacyGoalDelta.id,
-        text: legacyGoalDelta.text,
-        logEntry: GoalLogEntry.fromPrevious(legacyGoalDelta.logEntry));
   }
 
   static Map<String, dynamic> toJsonMap(GoalDelta delta) {
