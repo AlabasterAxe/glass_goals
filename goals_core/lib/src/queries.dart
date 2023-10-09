@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:goals_types/goals_types.dart';
 import 'package:collection/collection.dart' show IterableZip;
 
@@ -80,16 +82,63 @@ Comparator<Goal> activeGoalExpiringSoonestComparator(WorldContext context) {
   };
 }
 
-Iterable<Goal> getGoalsToAncestor(Map<String, Goal> goalMap, String goalId,
-    {String? ancestorId}) {
-  final result = <Goal>[];
-  var currentGoal = goalMap[goalId];
-  while (currentGoal != null && currentGoal.id != ancestorId) {
-    result.add(currentGoal);
-    currentGoal =
-        currentGoal.parentId != null ? goalMap[currentGoal.parentId!] : null;
+_visitAncestors(Map<String, Goal> goalMap, String? head,
+    bool Function(String, List<String> path) visit,
+    {Set<String>? seenIds, List<String> tail = const []}) {
+  if (head == null) {
+    return;
   }
-  return result.reversed;
+  seenIds = seenIds ?? {head};
+
+  final headGoal = goalMap[head];
+  if (headGoal == null) {
+    throw Exception('Parent goal not found: $head');
+  }
+  for (final superGoal in headGoal.superGoals) {
+    if (visit(superGoal.id, tail)) {
+      return;
+    }
+    _visitAncestors(goalMap, superGoal.id, visit,
+        seenIds: seenIds, tail: [...tail, head]);
+  }
+}
+
+_findAncestors(Map<String, Goal> goalMap, Set<String> frontierIds,
+    Map<String, int> seenIds,
+    [depth = 1]) {
+  if (frontierIds.isEmpty) {
+    return;
+  }
+
+  Set<String> newFrontierIds = {};
+  for (final parentId in frontierIds) {
+    final parent = goalMap[parentId];
+    if (parent == null) {
+      throw Exception('Parent goal not found: $parentId');
+    }
+    for (final superGoal in parent.superGoals) {
+      if (!seenIds.containsKey(superGoal.id)) {
+        newFrontierIds.add(superGoal.id);
+        seenIds[superGoal.id] = depth;
+      }
+    }
+  }
+
+  return _findAncestors(goalMap, newFrontierIds, seenIds, depth + 1);
+}
+
+Iterable<String> getGoalsToAncestor(Map<String, Goal> goalMap, String goalId,
+    {String? ancestorId}) {
+  List<String>? result;
+  _visitAncestors(goalMap, goalId, (String id, List<String> path) {
+    if (id == ancestorId) {
+      result = path;
+      return true;
+    }
+    return false;
+  });
+
+  return result ?? [];
 }
 
 List<Goal> findCommonPrefix(
@@ -105,25 +154,50 @@ List<Goal> findCommonPrefix(
   return result;
 }
 
+Map<String, int> _intersectKeys(Map<String, int> a, Map<String, int> b) {
+  final result = <String, int>{};
+  for (final key in a.keys) {
+    if (b.containsKey(key)) {
+      result[key] = max(a[key]!, b[key]!);
+    }
+  }
+  return result;
+}
+
 String? findLatestCommonAncestor(
     Map<String, Goal> goalMap, Iterable<Goal> goals) {
   if (goals.isEmpty) {
     return null;
   }
 
-  Iterable<Goal>? commonAncestryOverlap;
+  Map<String, int>? commonAncestryOverlap;
 
   for (final goal in goals) {
-    final goalToRoot = getGoalsToAncestor(goalMap, goal.id);
+    final ancestors = <String, int>{goal.id: 0};
+    _findAncestors(goalMap, {goal.id}, ancestors);
 
     if (commonAncestryOverlap == null) {
-      commonAncestryOverlap = goalToRoot;
+      commonAncestryOverlap = ancestors;
       continue;
     }
 
-    commonAncestryOverlap = findCommonPrefix(commonAncestryOverlap, goalToRoot);
+    commonAncestryOverlap = _intersectKeys(commonAncestryOverlap, ancestors);
   }
-  return commonAncestryOverlap?.lastOrNull?.id;
+
+  if (commonAncestryOverlap!.isEmpty) {
+    return null;
+  }
+
+  int maxDepth = 0;
+  String? maxDepthAncestorId;
+  for (final entry in commonAncestryOverlap.entries) {
+    if (entry.value > maxDepth || maxDepthAncestorId == null) {
+      maxDepth = entry.value;
+      maxDepthAncestorId = entry.key;
+    }
+  }
+
+  return maxDepthAncestorId;
 }
 
 /// The logic for goals requiring attention is as follows:
@@ -178,8 +252,8 @@ Map<String, Goal> getGoalsRequiringAttention(
   final goalsToAdd = <String>{};
   for (final goal in result.values) {
     getGoalsToAncestor(goalMap, goal.id, ancestorId: latestCommonAncestor)
-        .forEach((g) {
-      goalsToAdd.add(g.id);
+        .forEach((goalId) {
+      goalsToAdd.add(goalId);
     });
   }
 

@@ -62,7 +62,9 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
                       AppContext.of(context).syncClient.modifyGoal(GoalDelta(
                           id: const Uuid().v4(),
                           text: newText,
-                          parentId: widget.parentId));
+                          logEntry: SetParentLogEntry(
+                              parentId: widget.parentId,
+                              creationTime: DateTime.now())));
                       setState(() {
                         _editing = false;
                       });

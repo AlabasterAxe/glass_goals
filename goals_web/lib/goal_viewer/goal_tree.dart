@@ -57,7 +57,10 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
   moveGoals(String newParentId, Set<String> goalIds) {
     final List<GoalDelta> goalDeltas = [];
     for (final goalId in goalIds) {
-      goalDeltas.add(GoalDelta(id: goalId, parentId: newParentId));
+      goalDeltas.add(GoalDelta(
+          id: goalId,
+          logEntry: SetParentLogEntry(
+              parentId: newParentId, creationTime: DateTime.now())));
     }
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
   }
@@ -126,9 +129,6 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
               onFocused: widget.onFocused,
               focused: isFocused,
               hovered: hovered && !dragging,
-              parent: widget.showParentName
-                  ? widget.goalMap[rootGoal.parentId]
-                  : null,
               hoverActions: widget.hoverActions,
               hasRenderableChildren: hasRenderableChildren,
               onExpanded: widget.onExpanded,
