@@ -12,7 +12,7 @@ import 'package:goals_core/model.dart'
         getGoalsMatchingPredicate,
         getGoalsRequiringAttention;
 import 'package:goals_core/sync.dart'
-    show GoalDelta, GoalStatus, StatusLogEntry;
+    show GoalDelta, GoalStatus, SetParentLogEntry, StatusLogEntry;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
@@ -118,7 +118,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         for (final Goal childGoal in goal.subGoals) {
           goalDeltas.add(GoalDelta(
             id: childGoal.id,
-            parentId: winningGoalId,
+            logEntry: SetParentLogEntry(
+                parentId: winningGoalId, creationTime: DateTime.now()),
           ));
         }
       }
@@ -442,8 +443,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                   final goalsRequiringAttention =
                       getGoalsRequiringAttention(worldContext, widget.goalMap);
                   final rootGoalIds = goalsRequiringAttention.values
-                      .where((goal) =>
-                          !goalsRequiringAttention.containsKey(goal.parentId))
+                      .where((goal) {
+                        for (final superGoal in goal.superGoals) {
+                          if (goalsRequiringAttention.containsKey(superGoal)) {
+                            return false;
+                          }
+                        }
+                        return true;
+                      })
                       .map((e) => e.id)
                       .toList();
 
@@ -473,7 +480,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           getGoalStatus(worldContext, goal).status !=
                               GoalStatus.done);
                   final rootGoalIds = pendingGoalMap.values
-                      .where((goal) => goal.parentId == null)
+                      .where((goal) => goal.superGoals.isEmpty)
                       .map((e) => e.id)
                       .toList();
                   return GoalListWidget(

@@ -1,5 +1,5 @@
 import 'dart:convert' show jsonDecode, jsonEncode;
-import 'package:goals_types_02/goals_types.dart' as prev_goal_types;
+import 'package:goals_types_03/goals_types.dart' as prev_goal_types;
 import 'package:equatable/equatable.dart' show Equatable;
 
 import 'version.dart' show TYPES_VERSION;
@@ -56,6 +56,8 @@ abstract class GoalLogEntry extends Equatable {
         return StatusLogEntry.fromJsonMap(json, version);
       case 'archiveNote':
         return ArchiveNoteLogEntry.fromJsonMap(json, version);
+      case 'setParent':
+        return SetParentLogEntry.fromJsonMap(json, version);
       default:
         throw Exception('Invalid data: $json has unknown type: $type');
     }
@@ -71,7 +73,25 @@ abstract class GoalLogEntry extends Equatable {
     if (entry is ArchiveNoteLogEntry) {
       return ArchiveNoteLogEntry.toJsonMap(entry);
     }
+    if (entry is SetParentLogEntry) {
+      return SetParentLogEntry.toJsonMap(entry);
+    }
     throw Exception('Unknown type: ${entry.runtimeType}');
+  }
+
+  static GoalLogEntry? fromPrevious(prev_goal_types.GoalLogEntry? legacyEntry) {
+    if (legacyEntry == null) {
+      return null;
+    }
+    if (legacyEntry is prev_goal_types.StatusLogEntry) {
+      return StatusLogEntry.fromPrevious(legacyEntry);
+    } else if (legacyEntry is prev_goal_types.ArchiveNoteLogEntry) {
+      return ArchiveNoteLogEntry.fromPrevious(legacyEntry);
+    } else if (legacyEntry is prev_goal_types.NoteLogEntry) {
+      return NoteLogEntry.fromPrevious(legacyEntry);
+    } else {
+      throw Exception('Unknown type: ${legacyEntry.runtimeType}');
+    }
   }
 }
 
@@ -114,6 +134,18 @@ class NoteLogEntry extends GoalLogEntry {
       'creationTime': noteLogEntry.creationTime.toUtc().toIso8601String(),
     };
   }
+
+  static NoteLogEntry? fromPrevious(prev_goal_types.NoteLogEntry? legacyEntry) {
+    if (legacyEntry == null) {
+      return null;
+    }
+
+    return NoteLogEntry(
+      id: legacyEntry.id,
+      text: legacyEntry.text,
+      creationTime: legacyEntry.creationTime,
+    );
+  }
 }
 
 class ArchiveNoteLogEntry extends GoalLogEntry {
@@ -148,6 +180,56 @@ class ArchiveNoteLogEntry extends GoalLogEntry {
     return {
       'type': 'archiveNote',
       'id': entry.id,
+      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+    };
+  }
+
+  static ArchiveNoteLogEntry? fromPrevious(
+      prev_goal_types.ArchiveNoteLogEntry? legacyEntry) {
+    if (legacyEntry == null) {
+      return null;
+    }
+
+    return ArchiveNoteLogEntry(
+      id: legacyEntry.id,
+      creationTime: legacyEntry.creationTime,
+    );
+  }
+}
+
+/// This log entry sets the parent of a goal, clearing other parents if any.
+class SetParentLogEntry extends GoalLogEntry {
+  static const FIRST_VERSION = 4;
+  final String? parentId;
+  const SetParentLogEntry({
+    required super.creationTime,
+    required this.parentId,
+  });
+
+  @override
+  List<Object?> get props => [parentId, creationTime];
+
+  static SetParentLogEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    return SetParentLogEntry(
+      parentId: json['parentId'],
+      creationTime: json['creationTime'] != null
+          ? DateTime.parse(json['creationTime']).toLocal()
+          : DateTime(2023, 1, 1),
+    );
+  }
+
+  static Map<String, dynamic> toJsonMap(SetParentLogEntry entry) {
+    return {
+      'type': 'setParent',
+      'parentId': entry.parentId,
       'creationTime': entry.creationTime.toUtc().toIso8601String(),
     };
   }
@@ -233,13 +315,12 @@ class GoalDelta extends Equatable {
   static const ID_FIELD_NAME = 'id';
   static const TEXT_FIELD_NAME = 'text';
   static const PARENT_ID_FIELD_NAME = 'parentId';
-  static const STATUS_LOG_ENTRY_FIELD_NAME = 'logEntry';
+  static const LOG_ENTRY_FIELD_NAME = 'logEntry';
 
   final String id;
   final String? text;
-  final String? parentId;
   final GoalLogEntry? logEntry;
-  const GoalDelta({required this.id, this.text, this.parentId, this.logEntry});
+  const GoalDelta({required this.id, this.text, this.logEntry});
 
   static GoalDelta fromJson(String jsonString, int? version) {
     return fromJsonMap(jsonDecode(jsonString), version);
@@ -260,19 +341,28 @@ class GoalDelta extends Equatable {
     return GoalDelta(
       id: json[ID_FIELD_NAME],
       text: json[TEXT_FIELD_NAME],
-      parentId: json[PARENT_ID_FIELD_NAME],
-      logEntry: json[STATUS_LOG_ENTRY_FIELD_NAME] != null
-          ? GoalLogEntry.fromJsonMap(json[STATUS_LOG_ENTRY_FIELD_NAME], version)
+      logEntry: json[LOG_ENTRY_FIELD_NAME] != null
+          ? GoalLogEntry.fromJsonMap(json[LOG_ENTRY_FIELD_NAME], version)
           : null,
     );
   }
 
   static GoalDelta fromPrevious(prev_goal_types.GoalDelta legacyGoalDelta) {
-    return GoalDelta(
-        id: legacyGoalDelta.id,
-        text: legacyGoalDelta.text,
-        parentId: legacyGoalDelta.parentId,
-        logEntry: StatusLogEntry.fromPrevious(legacyGoalDelta.statusLogEntry));
+    if (legacyGoalDelta.logEntry != null) {
+      return GoalDelta(
+          id: legacyGoalDelta.id,
+          text: legacyGoalDelta.text,
+          logEntry: GoalLogEntry.fromPrevious(legacyGoalDelta.logEntry));
+    } else if (legacyGoalDelta.parentId != null) {
+      return GoalDelta(
+          id: legacyGoalDelta.id,
+          text: legacyGoalDelta.text,
+          logEntry: SetParentLogEntry(
+              creationTime: DateTime(2023, 1, 1),
+              parentId: legacyGoalDelta.parentId!));
+    } else {
+      return GoalDelta(id: legacyGoalDelta.id, text: legacyGoalDelta.text);
+    }
   }
 
   static Map<String, dynamic> toJsonMap(GoalDelta delta) {
@@ -282,12 +372,8 @@ class GoalDelta extends Equatable {
     if (delta.text != null) {
       json[TEXT_FIELD_NAME] = delta.text!;
     }
-    if (delta.parentId != null) {
-      json[PARENT_ID_FIELD_NAME] = delta.parentId!;
-    }
     if (delta.logEntry != null) {
-      json[STATUS_LOG_ENTRY_FIELD_NAME] =
-          GoalLogEntry.toJsonMap(delta.logEntry!);
+      json[LOG_ENTRY_FIELD_NAME] = GoalLogEntry.toJsonMap(delta.logEntry!);
     }
     return json;
   }
@@ -297,7 +383,7 @@ class GoalDelta extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, text, parentId, logEntry];
+  List<Object?> get props => [id, text, logEntry];
 }
 
 class Op extends Equatable {

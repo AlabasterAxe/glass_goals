@@ -6,12 +6,15 @@ class Goal {
   // These fields are intentionally not final to allow references to stay valid
   String text;
   final List<Goal> subGoals = [];
-  String? parentId;
+  final List<Goal> superGoals = [];
   final List<GoalLogEntry> log = [];
 
-  Goal({required this.text, required this.id, subGoals, this.parentId}) {
+  Goal({required this.text, required this.id, subGoals, superGoals}) {
     if (subGoals != null) {
       this.subGoals.addAll(subGoals);
+    }
+    if (superGoals != null) {
+      this.superGoals.addAll(superGoals);
     }
   }
 

@@ -7,7 +7,8 @@ import 'package:rxdart/rxdart.dart' show BehaviorSubject, Subject;
 import 'package:uuid/uuid.dart';
 
 import 'package:goals_core/model.dart' show Goal;
-import 'package:goals_types/goals_types.dart' show GoalDelta, Op;
+import 'package:goals_types/goals_types.dart'
+    show GoalDelta, GoalLogEntry, Op, SetParentLogEntry;
 import 'persistence_service.dart' show PersistenceService;
 
 Map<String, Goal> initialGoalState() => {};
@@ -62,37 +63,66 @@ class SyncClient {
     sync();
   }
 
-  _checkCycles(Map<String, Goal> goalMap, String goalId, String? parentId) {
-    if (parentId == null) {
+  _checkCycles(Map<String, Goal> goalMap, String goalId,
+      Set<String> frontierIds, Set<String> seenIds) {
+    if (frontierIds.isEmpty) {
       return false;
     }
 
-    if (goalId == parentId) {
+    if (frontierIds.contains(goalId)) {
       return true;
     }
 
-    final parent = goalMap[parentId];
-    if (parent == null) {
-      throw Exception('Parent goal not found: $parentId');
+    Set<String> newFrontierIds = {};
+    for (final parentId in frontierIds) {
+      final parent = goalMap[parentId];
+      if (parent == null) {
+        throw Exception('Parent goal not found: $parentId');
+      }
+      for (final superGoal in parent.superGoals) {
+        if (superGoal.id == goalId) {
+          return true;
+        }
+        if (!seenIds.contains(superGoal)) {
+          newFrontierIds.add(superGoal.id);
+          seenIds.add(superGoal.id);
+        }
+      }
     }
 
-    return _checkCycles(goalMap, goalId, parent.parentId);
+    return _checkCycles(goalMap, goalId, newFrontierIds, seenIds);
+  }
+
+  void _evaluateSuperGoals(
+      Map<String, Goal> goalMap, Goal goal, GoalLogEntry? entry) {
+    if (entry is SetParentLogEntry && entry.parentId != null) {
+      final newSuperGoal = goalMap[entry.parentId];
+      if (newSuperGoal == null) {
+        throw Exception('Parent goal not found: ${entry.parentId}');
+      }
+      if (_checkCycles(
+          goalMap, goal.id, {newSuperGoal.id}, {newSuperGoal.id})) {
+        // silently ignore deltas that would create cycles ¯\_(ツ)_/¯
+        return;
+      }
+
+      for (final superGoal in goal.superGoals) {
+        superGoal.removeSubGoal(goal.id);
+      }
+
+      goal.superGoals.clear();
+      goal.superGoals.add(newSuperGoal);
+      newSuperGoal.addOrReplaceSubGoal(goal);
+    }
   }
 
   applyOp(Map<String, Goal> goalMap, Op op) {
     hlc = hlc.receive(HLC.unpack(op.hlcTimestamp));
     Goal? goal = goalMap[op.delta.id];
 
-    if (_checkCycles(goalMap, op.delta.id, op.delta.parentId)) {
-      // silently ignore deltas that would create cycles.
-      return;
-    }
-
     if (goal == null) {
-      goalMap[op.delta.id] = goal = Goal(
-          id: op.delta.id,
-          text: op.delta.text ?? 'Untitled',
-          parentId: op.delta.parentId);
+      goalMap[op.delta.id] =
+          goal = Goal(id: op.delta.id, text: op.delta.text ?? 'Untitled');
     }
 
     if (op.delta.text != null && goal.text != op.delta.text) {
@@ -101,17 +131,7 @@ class SyncClient {
 
     if (op.delta.logEntry != null) {
       goal.log.add(op.delta.logEntry!);
-    }
-
-    if (goal.parentId != null &&
-        op.delta.parentId != null &&
-        goal.parentId != op.delta.parentId) {
-      goalMap[goal.parentId!]?.removeSubGoal(goal.id);
-      goal.parentId = op.delta.parentId;
-    }
-
-    if (goal.parentId != null) {
-      goalMap[goal.parentId!]?.addOrReplaceSubGoal(goal);
+      _evaluateSuperGoals(goalMap, goal, op.delta.logEntry);
     }
   }
 
@@ -151,17 +171,14 @@ class SyncClient {
     final Set<String> localOps =
         Set.from(_getOpsFromBox('ops').map((op) => op.hlcTimestamp));
 
-    try {
-      final result = await persistenceService!.load(cursor: cursor);
-      appBox.put('syncCursor', result.cursor);
-      for (Op op in result.ops) {
-        if (!localOps.contains(op.hlcTimestamp)) {
-          ops.add(Op.toJson(op));
-        }
+    final result = await persistenceService!.load(cursor: cursor);
+    appBox.put('syncCursor', result.cursor);
+    for (Op op in result.ops) {
+      if (!localOps.contains(op.hlcTimestamp)) {
+        ops.add(Op.toJson(op));
       }
-    } catch (e) {
-      log('Fetch failed', error: e);
     }
+
     final Iterable<Op> unsyncedOps = _getOpsFromBox('unsyncedOps');
     if (unsyncedOps.isNotEmpty) {
       try {

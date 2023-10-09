@@ -5,7 +5,7 @@ import 'package:hlc/hlc.dart';
 import 'package:test/test.dart';
 
 Map<String, Goal> testGoals() {
-  final testRootGoal = Goal(id: '0', text: 'root', parentId: null);
+  final testRootGoal = Goal(id: '0', text: 'root');
 
   final goals = <String, Goal>{};
   goals[testRootGoal.id] = testRootGoal;
@@ -187,11 +187,17 @@ void main() {
       ),
       Op(
         hlcTimestamp: tick(),
-        delta: GoalDelta(id: '1', parentId: '0'),
+        delta: GoalDelta(
+            id: '1',
+            logEntry:
+                SetParentLogEntry(creationTime: DateTime.now(), parentId: '0')),
       ),
       Op(
         hlcTimestamp: tick(),
-        delta: GoalDelta(id: '2', parentId: '0'),
+        delta: GoalDelta(
+            id: '2',
+            logEntry:
+                SetParentLogEntry(creationTime: DateTime.now(), parentId: '0')),
       ),
     ]);
 
@@ -230,7 +236,13 @@ void main() {
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'child',
-            parentId: 'root',
+            logEntry: SetParentLogEntry(
+                parentId: 'root', creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'child',
             logEntry: StatusLogEntry(
                 status: GoalStatus.active,
                 creationTime: DateTime(2020, 1, 1, 12))),
@@ -239,7 +251,13 @@ void main() {
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'sub-child-1',
-            parentId: 'child',
+            logEntry: SetParentLogEntry(
+                parentId: 'child', creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-1',
             logEntry: StatusLogEntry(
                 status: GoalStatus.active,
                 creationTime: DateTime(2020, 1, 1, 12))),
@@ -248,7 +266,13 @@ void main() {
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'sub-child-2',
-            parentId: 'child',
+            logEntry: SetParentLogEntry(
+                parentId: 'child', creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-2',
             logEntry: StatusLogEntry(
                 status: GoalStatus.active,
                 creationTime: DateTime(2020, 1, 1, 12))),
