@@ -1,7 +1,7 @@
 import 'dart:html';
 
 import 'package:flutter/material.dart'
-    show AppBar, Drawer, IconButton, Icons, ListTile, Scaffold;
+    show AppBar, Colors, Drawer, IconButton, Icons, ListTile, Scaffold;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:goals_core/model.dart'
@@ -357,6 +357,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        surfaceTintColor: Colors.transparent,
         title: Row(
           children: [
             SizedBox(
@@ -512,9 +514,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       return Container();
     }
 
-    return GoalDetail(
+    return SingleChildScrollView(
       key: const ValueKey('detail'),
-      goal: focusedGoal,
+      child: GoalDetail(
+        goal: focusedGoal,
+      ),
     );
   }
 }

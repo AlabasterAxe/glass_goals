@@ -77,19 +77,35 @@ String getGoalStatusString(WorldContext context, Goal goal) {
   }
 }
 
-Color getGoalStatusColor(WorldContext context, Goal goal) {
+Color getGoalStatusBackgroundColor(WorldContext context, Goal goal) {
   final status = getGoalStatus(context, goal);
   switch (status.status) {
     case GoalStatus.active:
-      return Colors.green;
+      return paleGreenColor;
     case GoalStatus.done:
-      return Colors.blueGrey;
+      return paleBlueColor;
     case GoalStatus.archived:
-      return Colors.grey;
+      return paleGreyColor;
     case GoalStatus.pending:
-      return Colors.amber;
+      return yellowColor;
     case null:
-      return Colors.deepPurple;
+      return palePurpleColor;
+  }
+}
+
+Color getGoalStatusTextColor(WorldContext context, Goal goal) {
+  final status = getGoalStatus(context, goal);
+  switch (status.status) {
+    case GoalStatus.active:
+      return darkGreenColor;
+    case GoalStatus.done:
+      return darkBlueColor;
+    case GoalStatus.archived:
+      return darkGreyColor;
+    case GoalStatus.pending:
+      return darkBrownColor;
+    case null:
+      return darkPurpleColor;
   }
 }
 
@@ -143,16 +159,29 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                 widget.onFocused?.call(widget.goal.id);
               },
         child: Container(
-          color: widget.hovered || _hovering
-              ? Colors.grey.shade300
-              : Colors.transparent,
+          decoration: BoxDecoration(
+            color: widget.hovered || _hovering
+                ? emphasizedLightBackground
+                : Colors.transparent,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.max,
             children: [
-              Checkbox(
-                  value: isSelected,
-                  onChanged: widget.onSelected,
-                  visualDensity: VisualDensity.standard),
+              Padding(
+                padding: EdgeInsets.only(
+                    left: uiUnit(2),
+                    right: uiUnit(2),
+                    top: uiUnit(1),
+                    bottom: uiUnit(1)),
+                child: Container(
+                  width: uiUnit(),
+                  height: uiUnit(),
+                  decoration: BoxDecoration(
+                    color: darkElementColor,
+                    borderRadius: BorderRadius.circular(uiUnit()),
+                  ),
+                ),
+              ),
               _editing
                   ? IntrinsicWidth(
                       child: TextField(
@@ -180,21 +209,26 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                   : Text(
                       '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
                       style: mainTextStyle.copyWith(
-                          fontWeight: widget.focused
-                              ? FontWeight.bold
-                              : FontWeight.normal)),
+                        fontWeight: widget.focused
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        decoration:
+                            isSelected ? TextDecoration.underline : null,
+                      )),
               SizedBox(width: uiUnit(2)),
               // chip like container widget around text status widget:
               Container(
                 decoration: BoxDecoration(
-                  color: getGoalStatusColor(worldContext, widget.goal),
-                  borderRadius: BorderRadius.circular(10000.0),
+                  color:
+                      getGoalStatusBackgroundColor(worldContext, widget.goal),
+                  borderRadius: BorderRadius.circular(1),
                 ),
                 padding: EdgeInsets.symmetric(
-                    horizontal: uiUnit(2), vertical: uiUnit()),
+                    vertical: uiUnit() / 2, horizontal: uiUnit()),
                 child: Text(
                   getGoalStatusString(worldContext, widget.goal),
-                  style: smallTextStyle.copyWith(color: Colors.white),
+                  style: smallTextStyle.copyWith(
+                      color: getGoalStatusTextColor(worldContext, widget.goal)),
                 ),
               ),
               IconButton(
