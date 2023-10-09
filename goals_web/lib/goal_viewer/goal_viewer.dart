@@ -2,6 +2,8 @@ import 'dart:html';
 
 import 'package:flutter/material.dart'
     show AppBar, Colors, Drawer, IconButton, Icons, ListTile, Scaffold;
+import 'package:flutter/services.dart'
+    show KeyDownEvent, KeyUpEvent, LogicalKeyboardKey;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:goals_core/model.dart'
@@ -36,6 +38,31 @@ enum GoalView { tree, list, to_review }
 
 class _GoalViewerState extends ConsumerState<GoalViewer> {
   GoalView _selectedDisplayMode = GoalView.tree;
+  bool shiftHeld = false;
+  bool ctrlHeld = false;
+  late final focusNode = FocusNode(
+    onKeyEvent: (node, event) {
+      if (event is KeyDownEvent) {
+        print(
+            '${event.logicalKey}, ${event.logicalKey == LogicalKeyboardKey.metaLeft}');
+        if (event.logicalKey == LogicalKeyboardKey.shiftLeft) {
+          shiftHeld = true;
+        } else if (event.logicalKey == LogicalKeyboardKey.controlLeft ||
+            event.logicalKey == LogicalKeyboardKey.metaLeft) {
+          print('ctrl down');
+          ctrlHeld = true;
+        }
+      } else if (event is KeyUpEvent) {
+        if (event.logicalKey == LogicalKeyboardKey.shiftLeft) {
+          shiftHeld = false;
+        } else if (event.logicalKey == LogicalKeyboardKey.controlLeft ||
+            event.logicalKey == LogicalKeyboardKey.metaLeft) {
+          ctrlHeld = false;
+        }
+      }
+      return KeyEventResult.ignored;
+    },
+  );
 
   Future<void>? openBoxFuture;
   bool isInitted = false;
@@ -87,9 +114,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   onFocused(String? goalId) {
     setState(() {
       if (goalId != null) {
-        ref.read(selectedGoalsProvider.notifier)
-          ..clear()
-          ..add(goalId);
+        final selectedGoals = ref.read(selectedGoalsProvider.notifier);
+        if (!ctrlHeld) {
+          selectedGoals.clear();
+        }
+
+        selectedGoals.add(goalId);
       }
 
       ref.read(focusedGoalProvider.notifier).set(goalId);
@@ -248,6 +278,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
+    focusNode.requestFocus();
+
     if (!isInitted) {
       ref.read(focusedGoalProvider.notifier).set(_parseUrlGoalId());
       window.addEventListener('popstate', _handlePopState);
@@ -355,56 +387,59 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       children.add(_detailView());
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        surfaceTintColor: Colors.transparent,
-        title: Row(
-          children: [
-            SizedBox(
-              width: uiUnit(12),
-              height: uiUnit(12),
-              child: Padding(
-                padding:
-                    EdgeInsets.fromLTRB(0, uiUnit(2), uiUnit(2), uiUnit(2)),
-                child: SvgPicture.asset(
-                  'assets/logo.svg',
+    return RawKeyboardListener(
+      focusNode: focusNode,
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          surfaceTintColor: Colors.transparent,
+          title: Row(
+            children: [
+              SizedBox(
+                width: uiUnit(12),
+                height: uiUnit(12),
+                child: Padding(
+                  padding:
+                      EdgeInsets.fromLTRB(0, uiUnit(2), uiUnit(2), uiUnit(2)),
+                  child: SvgPicture.asset(
+                    'assets/logo.svg',
+                  ),
                 ),
               ),
-            ),
-            const Text('Glass Goals'),
-          ],
-        ),
-        centerTitle: false,
-        leading: isNarrow
-            ? focusedGoal != null
-                ? IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () {
-                      ref.read(focusedGoalProvider.notifier).set(null);
+              const Text('Glass Goals'),
+            ],
+          ),
+          centerTitle: false,
+          leading: isNarrow
+              ? focusedGoal != null
+                  ? IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () {
+                        ref.read(focusedGoalProvider.notifier).set(null);
+                      })
+                  : Builder(builder: (context) {
+                      return IconButton(
+                          icon: const Icon(Icons.menu),
+                          onPressed: () {
+                            Scaffold.of(context).openDrawer();
+                          });
                     })
-                : Builder(builder: (context) {
-                    return IconButton(
-                        icon: const Icon(Icons.menu),
-                        onPressed: () {
-                          Scaffold.of(context).openDrawer();
-                        });
-                  })
+              : null,
+        ),
+        drawer: isNarrow && focusedGoal == null
+            ? Drawer(
+                child: _viewSwitcher(true),
+              )
             : null,
+        body: children.length == 1
+            ? children[0]
+            : MultiSplitViewTheme(
+                data: multiSplitViewThemeData,
+                child: MultiSplitView(
+                  controller: _multiSplitViewController,
+                  children: children,
+                )),
       ),
-      drawer: isNarrow && focusedGoal == null
-          ? Drawer(
-              child: _viewSwitcher(true),
-            )
-          : null,
-      body: children.length == 1
-          ? children[0]
-          : MultiSplitViewTheme(
-              data: multiSplitViewThemeData,
-              child: MultiSplitView(
-                controller: _multiSplitViewController,
-                children: children,
-              )),
     );
   }
 
