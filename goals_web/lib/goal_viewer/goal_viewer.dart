@@ -22,7 +22,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 
-import '../styles.dart' show multiSplitViewThemeData, uiUnit;
+import '../styles.dart' show lightBackground, multiSplitViewThemeData, uiUnit;
 import 'goal_list.dart' show GoalListWidget;
 import 'hover_actions.dart';
 
@@ -43,13 +43,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   late final focusNode = FocusNode(
     onKeyEvent: (node, event) {
       if (event is KeyDownEvent) {
-        print(
-            '${event.logicalKey}, ${event.logicalKey == LogicalKeyboardKey.metaLeft}');
         if (event.logicalKey == LogicalKeyboardKey.shiftLeft) {
           shiftHeld = true;
         } else if (event.logicalKey == LogicalKeyboardKey.controlLeft ||
             event.logicalKey == LogicalKeyboardKey.metaLeft) {
-          print('ctrl down');
           ctrlHeld = true;
         }
       } else if (event is KeyUpEvent) {
@@ -281,7 +278,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     focusNode.requestFocus();
 
     if (!isInitted) {
-      ref.read(focusedGoalProvider.notifier).set(_parseUrlGoalId());
+      final focusedGoalId = _parseUrlGoalId();
+      if (focusedGoalId != null) {
+        ref.read(focusedGoalProvider.notifier).set(focusedGoalId);
+        ref.read(selectedGoalsProvider.notifier).add(focusedGoalId);
+      }
       window.addEventListener('popstate', _handlePopState);
       setState(() {
         openBoxFuture = Hive.openBox('goals_web.ui').then((box) {
@@ -370,6 +371,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   Widget build(BuildContext context) {
     final focusedGoal = ref.watch(focusedGoalProvider);
     final worldContext = ref.watch(worldContextProvider);
+    final selectedGoals = ref.watch(selectedGoalsProvider);
     ref.listen(focusedGoalProvider, _handleFocusedGoalChange);
 
     final children = <Widget>[];
@@ -431,14 +433,41 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                 child: _viewSwitcher(true),
               )
             : null,
-        body: children.length == 1
-            ? children[0]
-            : MultiSplitViewTheme(
-                data: multiSplitViewThemeData,
-                child: MultiSplitView(
-                  controller: _multiSplitViewController,
-                  children: children,
-                )),
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: children.length == 1
+                  ? children[0]
+                  : MultiSplitViewTheme(
+                      data: multiSplitViewThemeData,
+                      child: MultiSplitView(
+                        controller: _multiSplitViewController,
+                        children: children,
+                      )),
+            ),
+            isNarrow && selectedGoals.isNotEmpty
+                ? Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: uiUnit(16),
+                    child: Container(
+                      color: lightBackground,
+                      child: HoverActionsWidget(
+                        onMerge: onMerge,
+                        onUnarchive: onUnarchive,
+                        onArchive: onArchive,
+                        onDone: onDone,
+                        onSnooze: onSnooze,
+                        onActive: onActive,
+                        onClearSelection: onClearSelection,
+                        goalMap: widget.goalMap,
+                        mainAxisSize: MainAxisSize.max,
+                      ),
+                    ))
+                : Container(),
+          ],
+        ),
       ),
     );
   }

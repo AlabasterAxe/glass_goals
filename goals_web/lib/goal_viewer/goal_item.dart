@@ -133,6 +133,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     final isSelected =
         ref.watch(selectedGoalsProvider).contains(widget.goal.id);
     final worldContext = ref.watch(worldContextProvider);
+    final isNarrow = MediaQuery.of(context).size.width < 600;
     return MouseRegion(
       onHover: (event) {
         setState(() {
@@ -167,20 +168,18 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
           child: Row(
             mainAxisSize: MainAxisSize.max,
             children: [
-              Padding(
-                padding: EdgeInsets.only(
-                    left: uiUnit(2),
-                    right: uiUnit(2),
-                    top: uiUnit(1),
-                    bottom: uiUnit(1)),
-                child: Container(
+              SizedBox(
+                width: uiUnit(10),
+                height: uiUnit(10),
+                child: Center(
+                    child: Container(
                   width: uiUnit(),
                   height: uiUnit(),
                   decoration: BoxDecoration(
                     color: darkElementColor,
                     borderRadius: BorderRadius.circular(uiUnit()),
                   ),
-                ),
+                )),
               ),
               _editing
                   ? IntrinsicWidth(
@@ -239,7 +238,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                           ? Icons.arrow_right
                           : Icons.add)),
               const Spacer(),
-              isSelected ? widget.hoverActions : Container(),
+              isSelected && !isNarrow ? widget.hoverActions : Container(),
             ],
           ),
         ),

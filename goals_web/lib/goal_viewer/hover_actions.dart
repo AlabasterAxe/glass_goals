@@ -9,7 +9,7 @@ import 'package:flutter/material.dart'
         MenuItemButton,
         Tooltip,
         showDatePicker;
-import 'package:flutter/rendering.dart' show MainAxisSize;
+import 'package:flutter/rendering.dart' show MainAxisAlignment, MainAxisSize;
 import 'package:flutter/widgets.dart'
     show BuildContext, Icon, Row, Text, Widget;
 import 'package:goals_core/model.dart' show Goal, getGoalStatus;
@@ -27,6 +27,7 @@ class HoverActionsWidget extends ConsumerStatefulWidget {
   final Function() onClearSelection;
   final Function(DateTime? endDate) onActive;
   final Map<String, Goal> goalMap;
+  final mainAxisSize;
   const HoverActionsWidget({
     super.key,
     required this.onMerge,
@@ -37,6 +38,7 @@ class HoverActionsWidget extends ConsumerStatefulWidget {
     required this.onActive,
     required this.onClearSelection,
     required this.goalMap,
+    this.mainAxisSize = MainAxisSize.min,
   });
 
   @override
@@ -62,7 +64,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
       }
     }
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: widget.mainAxisSize,
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         Tooltip(
           message: 'Merge',
