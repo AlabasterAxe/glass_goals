@@ -228,9 +228,7 @@ void main() {
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'root',
-            logEntry: StatusLogEntry(
-                status: GoalStatus.pending,
-                creationTime: DateTime(2020, 1, 1, 12))),
+            logEntry: StatusLogEntry(creationTime: DateTime(2020, 1, 1, 12))),
       ),
       Op(
         hlcTimestamp: tick(),

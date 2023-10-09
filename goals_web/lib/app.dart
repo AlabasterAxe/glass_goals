@@ -54,7 +54,7 @@ class _WebGoalsState extends ConsumerState<WebGoals>
 
   Future<void> appInit(context) async {
     await syncClient.init();
-    refreshTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       ref.read(worldContextProvider.notifier).poke();
     });
     stateSubscription = syncClient.stateSubject

@@ -94,12 +94,13 @@ _visitAncestors(Map<String, Goal> goalMap, String? head,
   if (headGoal == null) {
     throw Exception('Parent goal not found: $head');
   }
+  final newTail = [...tail, head];
   for (final superGoal in headGoal.superGoals) {
-    if (visit(superGoal.id, tail)) {
+    if (visit(superGoal.id, newTail)) {
       return;
     }
     _visitAncestors(goalMap, superGoal.id, visit,
-        seenIds: seenIds, tail: [...tail, head]);
+        seenIds: seenIds, tail: newTail);
   }
 }
 
@@ -188,11 +189,13 @@ String? findLatestCommonAncestor(
     return null;
   }
 
-  int maxDepth = 0;
+  int? minDepth;
   String? maxDepthAncestorId;
   for (final entry in commonAncestryOverlap.entries) {
-    if (entry.value > maxDepth || maxDepthAncestorId == null) {
-      maxDepth = entry.value;
+    if (minDepth == null ||
+        entry.value < minDepth ||
+        maxDepthAncestorId == null) {
+      minDepth = entry.value;
       maxDepthAncestorId = entry.key;
     }
   }
@@ -250,11 +253,16 @@ Map<String, Goal> getGoalsRequiringAttention(
 
   // fill all parents up to that ancestor
   final goalsToAdd = <String>{};
+  print("lca $latestCommonAncestor");
+  print("----");
   for (final goal in result.values) {
-    getGoalsToAncestor(goalMap, goal.id, ancestorId: latestCommonAncestor)
-        .forEach((goalId) {
+    final pathToAncestor =
+        getGoalsToAncestor(goalMap, goal.id, ancestorId: latestCommonAncestor);
+    print('path to $latestCommonAncestor for "${goal.text}"');
+    print(pathToAncestor.map((id) => goalMap[id]!.text).toList());
+    for (final goalId in pathToAncestor) {
       goalsToAdd.add(goalId);
-    });
+    }
   }
 
   for (final goalId in goalsToAdd) {
