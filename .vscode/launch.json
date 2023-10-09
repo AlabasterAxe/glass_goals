@@ -28,7 +28,7 @@
             "name": "goals_web",
             "request": "launch",
             "type": "dart",
-            "program": "goals_web/lib/main.dart",
+            "program": "goals_web/lib/main_readonly.dart",
         },
         {
             "name": "goals_web (unauthed)",
