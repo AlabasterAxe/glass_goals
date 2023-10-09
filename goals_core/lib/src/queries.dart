@@ -253,13 +253,9 @@ Map<String, Goal> getGoalsRequiringAttention(
 
   // fill all parents up to that ancestor
   final goalsToAdd = <String>{};
-  print("lca $latestCommonAncestor");
-  print("----");
   for (final goal in result.values) {
     final pathToAncestor =
         getGoalsToAncestor(goalMap, goal.id, ancestorId: latestCommonAncestor);
-    print('path to $latestCommonAncestor for "${goal.text}"');
-    print(pathToAncestor.map((id) => goalMap[id]!.text).toList());
     for (final goalId in pathToAncestor) {
       goalsToAdd.add(goalId);
     }
