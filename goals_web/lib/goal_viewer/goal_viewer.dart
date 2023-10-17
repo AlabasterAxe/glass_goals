@@ -208,6 +208,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     setState(() {
       AppContext.of(context).syncClient.modifyGoals(goalDeltas);
       ref.read(selectedGoalsProvider.notifier).clear();
+      ref.read(focusedGoalProvider.notifier).set(null);
     });
   }
 

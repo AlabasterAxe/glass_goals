@@ -139,14 +139,10 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isExpanded =
-        ref.watch(expandedGoalsProvider).contains(widget.goal.id);
-    final selectedGoals = ref.watch(selectedGoalsProvider);
-    final isSelected = selectedGoals.contains(widget.goal.id);
-    final worldContext = ref.watch(worldContextProvider);
-    final isNarrow = MediaQuery.of(context).size.width < 600;
+  Widget _dragWrapWidget(
+      {required Widget child,
+      required bool isSelected,
+      required Set<String> selectedGoals}) {
     return Draggable<String>(
       data: widget.goal.id,
       onDragEnd: (_) => widget.onDragEnd?.call(),
@@ -165,117 +161,140 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                   color: Colors.white)),
         ),
       ),
-      child: MouseRegion(
-        onHover: (event) {
-          setState(() {
-            _hovering = true;
-          });
-        },
-        onExit: (event) {
-          setState(() {
-            _hovering = false;
-          });
-        },
-        child: GestureDetector(
-          onDoubleTap: _editing
-              ? null
-              : () => {
-                    setState(() {
-                      _editing = true;
-                      _focusNode.requestFocus();
-                    })
-                  },
-          onTap: _editing
-              ? null
-              : () {
-                  widget.onFocused?.call(widget.goal.id);
-                },
+      child: child,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isExpanded =
+        ref.watch(expandedGoalsProvider).contains(widget.goal.id);
+    final selectedGoals = ref.watch(selectedGoalsProvider);
+    final isSelected = selectedGoals.contains(widget.goal.id);
+    final worldContext = ref.watch(worldContextProvider);
+    final isNarrow = MediaQuery.of(context).size.width < 600;
+    final bullet = SizedBox(
+      width: uiUnit(10),
+      height: uiUnit(10),
+      child: Center(
           child: Container(
-            decoration: BoxDecoration(
-              color: widget.hovered || _hovering
-                  ? emphasizedLightBackground
-                  : Colors.transparent,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                SizedBox(
-                  width: uiUnit(10),
-                  height: uiUnit(10),
-                  child: Center(
-                      child: Container(
-                    width: uiUnit(),
-                    height: uiUnit(),
-                    decoration: BoxDecoration(
-                      color: darkElementColor,
-                      borderRadius: BorderRadius.circular(uiUnit()),
-                    ),
-                  )),
+        width: uiUnit(),
+        height: uiUnit(),
+        decoration: BoxDecoration(
+          color: darkElementColor,
+          borderRadius: BorderRadius.circular(uiUnit()),
+        ),
+      )),
+    );
+    final content = MouseRegion(
+      onHover: (event) {
+        setState(() {
+          _hovering = true;
+        });
+      },
+      onExit: (event) {
+        setState(() {
+          _hovering = false;
+        });
+      },
+      child: GestureDetector(
+        onDoubleTap: _editing
+            ? null
+            : () => {
+                  setState(() {
+                    _editing = true;
+                    _focusNode.requestFocus();
+                  })
+                },
+        onTap: _editing
+            ? null
+            : () {
+                widget.onFocused?.call(widget.goal.id);
+              },
+        child: Container(
+          decoration: BoxDecoration(
+            color: widget.hovered || _hovering
+                ? emphasizedLightBackground
+                : Colors.transparent,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              widget.dragHandle == GoalItemDragHandle.bullet
+                  ? _dragWrapWidget(
+                      child: bullet,
+                      isSelected: isSelected,
+                      selectedGoals: selectedGoals)
+                  : bullet,
+              _editing
+                  ? IntrinsicWidth(
+                      child: TextField(
+                        autocorrect: false,
+                        controller: _textController,
+                        decoration: null,
+                        style: mainTextStyle,
+                        onEditingComplete: () {
+                          AppContext.of(context).syncClient.modifyGoal(
+                              GoalDelta(
+                                  id: widget.goal.id,
+                                  text: _textController!.text));
+                          setState(() {
+                            _editing = false;
+                          });
+                        },
+                        onTapOutside: (_) {
+                          setState(() {
+                            _editing = false;
+                          });
+                        },
+                        focusNode: _focusNode,
+                      ),
+                    )
+                  : Text(
+                      '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
+                      style: mainTextStyle.copyWith(
+                        fontWeight: widget.focused
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        decoration:
+                            isSelected ? TextDecoration.underline : null,
+                      )),
+              SizedBox(width: uiUnit(2)),
+              // chip like container widget around text status widget:
+              Container(
+                decoration: BoxDecoration(
+                  color:
+                      getGoalStatusBackgroundColor(worldContext, widget.goal),
+                  borderRadius: BorderRadius.circular(1),
                 ),
-                _editing
-                    ? IntrinsicWidth(
-                        child: TextField(
-                          autocorrect: false,
-                          controller: _textController,
-                          decoration: null,
-                          style: mainTextStyle,
-                          onEditingComplete: () {
-                            AppContext.of(context).syncClient.modifyGoal(
-                                GoalDelta(
-                                    id: widget.goal.id,
-                                    text: _textController!.text));
-                            setState(() {
-                              _editing = false;
-                            });
-                          },
-                          onTapOutside: (_) {
-                            setState(() {
-                              _editing = false;
-                            });
-                          },
-                          focusNode: _focusNode,
-                        ),
-                      )
-                    : Text(
-                        '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
-                        style: mainTextStyle.copyWith(
-                          fontWeight: widget.focused
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          decoration:
-                              isSelected ? TextDecoration.underline : null,
-                        )),
-                SizedBox(width: uiUnit(2)),
-                // chip like container widget around text status widget:
-                Container(
-                  decoration: BoxDecoration(
-                    color:
-                        getGoalStatusBackgroundColor(worldContext, widget.goal),
-                    borderRadius: BorderRadius.circular(1),
-                  ),
-                  padding: EdgeInsets.symmetric(
-                      vertical: uiUnit() / 2, horizontal: uiUnit()),
-                  child: Text(
-                    getGoalStatusString(worldContext, widget.goal),
-                    style: smallTextStyle.copyWith(
-                        color:
-                            getGoalStatusTextColor(worldContext, widget.goal)),
-                  ),
+                padding: EdgeInsets.symmetric(
+                    vertical: uiUnit() / 2, horizontal: uiUnit()),
+                child: Text(
+                  getGoalStatusString(worldContext, widget.goal),
+                  style: smallTextStyle.copyWith(
+                      color: getGoalStatusTextColor(worldContext, widget.goal)),
                 ),
-                IconButton(
-                    onPressed: () => widget.onExpanded(widget.goal.id),
-                    icon: Icon(isExpanded
-                        ? Icons.arrow_drop_down
-                        : widget.hasRenderableChildren
-                            ? Icons.arrow_right
-                            : Icons.add)),
-                const Spacer(),
-                isSelected && !isNarrow ? widget.hoverActions : Container(),
-              ],
-            ),
+              ),
+              IconButton(
+                  onPressed: () => widget.onExpanded(widget.goal.id),
+                  icon: Icon(isExpanded
+                      ? Icons.arrow_drop_down
+                      : widget.hasRenderableChildren
+                          ? Icons.arrow_right
+                          : Icons.add)),
+              const Spacer(),
+              isSelected && !isNarrow ? widget.hoverActions : Container(),
+            ],
           ),
         ),
       ),
     );
+    return widget.dragHandle == GoalItemDragHandle.item
+        ? _dragWrapWidget(
+            isSelected: isSelected,
+            selectedGoals: selectedGoals,
+            child: content,
+          )
+        : content;
   }
 }
