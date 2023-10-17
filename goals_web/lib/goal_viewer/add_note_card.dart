@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/styles.dart';
+import 'package:goals_web/util/format_date.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerStatefulWidget, ConsumerState;
 import 'package:uuid/uuid.dart';
@@ -53,9 +54,13 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
     _stopEditing();
   }
 
-  _discardNote() {
-    _textController!.text = _defaultText;
-    _stopEditing();
+  _potentiallyDiscardNote() {
+    if (_textController!.text == _defaultText) {
+      _textController!.text = _defaultText;
+      _stopEditing();
+    } else {
+      _createNote();
+    }
   }
 
   _startEditing() {
@@ -70,7 +75,7 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
             _createNote();
             break;
           case EditingEvent.discard:
-            _discardNote();
+            _potentiallyDiscardNote();
             break;
         }
       });
@@ -100,11 +105,20 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
             _createNote,
       },
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: Row(
-          children: [
-            Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: uiUnit(10),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(formatDate(DateTime.now())),
+            ),
+          ),
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Padding(
+              padding: EdgeInsets.only(left: uiUnit(4), bottom: uiUnit(4)),
               child: _editing
                   ? IntrinsicHeight(
                       child: TextField(
@@ -113,7 +127,8 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
                         decoration: null,
                         maxLines: null,
                         style: mainTextStyle,
-                        onTapOutside: isNarrow ? null : (_) => _discardNote(),
+                        onTapOutside:
+                            isNarrow ? null : (_) => _potentiallyDiscardNote(),
                         focusNode: _focusNode,
                       ),
                     )
@@ -123,8 +138,8 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
                           style: mainTextStyle.copyWith(color: Colors.black54)),
                     ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

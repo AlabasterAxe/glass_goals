@@ -7,7 +7,7 @@ import 'package:goals_core/sync.dart'
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
 import 'package:goals_web/styles.dart' show mainTextStyle, uiUnit;
-import 'package:intl/intl.dart';
+import 'package:goals_web/util/format_date.dart';
 
 class NoteCard extends StatefulWidget {
   final String goalId;
@@ -79,12 +79,7 @@ class _NoteCardState extends State<NoteCard> {
             children: [
               Row(
                 children: [
-                  Text(DateFormat('yyyy.MM.dd.')
-                          .format(widget.entry.creationTime) +
-                      DateFormat('EE')
-                          .format(widget.entry.creationTime)
-                          .substring(0, 2)
-                          .toUpperCase()),
+                  Text(formatDate(widget.entry.creationTime)),
                   widget.goalText != null
                       ? Text(' - ${widget.goalText!}')
                       : Container()
@@ -94,14 +89,6 @@ class _NoteCardState extends State<NoteCard> {
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _editing = true;
-                                _focusNode.requestFocus();
-                              });
-                            },
-                            icon: const Icon(Icons.edit)),
                         IconButton(
                             onPressed: () {
                               AppContext.of(context).syncClient.modifyGoal(
@@ -129,7 +116,9 @@ class _NoteCardState extends State<NoteCard> {
                       maxLines: null,
                       style: mainTextStyle,
                       onTapOutside: (_) {
-                        _textController.text = widget.entry.text;
+                        if (_textController.text != widget.entry.text) {
+                          _saveNote();
+                        }
                         setState(() {
                           _editing = false;
                         });
@@ -140,6 +129,12 @@ class _NoteCardState extends State<NoteCard> {
                 : MarkdownBody(
                     data: _textController.text,
                     selectable: true,
+                    onTapText: () {
+                      setState(() {
+                        _editing = true;
+                        _focusNode.requestFocus();
+                      });
+                    },
                     styleSheet: MarkdownStyleSheet(
                       textScaleFactor: 1.4,
                     )),
@@ -200,11 +195,16 @@ class _GoalDetailState extends State<GoalDetail> {
           goalId: goal.id, goalText: goal.text, entry: entry)));
     }
     final textTheme = Theme.of(context).textTheme;
+    final noteLog = _computeNoteLog(logItems);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Text(widget.goal.text, style: textTheme.headlineMedium),
       SizedBox(height: uiUnit(2)),
-      AddNoteCard(goalId: widget.goal.id),
-      for (final entry in _computeNoteLog(logItems))
+      noteLog.firstOrNull == null ||
+              formatDate(noteLog.first.entry.creationTime) !=
+                  formatDate(DateTime.now())
+          ? AddNoteCard(goalId: widget.goal.id)
+          : Container(),
+      for (final entry in noteLog)
         NoteCard(
             key: ValueKey((entry.entry as NoteLogEntry).id),
             goalId: widget.goal.id,

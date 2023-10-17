@@ -35,6 +35,18 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
     }
   }
 
+  _addGoal() {
+    final newText = _textController!.text;
+    _textController!.text = _defaultText;
+    _textController!.selection = TextSelection(
+        baseOffset: 0, extentOffset: _textController!.text.length);
+    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+        id: const Uuid().v4(),
+        text: newText,
+        logEntry: SetParentLogEntry(
+            parentId: widget.parentId, creationTime: DateTime.now())));
+  }
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -53,21 +65,11 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
                     controller: _textController,
                     decoration: null,
                     style: mainTextStyle,
-                    onEditingComplete: () {
-                      final newText = _textController!.text;
-                      _textController!.text = _defaultText;
-                      _textController!.selection = TextSelection(
-                          baseOffset: 0,
-                          extentOffset: _textController!.text.length);
-                      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                          id: const Uuid().v4(),
-                          text: newText,
-                          logEntry: SetParentLogEntry(
-                              parentId: widget.parentId,
-                              creationTime: DateTime.now())));
-                    },
+                    onEditingComplete: _addGoal,
                     onTapOutside: (_) {
-                      _textController!.text = _defaultText;
+                      if (_textController!.text != _defaultText) {
+                        _addGoal();
+                      }
                       setState(() {
                         _editing = false;
                       });
