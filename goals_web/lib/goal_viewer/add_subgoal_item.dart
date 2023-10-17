@@ -65,9 +65,6 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
                           logEntry: SetParentLogEntry(
                               parentId: widget.parentId,
                               creationTime: DateTime.now())));
-                      setState(() {
-                        _editing = false;
-                      });
                     },
                     onTapOutside: (_) {
                       _textController!.text = _defaultText;

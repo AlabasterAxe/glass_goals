@@ -40,7 +40,6 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
   }
 
   _createNote() {
-    print("Creating note");
     final newText = _textController!.text;
     _textController!.text = _defaultText;
     _textController!.selection = TextSelection(
@@ -55,20 +54,17 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
   }
 
   _discardNote() {
-    print('discarded');
     _textController!.text = _defaultText;
     _stopEditing();
   }
 
   _startEditing() {
-    print('start editing');
     ref.read(isEditingTextProvider.notifier).set(true);
     setState(() {
       if (_editingSubscription != null) {
         _editingSubscription!.cancel();
       }
       _editingSubscription = editingEventStream.listen((event) {
-        print('got event $event');
         switch (event) {
           case EditingEvent.accept:
             _createNote();

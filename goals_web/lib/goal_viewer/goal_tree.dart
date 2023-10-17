@@ -92,9 +92,12 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
               hovered = false;
             });
           },
-          builder: (context, _, __) => Draggable<String>(
-            data: rootGoal.id,
-            onDragEnd: (_) {
+          builder: (context, _, __) => GoalItemWidget(
+            goal: rootGoal,
+            onSelected: (value) {
+              widget.onSelected(rootGoal.id);
+            },
+            onDragEnd: () {
               setState(() {
                 hovered = false;
                 dragging = false;
@@ -105,34 +108,12 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                 dragging = true;
               });
             },
-            feedback: Container(
-              decoration: const BoxDecoration(
-                  color: Colors.red, shape: BoxShape.circle),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                    (isSelected
-                            ? selectedGoals.length
-                            : selectedGoals.length + 1)
-                        .toString(),
-                    style: const TextStyle(
-                        fontSize: 20,
-                        decoration: TextDecoration.none,
-                        color: Colors.white)),
-              ),
-            ),
-            child: GoalItemWidget(
-              goal: rootGoal,
-              onSelected: (value) {
-                widget.onSelected(rootGoal.id);
-              },
-              onFocused: widget.onFocused,
-              focused: isFocused,
-              hovered: hovered && !dragging,
-              hoverActions: widget.hoverActions,
-              hasRenderableChildren: hasRenderableChildren,
-              onExpanded: widget.onExpanded,
-            ),
+            onFocused: widget.onFocused,
+            focused: isFocused,
+            hovered: hovered && !dragging,
+            hoverActions: widget.hoverActions,
+            hasRenderableChildren: hasRenderableChildren,
+            onExpanded: widget.onExpanded,
           ),
         ),
         isExpanded && (widget.depthLimit == null || widget.depthLimit! > 0)
