@@ -40,6 +40,7 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
   }
 
   _createNote() {
+    print("Creating note");
     final newText = _textController!.text;
     _textController!.text = _defaultText;
     _textController!.selection = TextSelection(
@@ -54,26 +55,29 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
   }
 
   _discardNote() {
+    print('discarded');
     _textController!.text = _defaultText;
     _stopEditing();
   }
 
   _startEditing() {
-    if (_editingSubscription != null) {
-      _editingSubscription!.cancel();
-    }
-    _editingSubscription = editingEventStream.listen((event) {
-      switch (event) {
-        case EditingEvent.accept:
-          _createNote();
-          break;
-        case EditingEvent.discard:
-          _discardNote();
-          break;
-      }
-    });
+    print('start editing');
     ref.read(isEditingTextProvider.notifier).set(true);
     setState(() {
+      if (_editingSubscription != null) {
+        _editingSubscription!.cancel();
+      }
+      _editingSubscription = editingEventStream.listen((event) {
+        print('got event $event');
+        switch (event) {
+          case EditingEvent.accept:
+            _createNote();
+            break;
+          case EditingEvent.discard:
+            _discardNote();
+            break;
+        }
+      });
       _editing = true;
       _focusNode.requestFocus();
       _textController!.selection = TextSelection(
@@ -92,6 +96,7 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isNarrow = MediaQuery.of(context).size.width < 600;
     return CallbackShortcuts(
       bindings: <ShortcutActivator, Function()>{
         LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter):
@@ -112,7 +117,7 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
                         decoration: null,
                         maxLines: null,
                         style: mainTextStyle,
-                        onTapOutside: (_) => _discardNote(),
+                        onTapOutside: isNarrow ? null : (_) => _discardNote(),
                         focusNode: _focusNode,
                       ),
                     )

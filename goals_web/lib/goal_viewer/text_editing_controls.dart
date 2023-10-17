@@ -1,6 +1,8 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart' show IconButton, Icons;
+import 'package:flutter/rendering.dart' show MainAxisAlignment;
+import 'package:flutter/widgets.dart'
+    show BuildContext, Icon, Row, SizedBox, StatelessWidget, Widget;
+import 'package:goals_web/goal_viewer/providers.dart';
 
 import '../styles.dart';
 
@@ -16,14 +18,18 @@ class TextEditingControls extends StatelessWidget {
           width: uiUnit(15),
           child: IconButton(
             icon: const Icon(Icons.close),
-            onPressed: () {},
+            onPressed: () {
+              editingEventStream.add(EditingEvent.discard);
+            },
           ),
         ),
         SizedBox(
           width: uiUnit(15),
           child: IconButton(
             icon: const Icon(Icons.check),
-            onPressed: () {},
+            onPressed: () {
+              editingEventStream.add(EditingEvent.accept);
+            },
           ),
         )
       ],
