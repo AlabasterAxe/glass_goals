@@ -256,10 +256,10 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                       : Flexible(
                           child: Text(
                               '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
-                              style: mainTextStyle.copyWith(
-                                fontWeight: widget.focused
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
+                              style: (widget.focused
+                                      ? focusedFontStyle.merge(mainTextStyle)
+                                      : mainTextStyle)
+                                  .copyWith(
                                 decoration: isSelected
                                     ? TextDecoration.underline
                                     : null,

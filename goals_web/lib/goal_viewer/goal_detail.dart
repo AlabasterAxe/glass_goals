@@ -199,7 +199,10 @@ class _GoalDetailState extends State<GoalDetail> {
     final textTheme = Theme.of(context).textTheme;
     final noteLog = _computeNoteLog(logItems);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text(widget.goal.text, style: textTheme.headlineMedium),
+      Padding(
+        padding: EdgeInsets.all(uiUnit(2)),
+        child: Text(widget.goal.text, style: textTheme.headlineMedium),
+      ),
       SizedBox(height: uiUnit(2)),
       noteLog.firstOrNull == null ||
               formatDate(noteLog.first.entry.creationTime) !=

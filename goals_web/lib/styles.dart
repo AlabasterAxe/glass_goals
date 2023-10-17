@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart'
     show AppBarTheme, ColorScheme, Colors, ThemeData, Typography;
+import 'dart:ui' show FontWeight;
 import 'package:flutter/widgets.dart' show Color, TextStyle;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:multi_split_view/multi_split_view.dart';
@@ -28,19 +29,24 @@ final mainTextStyle = TextStyle(fontSize: uiUnit(5), color: darkElementColor);
 final smallTextStyle =
     TextStyle(fontSize: uiUnit(3.5), color: darkElementColor);
 
-final defaultTextTheme = Typography.material2021().black.apply(
-      fontFamily: defaultFont.fontFamily,
-      bodyColor: defaultFont.color,
-      displayColor: defaultFont.color,
-    );
+const focusedFontStyle = TextStyle(fontWeight: FontWeight.bold, inherit: true);
+
+final colorScheme = ColorScheme.fromSwatch(
+  primarySwatch: Colors.amber,
+  backgroundColor: lightBackground,
+).copyWith(primary: Color.fromARGB(255, 139, 104, 0));
+
+final defaultTextTheme =
+    Typography.material2021(colorScheme: colorScheme).black.apply(
+          fontFamily: defaultFont.fontFamily,
+          bodyColor: defaultFont.color,
+          displayColor: defaultFont.color,
+        );
 
 final theme = ThemeData(
   useMaterial3: true,
   // navy
-  colorScheme: ColorScheme.fromSwatch(
-    primarySwatch: Colors.amber,
-    backgroundColor: lightBackground,
-  ),
+  colorScheme: colorScheme,
   appBarTheme: const AppBarTheme(
     backgroundColor: lightBackground,
     foregroundColor: darkElementColor,
