@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart'
-    show AppBarTheme, ColorScheme, ThemeData, Typography;
+    show AppBarTheme, ColorScheme, Colors, ThemeData, Typography;
 import 'package:flutter/widgets.dart' show Color, TextStyle;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 
 uiUnit([double numUnits = 1]) => 4.0 * (numUnits);
 
-const lightBackground = Color(0xFFF9F6ED);
+const lightBackground = Color(0xFFFEFBF1);
 const emphasizedLightBackground = Color.fromARGB(255, 255, 254, 251);
 
 const paleGreenColor = Color.fromARGB(255, 208, 231, 197);
@@ -38,6 +38,7 @@ final theme = ThemeData(
   useMaterial3: true,
   // navy
   colorScheme: ColorScheme.fromSwatch(
+    primarySwatch: Colors.amber,
     backgroundColor: lightBackground,
   ),
   appBarTheme: const AppBarTheme(
