@@ -7,8 +7,10 @@ import 'package:flutter/material.dart'
         MenuAnchor,
         MenuController,
         MenuItemButton,
+        TimeOfDay,
         Tooltip,
-        showDatePicker;
+        showDatePicker,
+        showTimePicker;
 import 'package:flutter/rendering.dart' show MainAxisAlignment, MainAxisSize;
 import 'package:flutter/widgets.dart'
     show BuildContext, Icon, Row, Text, Widget;
@@ -100,6 +102,18 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                     .onActive(DateTime.now().add(const Duration(hours: 1))),
               ),
               MenuItemButton(
+                  child: const Text('Later Today...'),
+                  onPressed: () async {
+                    final time = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (time != null) {
+                      widget.onActive(DateTime.now().copyWith(
+                          hour: time.hour, minute: time.minute, second: 0));
+                    }
+                  }),
+              MenuItemButton(
                 child: const Text('A day'),
                 onPressed: () => widget
                     .onActive(DateTime.now().add(const Duration(days: 1))),
@@ -110,7 +124,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                     .onActive(DateTime.now().add(const Duration(days: 7))),
               ),
               MenuItemButton(
-                  child: const Text('Custom...'),
+                  child: const Text('Future Date...'),
                   onPressed: () async {
                     final date = await showDatePicker(
                       context: context,
@@ -142,6 +156,23 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
             controller: _snoozeMenuController,
             menuChildren: [
               MenuItemButton(
+                child: const Text('An hour'),
+                onPressed: () => widget
+                    .onSnooze(DateTime.now().add(const Duration(hours: 1))),
+              ),
+              MenuItemButton(
+                  child: const Text('Later Today...'),
+                  onPressed: () async {
+                    final time = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (time != null) {
+                      widget.onSnooze(DateTime.now().copyWith(
+                          hour: time.hour, minute: time.minute, second: 0));
+                    }
+                  }),
+              MenuItemButton(
                 child: const Text('Tomorrow'),
                 onPressed: () {
                   widget.onSnooze(DateTime.now().add(const Duration(days: 1)));
@@ -154,17 +185,17 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 },
               ),
               MenuItemButton(
-                  child: const Text('Custom...'),
+                  child: const Text('Future Date...'),
                   onPressed: () async {
-                    final date = await showDatePicker(
+                    final day = await showDatePicker(
                       context: context,
                       initialDate: DateTime.now(),
                       firstDate: DateTime.now(),
                       lastDate: DateTime(2100),
                       locale: const Locale('en', 'GB'),
                     );
-                    if (date != null) {
-                      widget.onSnooze(date);
+                    if (day != null) {
+                      widget.onSnooze(day);
                     }
                   }),
               MenuItemButton(
