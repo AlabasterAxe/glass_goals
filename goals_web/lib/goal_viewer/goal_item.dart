@@ -219,71 +219,82 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
           ),
           child: Row(
             mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              widget.dragHandle == GoalItemDragHandle.bullet
-                  ? _dragWrapWidget(
-                      child: bullet,
-                      isSelected: isSelected,
-                      selectedGoals: selectedGoals)
-                  : bullet,
-              _editing
-                  ? IntrinsicWidth(
-                      child: TextField(
-                        autocorrect: false,
-                        controller: _textController,
-                        decoration: null,
-                        style: mainTextStyle,
-                        onEditingComplete: () {
-                          AppContext.of(context).syncClient.modifyGoal(
-                              GoalDelta(
-                                  id: widget.goal.id,
-                                  text: _textController!.text));
-                          setState(() {
-                            _editing = false;
-                          });
-                        },
-                        onTapOutside: (_) {
-                          setState(() {
-                            _editing = false;
-                          });
-                        },
-                        focusNode: _focusNode,
-                      ),
-                    )
-                  : Text(
-                      '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
-                      style: mainTextStyle.copyWith(
-                        fontWeight: widget.focused
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        decoration:
-                            isSelected ? TextDecoration.underline : null,
-                      )),
-              SizedBox(width: uiUnit(2)),
-              // chip like container widget around text status widget:
-              Container(
-                decoration: BoxDecoration(
-                  color:
-                      getGoalStatusBackgroundColor(worldContext, widget.goal),
-                  borderRadius: BorderRadius.circular(1),
-                ),
-                padding: EdgeInsets.symmetric(
-                    vertical: uiUnit() / 2, horizontal: uiUnit()),
-                child: Text(
-                  getGoalStatusString(worldContext, widget.goal),
-                  style: smallTextStyle.copyWith(
-                      color: getGoalStatusTextColor(worldContext, widget.goal)),
-                ),
+              Flexible(
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  widget.dragHandle == GoalItemDragHandle.bullet
+                      ? _dragWrapWidget(
+                          child: bullet,
+                          isSelected: isSelected,
+                          selectedGoals: selectedGoals)
+                      : bullet,
+                  _editing
+                      ? IntrinsicWidth(
+                          child: TextField(
+                            autocorrect: false,
+                            controller: _textController,
+                            decoration: null,
+                            style: mainTextStyle,
+                            onEditingComplete: () {
+                              AppContext.of(context).syncClient.modifyGoal(
+                                  GoalDelta(
+                                      id: widget.goal.id,
+                                      text: _textController!.text));
+                              setState(() {
+                                _editing = false;
+                              });
+                            },
+                            onTapOutside: (_) {
+                              setState(() {
+                                _editing = false;
+                              });
+                            },
+                            focusNode: _focusNode,
+                          ),
+                        )
+                      : Flexible(
+                          child: Text(
+                              '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
+                              style: mainTextStyle.copyWith(
+                                fontWeight: widget.focused
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                decoration: isSelected
+                                    ? TextDecoration.underline
+                                    : null,
+                                overflow: TextOverflow.ellipsis,
+                              )),
+                        ),
+                  SizedBox(width: uiUnit(2)),
+                  // chip like container widget around text status widget:
+                  Container(
+                    decoration: BoxDecoration(
+                      color: getGoalStatusBackgroundColor(
+                          worldContext, widget.goal),
+                      borderRadius: BorderRadius.circular(1),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                        vertical: uiUnit() / 2, horizontal: uiUnit()),
+                    child: Text(
+                      getGoalStatusString(worldContext, widget.goal),
+                      style: smallTextStyle.copyWith(
+                          color: getGoalStatusTextColor(
+                              worldContext, widget.goal)),
+                    ),
+                  ),
+                  IconButton(
+                      onPressed: () => widget.onExpanded(widget.goal.id),
+                      icon: Icon(isExpanded
+                          ? Icons.arrow_drop_down
+                          : widget.hasRenderableChildren
+                              ? Icons.arrow_right
+                              : Icons.add)),
+                ]),
               ),
-              IconButton(
-                  onPressed: () => widget.onExpanded(widget.goal.id),
-                  icon: Icon(isExpanded
-                      ? Icons.arrow_drop_down
-                      : widget.hasRenderableChildren
-                          ? Icons.arrow_right
-                          : Icons.add)),
-              const Spacer(),
-              isSelected && !isNarrow ? widget.hoverActions : Container(),
+              isSelected && !isNarrow && !_editing
+                  ? widget.hoverActions
+                  : Container(),
             ],
           ),
         ),
