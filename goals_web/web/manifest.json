@@ -1,11 +1,11 @@
 {
-    "name": "goals_web",
-    "short_name": "goals_web",
+    "name": "Glass Goals",
+    "short_name": "Goals",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F9F6ED",
+    "theme_color": "#F9F6ED",
+    "description": "Track your goals.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
