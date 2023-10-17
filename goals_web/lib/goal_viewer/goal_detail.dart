@@ -130,10 +130,12 @@ class _NoteCardState extends State<NoteCard> {
                     data: _textController.text,
                     selectable: true,
                     onTapText: () {
-                      setState(() {
-                        _editing = true;
-                        _focusNode.requestFocus();
-                      });
+                      if (widget.editable) {
+                        setState(() {
+                          _editing = true;
+                          _focusNode.requestFocus();
+                        });
+                      }
                     },
                     styleSheet: MarkdownStyleSheet(
                       textScaleFactor: 1.4,
@@ -201,7 +203,8 @@ class _GoalDetailState extends State<GoalDetail> {
       SizedBox(height: uiUnit(2)),
       noteLog.firstOrNull == null ||
               formatDate(noteLog.first.entry.creationTime) !=
-                  formatDate(DateTime.now())
+                  formatDate(DateTime.now()) ||
+              noteLog.first.goalId != widget.goal.id
           ? AddNoteCard(goalId: widget.goal.id)
           : Container(),
       for (final entry in noteLog)
