@@ -1,6 +1,7 @@
 import 'package:goals_core/model.dart' show WorldContext;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show StateNotifier, StateNotifierProvider;
+import 'package:rxdart/rxdart.dart' show BehaviorSubject;
 
 final selectedGoalsProvider =
     StateNotifierProvider<_IdSet, Set<String>>((ref) => _IdSet());
@@ -12,6 +13,23 @@ final focusedGoalProvider = StateNotifierProvider<_Id, String?>((ref) => _Id());
 
 final worldContextProvider = StateNotifierProvider<_WorldContext, WorldContext>(
     (ref) => _WorldContext());
+
+final isEditingTextProvider =
+    StateNotifierProvider<_BooleanStateNotifier, bool>(
+        (ref) => _BooleanStateNotifier(false));
+
+final editingEventStream = BehaviorSubject<EditingEvent>();
+
+enum EditingEvent {
+  accept,
+  discard,
+}
+
+class _BooleanStateNotifier extends StateNotifier<bool> {
+  _BooleanStateNotifier(super.state);
+  void toggle() => state = !state;
+  void set(bool value) => state = value;
+}
 
 class _WorldContext extends StateNotifier<WorldContext> {
   _WorldContext() : super(WorldContext.now());

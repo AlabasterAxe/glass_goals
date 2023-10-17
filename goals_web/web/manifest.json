@@ -1,6 +1,7 @@
 {
     "name": "Glass Goals",
     "short_name": "Goals",
+    "id": "com.glassgoals.web",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#F9F6ED",
