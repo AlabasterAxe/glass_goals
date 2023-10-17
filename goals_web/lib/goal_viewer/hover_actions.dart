@@ -183,7 +183,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
         Tooltip(
           message: 'Mark Done',
           child: IconButton(
-            icon: const Icon(Icons.done),
+            icon: const Icon(Icons.done_outline_rounded),
             onPressed: widget.onDone,
           ),
         ),

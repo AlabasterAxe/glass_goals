@@ -6,7 +6,7 @@ import 'package:multi_split_view/multi_split_view.dart';
 
 uiUnit([double numUnits = 1]) => 4.0 * (numUnits);
 
-const lightBackground = Color.fromARGB(255, 249, 246, 237);
+const lightBackground = Color(0xFFF9F6ED);
 const emphasizedLightBackground = Color.fromARGB(255, 255, 254, 251);
 
 const paleGreenColor = Color.fromARGB(255, 208, 231, 197);

@@ -1,23 +1,30 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/styles.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart'
+    show ConsumerStatefulWidget, ConsumerState;
 import 'package:uuid/uuid.dart';
 
 import '../app_context.dart';
+import 'providers.dart'
+    show EditingEvent, editingEventStream, isEditingTextProvider;
 
-class AddNoteCard extends StatefulWidget {
+class AddNoteCard extends ConsumerStatefulWidget {
   final String goalId;
   const AddNoteCard({super.key, required this.goalId});
 
   @override
-  State<AddNoteCard> createState() => _AddNoteCardState();
+  ConsumerState<AddNoteCard> createState() => _AddNoteCardState();
 }
 
-class _AddNoteCardState extends State<AddNoteCard> {
+class _AddNoteCardState extends ConsumerState<AddNoteCard> {
   TextEditingController? _textController;
   bool _editing = false;
   late final _focusNode = FocusNode();
+  StreamSubscription? _editingSubscription;
 
   final _defaultText = "[New Note]";
 
@@ -43,6 +50,41 @@ class _AddNoteCardState extends State<AddNoteCard> {
             id: const Uuid().v4(),
             creationTime: DateTime.now(),
             text: newText)));
+    _stopEditing();
+  }
+
+  _discardNote() {
+    _textController!.text = _defaultText;
+    _stopEditing();
+  }
+
+  _startEditing() {
+    ref.read(isEditingTextProvider.notifier).set(true);
+    setState(() {
+      if (_editingSubscription != null) {
+        _editingSubscription!.cancel();
+      }
+      _editingSubscription = editingEventStream.listen((event) {
+        switch (event) {
+          case EditingEvent.accept:
+            _createNote();
+            break;
+          case EditingEvent.discard:
+            _discardNote();
+            break;
+        }
+      });
+      _editing = true;
+      _focusNode.requestFocus();
+      _textController!.selection = TextSelection(
+          baseOffset: 0, extentOffset: _textController!.text.length);
+    });
+  }
+
+  _stopEditing() {
+    _editingSubscription!.cancel();
+    _editingSubscription = null;
+    ref.read(isEditingTextProvider.notifier).set(false);
     setState(() {
       _editing = false;
     });
@@ -50,6 +92,7 @@ class _AddNoteCardState extends State<AddNoteCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isNarrow = MediaQuery.of(context).size.width < 600;
     return CallbackShortcuts(
       bindings: <ShortcutActivator, Function()>{
         LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter):
@@ -70,25 +113,12 @@ class _AddNoteCardState extends State<AddNoteCard> {
                         decoration: null,
                         maxLines: null,
                         style: mainTextStyle,
-                        onTapOutside: (_) {
-                          _textController!.text = _defaultText;
-                          setState(() {
-                            _editing = false;
-                          });
-                        },
+                        onTapOutside: isNarrow ? null : (_) => _discardNote(),
                         focusNode: _focusNode,
                       ),
                     )
                   : GestureDetector(
-                      onTap: () => {
-                        setState(() {
-                          _editing = true;
-                          _focusNode.requestFocus();
-                          _textController!.selection = TextSelection(
-                              baseOffset: 0,
-                              extentOffset: _textController!.text.length);
-                        })
-                      },
+                      onTap: _startEditing,
                       child: Text(_textController!.text,
                           style: mainTextStyle.copyWith(color: Colors.black54)),
                     ),

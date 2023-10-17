@@ -25,6 +25,7 @@ import 'package:multi_split_view/multi_split_view.dart';
 import '../styles.dart' show lightBackground, multiSplitViewThemeData, uiUnit;
 import 'goal_list.dart' show GoalListWidget;
 import 'hover_actions.dart';
+import 'text_editing_controls.dart';
 
 class GoalViewer extends StatefulHookConsumerWidget {
   final Map<String, Goal> goalMap;
@@ -207,6 +208,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     setState(() {
       AppContext.of(context).syncClient.modifyGoals(goalDeltas);
       ref.read(selectedGoalsProvider.notifier).clear();
+      ref.read(focusedGoalProvider.notifier).set(null);
     });
   }
 
@@ -372,6 +374,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final focusedGoal = ref.watch(focusedGoalProvider);
     final worldContext = ref.watch(worldContextProvider);
     final selectedGoals = ref.watch(selectedGoalsProvider);
+    final isEditingText = ref.watch(isEditingTextProvider);
     ref.listen(focusedGoalProvider, _handleFocusedGoalChange);
 
     final children = <Widget>[];
@@ -453,17 +456,19 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                     height: uiUnit(16),
                     child: Container(
                       color: lightBackground,
-                      child: HoverActionsWidget(
-                        onMerge: onMerge,
-                        onUnarchive: onUnarchive,
-                        onArchive: onArchive,
-                        onDone: onDone,
-                        onSnooze: onSnooze,
-                        onActive: onActive,
-                        onClearSelection: onClearSelection,
-                        goalMap: widget.goalMap,
-                        mainAxisSize: MainAxisSize.max,
-                      ),
+                      child: isEditingText
+                          ? const TextEditingControls()
+                          : HoverActionsWidget(
+                              onMerge: onMerge,
+                              onUnarchive: onUnarchive,
+                              onArchive: onArchive,
+                              onDone: onDone,
+                              onSnooze: onSnooze,
+                              onActive: onActive,
+                              onClearSelection: onClearSelection,
+                              goalMap: widget.goalMap,
+                              mainAxisSize: MainAxisSize.max,
+                            ),
                     ))
                 : Container(),
           ],
