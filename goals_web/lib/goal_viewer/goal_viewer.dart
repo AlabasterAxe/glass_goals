@@ -27,7 +27,14 @@ import 'package:goals_core/sync.dart'
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
-import 'package:goals_web/util/date_utils.dart';
+import 'package:goals_web/util/date_utils.dart'
+    show
+        DateTimeExtension,
+        isWithinCalendarMonth,
+        isWithinCalendarWeek,
+        isWithinCalendarYear,
+        isWithinDay,
+        isWithinQuarter;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
@@ -216,19 +223,35 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         text: text,
         logEntry: SetParentLogEntry(
             parentId: parentId, creationTime: DateTime.now())));
+
+    DateTime? endDate;
     switch (_filter) {
       case GoalFilter.today:
-        final now = DateTime.now();
-        AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-            id: id,
-            logEntry: StatusLogEntry(
-                creationTime: now,
-                status: GoalStatus.active,
-                startTime: now,
-                endTime: now.copyWith(hour: 23, minute: 59, second: 59))));
+        endDate = DateTime.now().endOfDay;
+        break;
+      case GoalFilter.this_week:
+        endDate = DateTime.now().endOfWeek;
+        break;
+      case GoalFilter.this_month:
+        endDate = DateTime.now().endOfMonth;
+        break;
+      case GoalFilter.this_quarter:
+        endDate = DateTime.now().endOfQuarter;
+        break;
+      case GoalFilter.this_year:
+        endDate = DateTime.now().endOfYear;
         break;
       default:
         break;
+    }
+    if (endDate != null) {
+      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+          id: id,
+          logEntry: StatusLogEntry(
+              creationTime: DateTime.now(),
+              status: GoalStatus.active,
+              startTime: DateTime.now(),
+              endTime: endDate)));
     }
   }
 
