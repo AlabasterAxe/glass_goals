@@ -300,7 +300,29 @@ Map<String, Goal> getGoalsForDateRange(WorldContext context,
         status, start, end.add(const Duration(seconds: 1)));
   });
 
-  for (final goal in activeGoalsWithinWindow.values) {
+  final snoozedGoalsEndingWithinWindow =
+      getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
+    final status = getGoalStatus(context, goal);
+    if (status.status != GoalStatus.pending) {
+      return false;
+    }
+    if (smallerWindowStart != null &&
+        smallerWindowEnd != null &&
+        status.endTime != null &&
+        status.endTime!.isAfter(smallerWindowStart) &&
+        status.endTime!.isBefore(smallerWindowEnd)) {
+      return false;
+    }
+
+    return status.endTime != null &&
+        status.endTime!.isAfter(start) &&
+        status.endTime!.isBefore(end);
+  });
+
+  for (final goal in [
+    ...activeGoalsWithinWindow.values,
+    ...snoozedGoalsEndingWithinWindow.values
+  ]) {
     result.addAll(getTransitiveSubGoals(goalMap, goal.id,
         predicate: (g) => getGoalStatus(context, g).status == null));
   }
