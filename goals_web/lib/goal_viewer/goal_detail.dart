@@ -4,10 +4,10 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart'
     show ArchiveNoteLogEntry, GoalDelta, GoalLogEntry, NoteLogEntry;
+import 'package:goals_core/util.dart' show formatDate;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
 import 'package:goals_web/styles.dart' show mainTextStyle, uiUnit;
-import 'package:goals_web/util/date_utils.dart';
 
 class NoteCard extends StatefulWidget {
   final String goalId;

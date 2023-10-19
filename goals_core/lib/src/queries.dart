@@ -4,13 +4,19 @@ import 'package:goals_types/goals_types.dart';
 import 'package:collection/collection.dart' show IterableZip;
 
 import '../model.dart' show Goal, WorldContext;
+import 'util/date_utils.dart';
 
 Map<String, Goal> getTransitiveSubGoals(
-    Map<String, Goal> goalMap, String rootGoalId) {
-  final result = <String, Goal>{};
-  final queue = <Goal>[goalMap[rootGoalId]!];
+    Map<String, Goal> goalMap, String rootGoalId,
+    {bool Function(Goal)? predicate}) {
+  // don't apply the predicate to the root goal
+  final result = <String, Goal>{rootGoalId: goalMap[rootGoalId]!};
+  final queue = <Goal>[...goalMap[rootGoalId]!.subGoals];
   while (queue.isNotEmpty) {
     final goal = queue.removeLast();
+    if (predicate != null && !predicate(goal)) {
+      continue;
+    }
     result[goal.id] = goal;
     queue.addAll(goal.subGoals);
   }
@@ -268,6 +274,35 @@ Map<String, Goal> getGoalsRequiringAttention(
 
   for (final goalId in goalsToAdd) {
     result[goalId] = goalMap[goalId]!;
+  }
+
+  return result;
+}
+
+Map<String, Goal> getGoalsForDateRange(WorldContext context,
+    Map<String, Goal> goalMap, DateTime start, DateTime end,
+    [DateTime? smallerWindowStart, DateTime? smallerWindowEnd]) {
+  final result = <String, Goal>{};
+  final activeGoalsWithinWindow =
+      getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
+    final status = getGoalStatus(context, goal);
+    if (status.status != GoalStatus.active) {
+      return false;
+    }
+    if (smallerWindowStart != null &&
+        smallerWindowEnd != null &&
+        statusIsBetweenDates(status, smallerWindowStart,
+            smallerWindowEnd.add(const Duration(seconds: 1)))) {
+      return false;
+    }
+
+    return statusIsBetweenDates(
+        status, start, end.add(const Duration(seconds: 1)));
+  });
+
+  for (final goal in activeGoalsWithinWindow.values) {
+    result.addAll(getTransitiveSubGoals(goalMap, goal.id,
+        predicate: (g) => getGoalStatus(context, g).status == null));
   }
 
   return result;

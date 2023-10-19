@@ -20,6 +20,7 @@ import 'package:goals_core/model.dart'
         Goal,
         WorldContext,
         getGoalStatus,
+        getGoalsForDateRange,
         getGoalsMatchingPredicate,
         getGoalsRequiringAttention;
 import 'package:goals_core/sync.dart'
@@ -27,7 +28,7 @@ import 'package:goals_core/sync.dart'
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
-import 'package:goals_web/util/date_utils.dart'
+import 'package:goals_core/util.dart'
     show
         DateTimeExtension,
         isWithinCalendarMonth,
@@ -611,12 +612,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                                     GoalStatus.done);
                         break;
                       case GoalFilter.today:
-                        goalMap = getGoalsMatchingPredicate(
-                            worldContext, widget.goalMap, (goal) {
-                          final status = getGoalStatus(worldContext, goal);
-                          return status.status == GoalStatus.active &&
-                              isWithinDay(worldContext.time, status);
-                        });
+                        goalMap = getGoalsForDateRange(
+                            worldContext,
+                            widget.goalMap,
+                            worldContext.time.startOfDay,
+                            worldContext.time.endOfDay);
                         break;
                       case GoalFilter.this_week:
                         goalMap = getGoalsMatchingPredicate(
