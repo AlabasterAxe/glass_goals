@@ -13,6 +13,17 @@ _statusIsBetweenDates(StatusLogEntry status, DateTime start, DateTime end) {
       status.endTime!.isBefore(end);
 }
 
+isWithinDay(
+  DateTime now,
+  StatusLogEntry status,
+) {
+  return _statusIsBetweenDates(
+    status,
+    now.copyWith(hour: 0, minute: 0, second: 0),
+    now.add(const Duration(days: 1)).copyWith(hour: 0, minute: 0, second: 0),
+  );
+}
+
 /// Whether or not this goal status is completely contained within the current week.
 isWithinCalendarWeek(
   DateTime now,

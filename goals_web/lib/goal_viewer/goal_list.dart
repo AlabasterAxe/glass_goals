@@ -12,7 +12,7 @@ class GoalListWidget extends StatelessWidget {
   final Function(String goalId, {bool expanded}) onExpanded;
   final Function(String goalId) onFocused;
   final int? depthLimit;
-  final bool showAddGoal;
+  final Function(String?, String)? onAddGoal;
   final Widget hoverActions;
   const GoalListWidget({
     super.key,
@@ -23,7 +23,7 @@ class GoalListWidget extends StatelessWidget {
     required this.onFocused,
     required this.hoverActions,
     this.depthLimit,
-    this.showAddGoal = false,
+    this.onAddGoal,
   });
 
   @override
@@ -39,8 +39,11 @@ class GoalListWidget extends StatelessWidget {
               depthLimit: depthLimit,
               showParentName: true,
               hoverActions: hoverActions,
+              onAddGoal: onAddGoal,
             ),
-          showAddGoal ? const AddSubgoalItemWidget() : Container(),
+          this.onAddGoal != null
+              ? AddSubgoalItemWidget(onAddGoal: this.onAddGoal!)
+              : Container(),
         ],
       );
 }

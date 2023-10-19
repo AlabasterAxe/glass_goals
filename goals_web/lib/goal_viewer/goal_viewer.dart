@@ -31,6 +31,7 @@ import 'package:goals_web/util/date_utils.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
+import 'package:uuid/uuid.dart' show Uuid;
 
 import '../styles.dart' show lightBackground, multiSplitViewThemeData, uiUnit;
 import 'goal_list.dart' show GoalListWidget;
@@ -206,6 +207,29 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       AppContext.of(context).syncClient.modifyGoals(goalDeltas);
       ref.read(selectedGoalsProvider.notifier).clear();
     });
+  }
+
+  onAddGoal(String? parentId, String text) {
+    final id = const Uuid().v4();
+    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+        id: id,
+        text: text,
+        logEntry: SetParentLogEntry(
+            parentId: parentId, creationTime: DateTime.now())));
+    switch (_filter) {
+      case GoalFilter.today:
+        final now = DateTime.now();
+        AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+            id: id,
+            logEntry: StatusLogEntry(
+                creationTime: now,
+                status: GoalStatus.active,
+                startTime: now,
+                endTime: now.copyWith(hour: 23, minute: 59, second: 59))));
+        break;
+      default:
+        break;
+    }
   }
 
   onArchive() {
@@ -568,9 +592,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                             worldContext, widget.goalMap, (goal) {
                           final status = getGoalStatus(worldContext, goal);
                           return status.status == GoalStatus.active &&
-                              status.endTime != null &&
-                              status.endTime!.isBefore(worldContext.time
-                                  .copyWith(hour: 23, minute: 59, second: 59));
+                              isWithinDay(worldContext.time, status);
                         });
                         break;
                       case GoalFilter.this_week:
@@ -579,10 +601,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           final status = getGoalStatus(worldContext, goal);
 
                           return status.status == GoalStatus.active &&
-                              status.endTime != null &&
-                              status.endTime!.isAfter(worldContext.time
-                                  .copyWith(
-                                      hour: 23, minute: 59, second: 59)) &&
+                              !isWithinDay(worldContext.time, status) &&
                               isWithinCalendarWeek(worldContext.time, status);
                         });
                         break;
@@ -668,7 +687,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onClearSelection: onClearSelection,
                           goalMap: widget.goalMap),
                       depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                      showAddGoal: true,
+                      onAddGoal: this.onAddGoal,
                     );
                   })),
         ),

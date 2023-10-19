@@ -26,6 +26,7 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
   final Function(String goalId) onSelected;
   final Function(String goalId)? onFocused;
   final Function(String goalId, {bool expanded}) onExpanded;
+  final Function(String?, String)? onAddGoal;
   final int? depthLimit;
   final bool showParentName;
   final Widget hoverActions;
@@ -39,6 +40,7 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
     this.depthLimit,
     this.showParentName = false,
     required this.hoverActions,
+    required this.onAddGoal,
   });
 
   @override
@@ -132,9 +134,15 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                                       ? null
                                       : widget.depthLimit! - 1,
                                   hoverActions: widget.hoverActions,
+                                  onAddGoal: widget.onAddGoal,
                                 )
                               : null,
-                        AddSubgoalItemWidget(parentId: rootGoal.id),
+                        widget.onAddGoal != null
+                            ? AddSubgoalItemWidget(
+                                parentId: rootGoal.id,
+                                onAddGoal: widget.onAddGoal!,
+                              )
+                            : Container(),
                       ].where((element) => element != null).toList().cast()),
                 )
               ])

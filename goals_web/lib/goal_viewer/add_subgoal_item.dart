@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:goals_core/sync.dart';
-import 'package:uuid/uuid.dart' show Uuid;
 
-import '../app_context.dart';
 import '../styles.dart';
 
 class AddSubgoalItemWidget extends StatefulWidget {
   final String? parentId;
+  final Function(String? parentId, String text) onAddGoal;
   const AddSubgoalItemWidget({
     super.key,
     this.parentId,
+    required this.onAddGoal,
   });
 
   @override
@@ -40,11 +39,8 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
     _textController!.text = _defaultText;
     _textController!.selection = TextSelection(
         baseOffset: 0, extentOffset: _textController!.text.length);
-    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-        id: const Uuid().v4(),
-        text: newText,
-        logEntry: SetParentLogEntry(
-            parentId: widget.parentId, creationTime: DateTime.now())));
+
+    widget.onAddGoal(widget.parentId, newText);
   }
 
   @override
