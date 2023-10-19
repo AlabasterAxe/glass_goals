@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:goals_core/model.dart' show Goal, WorldContext, getGoalStatus;
 import 'package:goals_core/sync.dart';
+import 'package:goals_core/util.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart' show DateFormat;
 
@@ -50,43 +51,77 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
   ConsumerState<GoalItemWidget> createState() => _GoalItemWidgetState();
 }
 
-String getRelativeDateString(DateTime now, DateTime? future) {
-  if (future == null) {
-    return 'Forever';
+String getActiveDateString(DateTime now, StatusLogEntry status) {
+  if (isWithinDay(now, status)) {
+    return 'Today';
+  } else if (isWithinCalendarWeek(now, status)) {
+    return 'This Week';
+  } else if (isWithinCalendarMonth(now, status)) {
+    return 'This Month';
+  } else if (isWithinQuarter(now, status)) {
+    return 'This Quarter';
+  } else if (isWithinCalendarYear(now, status)) {
+    return 'This Year';
+  } else if (status.endTime != null) {
+    return DateFormat.yMd().format(status.endTime!);
+  } else {
+    return 'Ongoing';
   }
+}
 
-  if (now.year != future.year) {
-    return DateFormat.yMd().format(future);
-  }
-
-  if (future.difference(now).inDays > 7) {
-    return DateFormat.Md().format(future);
-  }
-
-  if (future.difference(now).inDays > 1) {
-    return DateFormat.E().format(future);
-  }
-
-  if (future.difference(now).inDays == 1) {
+String getSnoozedDateString(DateTime now, StatusLogEntry status) {
+  if (status.endTime?.isBefore(now.endOfDay.subtract(const Duration(seconds: 1))) ==
+      true) {
+    return 'Later Today';
+  } else if (status.endTime?.isBefore(now.add(const Duration(days: 1)).endOfDay) ==
+      true) {
     return 'Tomorrow';
+  } else if (status.endTime?.isBefore(now.endOfWeek.subtract(const Duration(seconds: 1))) ==
+      true) {
+    return 'Later This Week';
+  } else if (status.endTime?.isBefore(now.add(const Duration(days: 7)).endOfWeek.subtract(const Duration(seconds: 1))) ==
+      true) {
+    return 'Next Week';
+  } else if (status.endTime?.isBefore(now.endOfMonth.subtract(const Duration(seconds: 1))) ==
+      true) {
+    return 'Later This Month';
+  } else if (status.endTime?.isBefore(now.endOfMonth
+          .add(const Duration(days: 1))
+          .endOfMonth
+          .subtract(const Duration(seconds: 1))) ==
+      true) {
+    return 'Next Month';
+  } else if (status.endTime?.isBefore(now.endOfQuarter.subtract(const Duration(seconds: 1))) ==
+      true) {
+    return 'Later This Quarter';
+  } else if (status.endTime?.isBefore(now.endOfQuarter
+          .add(const Duration(days: 1))
+          .endOfQuarter
+          .subtract(const Duration(seconds: 1))) ==
+      true) {
+    return 'Next Quarter';
+  } else if (status.endTime?.isBefore(now.endOfYear.subtract(const Duration(seconds: 1))) == true) {
+    return 'Later This Year';
+  } else if (status.endTime != null) {
+    return DateFormat.yMd().format(status.endTime!);
+  } else {
+    return 'Ongoing';
   }
-
-  return 'Today';
 }
 
 String getGoalStatusString(WorldContext context, Goal goal) {
   final status = getGoalStatus(context, goal);
   switch (status.status) {
     case GoalStatus.active:
-      return 'Active: ${getRelativeDateString(context.time, status.endTime)}';
+      return getActiveDateString(context.time, status);
     case GoalStatus.done:
       return 'Done';
     case GoalStatus.archived:
       return 'Archived';
     case GoalStatus.pending:
-      return 'On Hold: ${getRelativeDateString(context.time, status.endTime)}';
+      return getSnoozedDateString(context.time, status);
     case null:
-      return 'No status';
+      return 'To Do';
   }
 }
 

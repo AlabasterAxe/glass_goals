@@ -29,13 +29,7 @@ import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_core/util.dart'
-    show
-        DateTimeExtension,
-        isWithinCalendarMonth,
-        isWithinCalendarWeek,
-        isWithinCalendarYear,
-        isWithinDay,
-        isWithinQuarter;
+    show DateTimeExtension, isWithinCalendarYear;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
@@ -619,49 +613,44 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                             worldContext.time.endOfDay);
                         break;
                       case GoalFilter.this_week:
-                        goalMap = getGoalsMatchingPredicate(
-                            worldContext, widget.goalMap, (goal) {
-                          final status = getGoalStatus(worldContext, goal);
-
-                          return status.status == GoalStatus.active &&
-                              !isWithinDay(worldContext.time, status) &&
-                              isWithinCalendarWeek(worldContext.time, status);
-                        });
+                        goalMap = getGoalsForDateRange(
+                          worldContext,
+                          widget.goalMap,
+                          worldContext.time.startOfWeek,
+                          worldContext.time.endOfWeek,
+                          worldContext.time.startOfDay,
+                          worldContext.time.endOfDay,
+                        );
                         break;
                       case GoalFilter.this_month:
-                        goalMap = getGoalsMatchingPredicate(
-                            worldContext, widget.goalMap, (goal) {
-                          final status = getGoalStatus(worldContext, goal);
-
-                          return status.status == GoalStatus.active &&
-                              status.endTime != null &&
-                              !isWithinCalendarWeek(
-                                  worldContext.time, status) &&
-                              isWithinCalendarMonth(worldContext.time, status);
-                        });
+                        goalMap = getGoalsForDateRange(
+                          worldContext,
+                          widget.goalMap,
+                          worldContext.time.startOfMonth,
+                          worldContext.time.endOfMonth,
+                          worldContext.time.startOfWeek,
+                          worldContext.time.endOfWeek,
+                        );
                         break;
                       case GoalFilter.this_quarter:
-                        goalMap = getGoalsMatchingPredicate(
-                            worldContext, widget.goalMap, (goal) {
-                          final status = getGoalStatus(worldContext, goal);
-
-                          return status.status == GoalStatus.active &&
-                              status.endTime != null &&
-                              !isWithinCalendarMonth(
-                                  worldContext.time, status) &&
-                              isWithinQuarter(worldContext.time, status);
-                        });
+                        goalMap = getGoalsForDateRange(
+                          worldContext,
+                          widget.goalMap,
+                          worldContext.time.startOfQuarter,
+                          worldContext.time.endOfQuarter,
+                          worldContext.time.startOfMonth,
+                          worldContext.time.endOfMonth,
+                        );
                         break;
                       case GoalFilter.this_year:
-                        goalMap = getGoalsMatchingPredicate(
-                            worldContext, widget.goalMap, (goal) {
-                          final status = getGoalStatus(worldContext, goal);
-
-                          return status.status == GoalStatus.active &&
-                              status.endTime != null &&
-                              !isWithinQuarter(worldContext.time, status) &&
-                              isWithinCalendarYear(worldContext.time, status);
-                        });
+                        goalMap = getGoalsForDateRange(
+                          worldContext,
+                          widget.goalMap,
+                          worldContext.time.startOfYear,
+                          worldContext.time.endOfYear,
+                          worldContext.time.startOfQuarter,
+                          worldContext.time.endOfQuarter,
+                        );
                         break;
                       case GoalFilter.long_term:
                         goalMap = getGoalsMatchingPredicate(
