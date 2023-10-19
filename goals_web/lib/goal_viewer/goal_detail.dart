@@ -7,7 +7,7 @@ import 'package:goals_core/sync.dart'
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
 import 'package:goals_web/styles.dart' show mainTextStyle, uiUnit;
-import 'package:goals_web/util/format_date.dart';
+import 'package:goals_web/util/date_utils.dart';
 
 class NoteCard extends StatefulWidget {
   final String goalId;

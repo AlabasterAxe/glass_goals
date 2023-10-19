@@ -206,7 +206,7 @@ String? findLatestCommonAncestor(
 /// The logic for goals requiring attention is as follows:
 ///  - Show all active tasks
 ///  - Don't show tasks if any of their children are marked active
-///  - Show tasks that don't currently have a setting (i.e. they were previously active and have become inactive)
+///  - Show tasks that don't currently have a setting (e.g. they were previously active and have become inactive)
 ///  - don't show any tasks under a snoozed task.
 Map<String, Goal> getGoalsRequiringAttention(
     WorldContext context, Map<String, Goal> goalMap) {
@@ -215,10 +215,10 @@ Map<String, Goal> getGoalsRequiringAttention(
   ///  - Don't show tasks if any of their children are marked active
   ///  - Show tasks that don't currently have a setting (i.e. they were previously active and have become inactive)
   final result = <String, Goal>{};
-  final activeOrUncategorizedGoals =
+  final uncategorizedGoals =
       getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
     final status = getGoalStatus(context, goal);
-    return status.status == null || status.status == GoalStatus.active;
+    return status.status == null;
   });
 
   final snoozedGoals = getGoalsMatchingPredicate(context, goalMap,
@@ -231,9 +231,8 @@ Map<String, Goal> getGoalsRequiringAttention(
       : {};
 
   ///  - Don't show tasks if any of their children are marked active
-  for (final goal in activeOrUncategorizedGoals.values) {
-    if (goal.subGoals
-        .any((g) => activeOrUncategorizedGoals.containsKey(g.id))) {
+  for (final goal in uncategorizedGoals.values) {
+    if (goal.subGoals.any((g) => uncategorizedGoals.containsKey(g.id))) {
       continue;
     }
 
@@ -244,22 +243,28 @@ Map<String, Goal> getGoalsRequiringAttention(
     result[goal.id] = goal;
   }
 
-  // find latest common ancestor of all goals
-  final latestCommonAncestor = findLatestCommonAncestor(goalMap, result.values);
-
-  if (latestCommonAncestor != null) {
-    result[latestCommonAncestor] = goalMap[latestCommonAncestor]!;
-  }
-
-  // fill all parents up to that ancestor
   final goalsToAdd = <String>{};
   for (final goal in result.values) {
-    final pathToAncestor =
-        getGoalsToAncestor(goalMap, goal.id, ancestorId: latestCommonAncestor);
-    for (final goalId in pathToAncestor) {
-      goalsToAdd.add(goalId);
+    for (final parent in goal.superGoals) {
+      goalsToAdd.add(parent.id);
     }
   }
+
+  // // find latest common ancestor of all goals
+  // final latestCommonAncestor = findLatestCommonAncestor(goalMap, result.values);
+
+  // if (latestCommonAncestor != null) {
+  //   result[latestCommonAncestor] = goalMap[latestCommonAncestor]!;
+  // }
+
+  // // fill all parents up to that ancestor
+  // for (final goal in result.values) {
+  //   final pathToAncestor =
+  //       getGoalsToAncestor(goalMap, goal.id, ancestorId: latestCommonAncestor);
+  //   for (final goalId in pathToAncestor) {
+  //     goalsToAdd.add(goalId);
+  //   }
+  // }
 
   for (final goalId in goalsToAdd) {
     result[goalId] = goalMap[goalId]!;

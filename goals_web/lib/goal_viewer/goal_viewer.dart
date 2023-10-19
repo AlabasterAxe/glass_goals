@@ -27,6 +27,7 @@ import 'package:goals_core/sync.dart'
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
+import 'package:goals_web/util/date_utils.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
@@ -44,17 +45,20 @@ class GoalViewer extends StatefulHookConsumerWidget {
   ConsumerState<GoalViewer> createState() => _GoalViewerState();
 }
 
-enum GoalFilter { pending, all, to_review }
+enum GoalFilter {
+  pending(displayName: "Pending Goals"),
+  all(displayName: "All Goals"),
+  to_review(displayName: "To Review"),
+  today(displayName: "Today"),
+  this_week(displayName: "This Week"),
+  this_month(displayName: "This Month"),
+  this_quarter(displayName: "This Quarter"),
+  this_year(displayName: "This Year"),
+  long_term(displayName: "Long Term");
 
-getFilterName(GoalFilter filter) {
-  switch (filter) {
-    case GoalFilter.pending:
-      return 'Pending Goals';
-    case GoalFilter.all:
-      return 'All Goals';
-    case GoalFilter.to_review:
-      return 'To Review';
-  }
+  const GoalFilter({required this.displayName});
+
+  final String displayName;
 }
 
 enum GoalViewMode { tree, list }
@@ -372,39 +376,18 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
           // Important: Remove any padding from the ListView.
           padding: EdgeInsets.zero,
           children: [
-            ListTile(
-              title: Text(getFilterName(GoalFilter.pending)),
-              selected: _filter == GoalFilter.pending,
-              onTap: () {
-                // Update the state of the app
-                onSwitchFilter(GoalFilter.pending);
-                if (drawer) {
-                  Navigator.pop(context);
-                }
-              },
-            ),
-            ListTile(
-              title: Text(getFilterName(GoalFilter.all)),
-              selected: _filter == GoalFilter.all,
-              onTap: () {
-                // Update the state of the app
-                onSwitchFilter(GoalFilter.all);
-                if (drawer) {
-                  Navigator.pop(context);
-                }
-              },
-            ),
-            ListTile(
-              title: Text(getFilterName(GoalFilter.to_review)),
-              selected: _filter == GoalFilter.to_review,
-              onTap: () {
-                // Update the state of the app
-                onSwitchFilter(GoalFilter.to_review);
-                if (drawer) {
-                  Navigator.pop(context);
-                }
-              },
-            ),
+            for (final filter in GoalFilter.values)
+              ListTile(
+                title: Text(filter.displayName),
+                selected: _filter == filter,
+                onTap: () {
+                  // Update the state of the app
+                  onSwitchFilter(filter);
+                  if (drawer) {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
           ],
         ),
       );
@@ -529,7 +512,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                getFilterName(_filter),
+                _filter.displayName,
                 style: theme.headlineMedium,
               ),
               _mode == GoalViewMode.list
@@ -580,6 +563,73 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                                 getGoalStatus(worldContext, goal).status !=
                                     GoalStatus.done);
                         break;
+                      case GoalFilter.today:
+                        goalMap = getGoalsMatchingPredicate(
+                            worldContext, widget.goalMap, (goal) {
+                          final status = getGoalStatus(worldContext, goal);
+                          return status.status == GoalStatus.active &&
+                              status.endTime != null &&
+                              status.endTime!.isBefore(worldContext.time
+                                  .copyWith(hour: 23, minute: 59, second: 59));
+                        });
+                        break;
+                      case GoalFilter.this_week:
+                        goalMap = getGoalsMatchingPredicate(
+                            worldContext, widget.goalMap, (goal) {
+                          final status = getGoalStatus(worldContext, goal);
+
+                          return status.status == GoalStatus.active &&
+                              status.endTime != null &&
+                              status.endTime!.isAfter(worldContext.time
+                                  .copyWith(
+                                      hour: 23, minute: 59, second: 59)) &&
+                              isWithinCalendarWeek(worldContext.time, status);
+                        });
+                        break;
+                      case GoalFilter.this_month:
+                        goalMap = getGoalsMatchingPredicate(
+                            worldContext, widget.goalMap, (goal) {
+                          final status = getGoalStatus(worldContext, goal);
+
+                          return status.status == GoalStatus.active &&
+                              status.endTime != null &&
+                              !isWithinCalendarWeek(
+                                  worldContext.time, status) &&
+                              isWithinCalendarMonth(worldContext.time, status);
+                        });
+                        break;
+                      case GoalFilter.this_quarter:
+                        goalMap = getGoalsMatchingPredicate(
+                            worldContext, widget.goalMap, (goal) {
+                          final status = getGoalStatus(worldContext, goal);
+
+                          return status.status == GoalStatus.active &&
+                              status.endTime != null &&
+                              !isWithinCalendarMonth(
+                                  worldContext.time, status) &&
+                              isWithinQuarter(worldContext.time, status);
+                        });
+                        break;
+                      case GoalFilter.this_year:
+                        goalMap = getGoalsMatchingPredicate(
+                            worldContext, widget.goalMap, (goal) {
+                          final status = getGoalStatus(worldContext, goal);
+
+                          return status.status == GoalStatus.active &&
+                              status.endTime != null &&
+                              !isWithinQuarter(worldContext.time, status) &&
+                              isWithinCalendarYear(worldContext.time, status);
+                        });
+                        break;
+                      case GoalFilter.long_term:
+                        goalMap = getGoalsMatchingPredicate(
+                            worldContext, widget.goalMap, (goal) {
+                          final status = getGoalStatus(worldContext, goal);
+                          return status.status == GoalStatus.active &&
+                              (status.endTime == null ||
+                                  !isWithinCalendarYear(
+                                      worldContext.time, status));
+                        });
                       default:
                         break;
                     }
@@ -618,6 +668,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onClearSelection: onClearSelection,
                           goalMap: widget.goalMap),
                       depthLimit: _mode == GoalViewMode.list ? 1 : null,
+                      showAddGoal: true,
                     );
                   })),
         ),

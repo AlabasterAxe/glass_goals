@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/styles.dart';
-import 'package:goals_web/util/format_date.dart';
+import 'package:goals_web/util/date_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerStatefulWidget, ConsumerState;
 import 'package:uuid/uuid.dart';
