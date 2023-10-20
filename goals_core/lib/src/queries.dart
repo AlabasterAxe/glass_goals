@@ -279,9 +279,12 @@ Map<String, Goal> getGoalsRequiringAttention(
   return result;
 }
 
-Map<String, Goal> getGoalsForDateRange(WorldContext context,
-    Map<String, Goal> goalMap, DateTime start, DateTime end,
-    [DateTime? smallerWindowStart, DateTime? smallerWindowEnd]) {
+Map<String, Goal> getGoalsForDateRange(
+    WorldContext context, Map<String, Goal> goalMap,
+    [DateTime? start,
+    DateTime? end,
+    DateTime? smallerWindowStart,
+    DateTime? smallerWindowEnd]) {
   final result = <String, Goal>{};
   final activeGoalsWithinWindow =
       getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
@@ -297,7 +300,7 @@ Map<String, Goal> getGoalsForDateRange(WorldContext context,
     }
 
     return statusIsBetweenDates(
-        status, start, end.add(const Duration(seconds: 1)));
+        status, start, end?.add(const Duration(seconds: 1)));
   });
 
   final snoozedGoalsEndingWithinWindow =
@@ -315,8 +318,8 @@ Map<String, Goal> getGoalsForDateRange(WorldContext context,
     }
 
     return status.endTime != null &&
-        status.endTime!.isAfter(start) &&
-        status.endTime!.isBefore(end);
+        (start == null || status.endTime!.isAfter(start)) &&
+        (end == null || status.endTime!.isBefore(end));
   });
 
   for (final goal in [

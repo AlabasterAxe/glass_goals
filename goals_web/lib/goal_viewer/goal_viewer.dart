@@ -28,8 +28,7 @@ import 'package:goals_core/sync.dart'
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
-import 'package:goals_core/util.dart'
-    show DateTimeExtension, isWithinCalendarYear;
+import 'package:goals_core/util.dart' show DateTimeExtension;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
@@ -219,27 +218,36 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         logEntry: SetParentLogEntry(
             parentId: parentId, creationTime: DateTime.now())));
 
+    bool shouldSetStatus = false;
     DateTime? endDate;
     switch (_filter) {
       case GoalFilter.today:
+        shouldSetStatus = true;
         endDate = DateTime.now().endOfDay;
         break;
       case GoalFilter.this_week:
+        shouldSetStatus = true;
         endDate = DateTime.now().endOfWeek;
         break;
       case GoalFilter.this_month:
+        shouldSetStatus = true;
         endDate = DateTime.now().endOfMonth;
         break;
       case GoalFilter.this_quarter:
+        shouldSetStatus = true;
         endDate = DateTime.now().endOfQuarter;
         break;
       case GoalFilter.this_year:
+        shouldSetStatus = true;
         endDate = DateTime.now().endOfYear;
+        break;
+      case GoalFilter.long_term:
+        shouldSetStatus = true;
         break;
       default:
         break;
     }
-    if (endDate != null) {
+    if (shouldSetStatus) {
       AppContext.of(context).syncClient.modifyGoal(GoalDelta(
           id: id,
           logEntry: StatusLogEntry(
@@ -411,28 +419,39 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
   }
 
-  _viewSwitcher(bool drawer) => SizedBox(
-        key: const ValueKey('viewSwitcher'),
-        width: 200,
-        child: ListView(
-          // Important: Remove any padding from the ListView.
-          padding: EdgeInsets.zero,
-          children: [
-            for (final filter in GoalFilter.values)
-              ListTile(
-                title: Text(filter.displayName),
-                selected: _filter == filter,
-                onTap: () {
-                  // Update the state of the app
-                  onSwitchFilter(filter);
-                  if (drawer) {
-                    Navigator.pop(context);
-                  }
-                },
-              ),
-          ],
-        ),
-      );
+  _viewSwitcher(bool drawer) {
+    final sidebarFilters = [
+      GoalFilter.today,
+      GoalFilter.this_week,
+      GoalFilter.this_month,
+      GoalFilter.this_quarter,
+      GoalFilter.this_year,
+      GoalFilter.long_term,
+      GoalFilter.all,
+    ];
+    return SizedBox(
+      key: const ValueKey('viewSwitcher'),
+      width: 200,
+      child: ListView(
+        // Important: Remove any padding from the ListView.
+        padding: EdgeInsets.zero,
+        children: [
+          for (final filter in sidebarFilters)
+            ListTile(
+              title: Text(filter.displayName),
+              selected: _filter == filter,
+              onTap: () {
+                // Update the state of the app
+                onSwitchFilter(filter);
+                if (drawer) {
+                  Navigator.pop(context);
+                }
+              },
+            ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -653,14 +672,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         );
                         break;
                       case GoalFilter.long_term:
-                        goalMap = getGoalsMatchingPredicate(
-                            worldContext, widget.goalMap, (goal) {
-                          final status = getGoalStatus(worldContext, goal);
-                          return status.status == GoalStatus.active &&
-                              (status.endTime == null ||
-                                  !isWithinCalendarYear(
-                                      worldContext.time, status));
-                        });
+                        goalMap = getGoalsForDateRange(
+                          worldContext,
+                          widget.goalMap,
+                          null,
+                          null,
+                          worldContext.time.startOfQuarter,
+                          worldContext.time.endOfQuarter,
+                        );
                       default:
                         break;
                     }

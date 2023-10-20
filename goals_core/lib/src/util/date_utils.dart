@@ -6,11 +6,15 @@ formatDate(DateTime date) {
       DateFormat('EE').format(date).substring(0, 2).toUpperCase();
 }
 
-bool statusIsBetweenDates(StatusLogEntry status, DateTime start, DateTime end) {
-  return status.startTime != null &&
-      status.startTime!.isAfter(start) &&
-      status.endTime != null &&
-      status.endTime!.isBefore(end);
+bool statusIsBetweenDates(
+    StatusLogEntry status, DateTime? start, DateTime? end) {
+  if (end != null && start != null && end.isBefore(start)) {
+    throw ArgumentError('end must be after start');
+  }
+  return (start == null ||
+          (status.startTime != null && status.startTime!.isAfter(start))) &&
+      (end == null ||
+          (status.endTime != null && status.endTime!.isBefore(end)));
 }
 
 isWithinDay(
