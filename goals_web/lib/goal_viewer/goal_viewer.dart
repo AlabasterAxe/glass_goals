@@ -48,16 +48,17 @@ class GoalViewer extends StatefulHookConsumerWidget {
 }
 
 enum TimeSlice {
-  today(null),
-  this_week(TimeSlice.today),
-  this_month(TimeSlice.this_week),
-  this_quarter(TimeSlice.this_month),
-  this_year(TimeSlice.this_quarter),
-  long_term(TimeSlice.this_year);
+  today(null, "Today"),
+  this_week(TimeSlice.today, "This Week"),
+  this_month(TimeSlice.this_week, "This Month"),
+  this_quarter(TimeSlice.this_month, "This Quarter"),
+  this_year(TimeSlice.this_quarter, "This Year"),
+  long_term(TimeSlice.this_year, "Long Term");
 
-  const TimeSlice(this.zoomDown);
+  const TimeSlice(this.zoomDown, this.displayName);
 
   final TimeSlice? zoomDown;
+  final String displayName;
 
   startTime(DateTime now) {
     switch (this) {
@@ -103,7 +104,8 @@ enum GoalFilter {
   this_month(displayName: "This Month"),
   this_quarter(displayName: "This Quarter"),
   this_year(displayName: "This Year"),
-  long_term(displayName: "Long Term");
+  long_term(displayName: "Long Term"),
+  schedule(displayName: "Scheduled Goals");
 
   const GoalFilter({required this.displayName});
 
@@ -113,7 +115,7 @@ enum GoalFilter {
 enum GoalViewMode { tree, list }
 
 class _GoalViewerState extends ConsumerState<GoalViewer> {
-  GoalFilter _filter = GoalFilter.today;
+  GoalFilter _filter = GoalFilter.schedule;
   GoalViewMode _mode = GoalViewMode.tree;
   bool shiftHeld = false;
   bool ctrlHeld = false;
@@ -257,7 +259,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     });
   }
 
-  onAddGoal(String? parentId, String text) {
+  onAddGoal(String? parentId, String text, [TimeSlice? timeSlice]) {
     final id = const Uuid().v4();
     AppContext.of(context).syncClient.modifyGoal(GoalDelta(
         id: id,
@@ -267,28 +269,28 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
     bool shouldSetStatus = false;
     DateTime? endDate;
-    switch (_filter) {
-      case GoalFilter.today:
+    switch (timeSlice) {
+      case TimeSlice.today:
         shouldSetStatus = true;
         endDate = DateTime.now().endOfDay;
         break;
-      case GoalFilter.this_week:
+      case TimeSlice.this_week:
         shouldSetStatus = true;
         endDate = DateTime.now().endOfWeek;
         break;
-      case GoalFilter.this_month:
+      case TimeSlice.this_month:
         shouldSetStatus = true;
         endDate = DateTime.now().endOfMonth;
         break;
-      case GoalFilter.this_quarter:
+      case TimeSlice.this_quarter:
         shouldSetStatus = true;
         endDate = DateTime.now().endOfQuarter;
         break;
-      case GoalFilter.this_year:
+      case TimeSlice.this_year:
         shouldSetStatus = true;
         endDate = DateTime.now().endOfYear;
         break;
-      case GoalFilter.long_term:
+      case TimeSlice.long_term:
         shouldSetStatus = true;
         break;
       default:
@@ -468,12 +470,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   _viewSwitcher(bool drawer) {
     final sidebarFilters = [
-      GoalFilter.today,
-      GoalFilter.this_week,
-      GoalFilter.this_month,
-      GoalFilter.this_quarter,
-      GoalFilter.this_year,
-      GoalFilter.long_term,
+      GoalFilter.schedule,
       GoalFilter.all,
     ];
     return SizedBox(
@@ -608,7 +605,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     );
   }
 
-  Widget _timeSlice(WorldContext context, TimeSlice slice) {
+  Widget? _timeSlice(WorldContext context, TimeSlice slice) {
     final goalMap = getGoalsForDateRange(
         context,
         widget.goalMap,
@@ -616,6 +613,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         slice.endTime(context.time),
         slice.zoomDown?.startTime(context.time),
         slice.zoomDown?.endTime(context.time));
+
+    if (goalMap.isEmpty && slice.zoomDown != null) {
+      return null;
+    }
     final goalIds = _mode == GoalViewMode.tree
         ? goalMap.values
             .where((goal) {
@@ -649,7 +650,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
           onClearSelection: onClearSelection,
           goalMap: widget.goalMap),
       depthLimit: _mode == GoalViewMode.list ? 1 : null,
-      onAddGoal: this.onAddGoal,
+      onAddGoal: (String? parentId, String text) =>
+          this.onAddGoal(parentId, text, slice),
     );
   }
 
@@ -824,17 +826,58 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onAddGoal: this.onAddGoal,
                         );
                       case GoalFilter.today:
-                        return _timeSlice(worldContext, TimeSlice.today);
+                        return _timeSlice(worldContext, TimeSlice.today) ??
+                            Text('No Goals!');
                       case GoalFilter.this_week:
-                        return _timeSlice(worldContext, TimeSlice.this_week);
+                        return _timeSlice(worldContext, TimeSlice.this_week) ??
+                            Text('No Goals!');
                       case GoalFilter.this_month:
-                        return _timeSlice(worldContext, TimeSlice.this_month);
+                        return _timeSlice(worldContext, TimeSlice.this_month) ??
+                            Text('No Goals!');
                       case GoalFilter.this_quarter:
-                        return _timeSlice(worldContext, TimeSlice.this_quarter);
+                        return _timeSlice(
+                                worldContext, TimeSlice.this_quarter) ??
+                            Text('No Goals!');
                       case GoalFilter.this_year:
-                        return _timeSlice(worldContext, TimeSlice.this_year);
+                        return _timeSlice(worldContext, TimeSlice.this_year) ??
+                            Text('No Goals!');
                       case GoalFilter.long_term:
-                        return _timeSlice(worldContext, TimeSlice.long_term);
+                        return _timeSlice(worldContext, TimeSlice.long_term) ??
+                            Text('No Goals!');
+                      case GoalFilter.schedule:
+                        final children = <Widget>[];
+
+                        for (final timeSlice in [
+                          TimeSlice.today,
+                          TimeSlice.this_week,
+                          TimeSlice.this_month,
+                          TimeSlice.this_quarter,
+                          TimeSlice.this_year,
+                          TimeSlice.long_term
+                        ]) {
+                          final slice = _timeSlice(worldContext, timeSlice);
+                          if (slice != null) {
+                            children.addAll([
+                              Padding(
+                                padding: EdgeInsets.all(uiUnit(2)),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      timeSlice.displayName,
+                                      style: theme.headlineSmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              slice,
+                            ]);
+                          }
+                        }
+                        return Column(
+                          children: children,
+                        );
                     }
                   })),
         ),

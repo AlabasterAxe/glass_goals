@@ -71,12 +71,12 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         Tooltip(
-          message: 'Activate',
+          message: 'Schedule',
           child: MenuAnchor(
             controller: _activateMenuController,
             menuChildren: [
               MenuItemButton(
-                child: const Text('An hour'),
+                child: const Text('For an hour'),
                 onPressed: () => widget
                     .onActive(DateTime.now().add(const Duration(hours: 1))),
               ),
@@ -113,7 +113,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 onPressed: () => widget.onActive(DateTime.now().endOfYear),
               ),
               MenuItemButton(
-                  child: const Text('Future Date...'),
+                  child: const Text('Until a future Date...'),
                   onPressed: () async {
                     final date = await showDatePicker(
                       context: context,
@@ -132,7 +132,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
               ),
             ],
             child: IconButton(
-              icon: const Icon(Icons.directions_run),
+              icon: const Icon(Icons.schedule),
               onPressed: () {
                 _activateMenuController.open();
               },

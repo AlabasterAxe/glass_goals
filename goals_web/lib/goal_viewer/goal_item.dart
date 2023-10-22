@@ -233,14 +233,6 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         });
       },
       child: GestureDetector(
-        onDoubleTap: _editing
-            ? null
-            : () => {
-                  setState(() {
-                    _editing = true;
-                    _focusNode.requestFocus();
-                  })
-                },
         onTap: _editing
             ? null
             : () {
@@ -288,18 +280,28 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                             focusNode: _focusNode,
                           ),
                         )
-                      : Flexible(
-                          child: Text(
-                              '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
-                              style: (widget.focused
-                                      ? focusedFontStyle.merge(mainTextStyle)
-                                      : mainTextStyle)
-                                  .copyWith(
-                                decoration: isSelected
-                                    ? TextDecoration.underline
-                                    : null,
-                                overflow: TextOverflow.ellipsis,
-                              )),
+                      : GestureDetector(
+                          onDoubleTap: _editing || !isSelected
+                              ? null
+                              : () => {
+                                    setState(() {
+                                      _editing = true;
+                                      _focusNode.requestFocus();
+                                    })
+                                  },
+                          child: Flexible(
+                            child: Text(
+                                '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
+                                style: (widget.focused
+                                        ? focusedFontStyle.merge(mainTextStyle)
+                                        : mainTextStyle)
+                                    .copyWith(
+                                  decoration: isSelected
+                                      ? TextDecoration.underline
+                                      : null,
+                                  overflow: TextOverflow.ellipsis,
+                                )),
+                          ),
                         ),
                   SizedBox(width: uiUnit(2)),
                   // chip like container widget around text status widget:
