@@ -47,6 +47,53 @@ class GoalViewer extends StatefulHookConsumerWidget {
   ConsumerState<GoalViewer> createState() => _GoalViewerState();
 }
 
+enum TimeSlice {
+  today(null),
+  this_week(TimeSlice.today),
+  this_month(TimeSlice.this_week),
+  this_quarter(TimeSlice.this_month),
+  this_year(TimeSlice.this_quarter),
+  long_term(TimeSlice.this_year);
+
+  const TimeSlice(this.zoomDown);
+
+  final TimeSlice? zoomDown;
+
+  startTime(DateTime now) {
+    switch (this) {
+      case TimeSlice.today:
+        return now.startOfDay;
+      case TimeSlice.this_week:
+        return now.startOfWeek;
+      case TimeSlice.this_month:
+        return now.startOfMonth;
+      case TimeSlice.this_quarter:
+        return now.startOfQuarter;
+      case TimeSlice.this_year:
+        return now.startOfYear;
+      case TimeSlice.long_term:
+        return null;
+    }
+  }
+
+  endTime(DateTime now) {
+    switch (this) {
+      case TimeSlice.today:
+        return now.endOfDay;
+      case TimeSlice.this_week:
+        return now.endOfWeek;
+      case TimeSlice.this_month:
+        return now.endOfMonth;
+      case TimeSlice.this_quarter:
+        return now.endOfQuarter;
+      case TimeSlice.this_year:
+        return now.endOfYear;
+      case TimeSlice.long_term:
+        return null;
+    }
+  }
+}
+
 enum GoalFilter {
   pending(displayName: "Pending Goals"),
   all(displayName: "All Goals"),
@@ -66,7 +113,7 @@ enum GoalFilter {
 enum GoalViewMode { tree, list }
 
 class _GoalViewerState extends ConsumerState<GoalViewer> {
-  GoalFilter _filter = GoalFilter.pending;
+  GoalFilter _filter = GoalFilter.today;
   GoalViewMode _mode = GoalViewMode.tree;
   bool shiftHeld = false;
   bool ctrlHeld = false;
@@ -561,6 +608,51 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     );
   }
 
+  Widget _timeSlice(WorldContext context, TimeSlice slice) {
+    final goalMap = getGoalsForDateRange(
+        context,
+        widget.goalMap,
+        slice.startTime(context.time),
+        slice.endTime(context.time),
+        slice.zoomDown?.startTime(context.time),
+        slice.zoomDown?.endTime(context.time));
+    final goalIds = _mode == GoalViewMode.tree
+        ? goalMap.values
+            .where((goal) {
+              for (final superGoal in goal.superGoals) {
+                if (goalMap.containsKey(superGoal.id)) {
+                  return false;
+                }
+              }
+              return true;
+            })
+            .map((e) => e.id)
+            .toList()
+        : (goalMap.values.toList(growable: false)
+              ..sort((a, b) =>
+                  a.text.toLowerCase().compareTo(b.text.toLowerCase())))
+            .map((g) => g.id)
+            .toList();
+    return GoalListWidget(
+      goalMap: goalMap,
+      goalIds: goalIds,
+      onSelected: onSelected,
+      onExpanded: onExpanded,
+      onFocused: onFocused,
+      hoverActions: HoverActionsWidget(
+          onMerge: onMerge,
+          onUnarchive: onUnarchive,
+          onArchive: onArchive,
+          onDone: onDone,
+          onSnooze: onSnooze,
+          onActive: onActive,
+          onClearSelection: onClearSelection,
+          goalMap: widget.goalMap),
+      depthLimit: _mode == GoalViewMode.list ? 1 : null,
+      onAddGoal: this.onAddGoal,
+    );
+  }
+
   Widget _listView(WorldContext worldContext) {
     final theme = Theme.of(context).textTheme;
     return Column(
@@ -608,11 +700,83 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                     }
                     var goalMap = widget.goalMap;
                     switch (_filter) {
+                      case GoalFilter.all:
+                        final goalIds = _mode == GoalViewMode.tree
+                            ? goalMap.values
+                                .where((goal) {
+                                  for (final superGoal in goal.superGoals) {
+                                    if (goalMap.containsKey(superGoal.id)) {
+                                      return false;
+                                    }
+                                  }
+                                  return true;
+                                })
+                                .map((e) => e.id)
+                                .toList()
+                            : (goalMap.values.toList(growable: false)
+                                  ..sort((a, b) => a.text
+                                      .toLowerCase()
+                                      .compareTo(b.text.toLowerCase())))
+                                .map((g) => g.id)
+                                .toList();
+                        return GoalListWidget(
+                          goalMap: goalMap,
+                          goalIds: goalIds,
+                          onSelected: onSelected,
+                          onExpanded: onExpanded,
+                          onFocused: onFocused,
+                          hoverActions: HoverActionsWidget(
+                              onMerge: onMerge,
+                              onUnarchive: onUnarchive,
+                              onArchive: onArchive,
+                              onDone: onDone,
+                              onSnooze: onSnooze,
+                              onActive: onActive,
+                              onClearSelection: onClearSelection,
+                              goalMap: widget.goalMap),
+                          depthLimit: _mode == GoalViewMode.list ? 1 : null,
+                          onAddGoal: this.onAddGoal,
+                        );
                       case GoalFilter.to_review:
                         goalMap = getGoalsRequiringAttention(
                             worldContext, widget.goalMap);
 
-                        break;
+                        final goalIds = _mode == GoalViewMode.tree
+                            ? goalMap.values
+                                .where((goal) {
+                                  for (final superGoal in goal.superGoals) {
+                                    if (goalMap.containsKey(superGoal.id)) {
+                                      return false;
+                                    }
+                                  }
+                                  return true;
+                                })
+                                .map((e) => e.id)
+                                .toList()
+                            : (goalMap.values.toList(growable: false)
+                                  ..sort((a, b) => a.text
+                                      .toLowerCase()
+                                      .compareTo(b.text.toLowerCase())))
+                                .map((g) => g.id)
+                                .toList();
+                        return GoalListWidget(
+                          goalMap: goalMap,
+                          goalIds: goalIds,
+                          onSelected: onSelected,
+                          onExpanded: onExpanded,
+                          onFocused: onFocused,
+                          hoverActions: HoverActionsWidget(
+                              onMerge: onMerge,
+                              onUnarchive: onUnarchive,
+                              onArchive: onArchive,
+                              onDone: onDone,
+                              onSnooze: onSnooze,
+                              onActive: onActive,
+                              onClearSelection: onClearSelection,
+                              goalMap: widget.goalMap),
+                          depthLimit: _mode == GoalViewMode.list ? 1 : null,
+                          onAddGoal: this.onAddGoal,
+                        );
 
                       case GoalFilter.pending:
                         goalMap = getGoalsMatchingPredicate(
@@ -623,103 +787,55 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                                     GoalStatus.archived &&
                                 getGoalStatus(worldContext, goal).status !=
                                     GoalStatus.done);
-                        break;
+                        final goalIds = _mode == GoalViewMode.tree
+                            ? goalMap.values
+                                .where((goal) {
+                                  for (final superGoal in goal.superGoals) {
+                                    if (goalMap.containsKey(superGoal.id)) {
+                                      return false;
+                                    }
+                                  }
+                                  return true;
+                                })
+                                .map((e) => e.id)
+                                .toList()
+                            : (goalMap.values.toList(growable: false)
+                                  ..sort((a, b) => a.text
+                                      .toLowerCase()
+                                      .compareTo(b.text.toLowerCase())))
+                                .map((g) => g.id)
+                                .toList();
+                        return GoalListWidget(
+                          goalMap: goalMap,
+                          goalIds: goalIds,
+                          onSelected: onSelected,
+                          onExpanded: onExpanded,
+                          onFocused: onFocused,
+                          hoverActions: HoverActionsWidget(
+                              onMerge: onMerge,
+                              onUnarchive: onUnarchive,
+                              onArchive: onArchive,
+                              onDone: onDone,
+                              onSnooze: onSnooze,
+                              onActive: onActive,
+                              onClearSelection: onClearSelection,
+                              goalMap: widget.goalMap),
+                          depthLimit: _mode == GoalViewMode.list ? 1 : null,
+                          onAddGoal: this.onAddGoal,
+                        );
                       case GoalFilter.today:
-                        goalMap = getGoalsForDateRange(
-                            worldContext,
-                            widget.goalMap,
-                            worldContext.time.startOfDay,
-                            worldContext.time.endOfDay);
-                        break;
+                        return _timeSlice(worldContext, TimeSlice.today);
                       case GoalFilter.this_week:
-                        goalMap = getGoalsForDateRange(
-                          worldContext,
-                          widget.goalMap,
-                          worldContext.time.startOfWeek,
-                          worldContext.time.endOfWeek,
-                          worldContext.time.startOfDay,
-                          worldContext.time.endOfDay,
-                        );
-                        break;
+                        return _timeSlice(worldContext, TimeSlice.this_week);
                       case GoalFilter.this_month:
-                        goalMap = getGoalsForDateRange(
-                          worldContext,
-                          widget.goalMap,
-                          worldContext.time.startOfMonth,
-                          worldContext.time.endOfMonth,
-                          worldContext.time.startOfWeek,
-                          worldContext.time.endOfWeek,
-                        );
-                        break;
+                        return _timeSlice(worldContext, TimeSlice.this_month);
                       case GoalFilter.this_quarter:
-                        goalMap = getGoalsForDateRange(
-                          worldContext,
-                          widget.goalMap,
-                          worldContext.time.startOfQuarter,
-                          worldContext.time.endOfQuarter,
-                          worldContext.time.startOfMonth,
-                          worldContext.time.endOfMonth,
-                        );
-                        break;
+                        return _timeSlice(worldContext, TimeSlice.this_quarter);
                       case GoalFilter.this_year:
-                        goalMap = getGoalsForDateRange(
-                          worldContext,
-                          widget.goalMap,
-                          worldContext.time.startOfYear,
-                          worldContext.time.endOfYear,
-                          worldContext.time.startOfQuarter,
-                          worldContext.time.endOfQuarter,
-                        );
-                        break;
+                        return _timeSlice(worldContext, TimeSlice.this_year);
                       case GoalFilter.long_term:
-                        goalMap = getGoalsForDateRange(
-                          worldContext,
-                          widget.goalMap,
-                          null,
-                          null,
-                          worldContext.time.startOfQuarter,
-                          worldContext.time.endOfQuarter,
-                        );
-                      default:
-                        break;
+                        return _timeSlice(worldContext, TimeSlice.long_term);
                     }
-
-                    final goalIds = _mode == GoalViewMode.tree
-                        ? goalMap.values
-                            .where((goal) {
-                              for (final superGoal in goal.superGoals) {
-                                if (goalMap.containsKey(superGoal.id)) {
-                                  return false;
-                                }
-                              }
-                              return true;
-                            })
-                            .map((e) => e.id)
-                            .toList()
-                        : (goalMap.values.toList(growable: false)
-                              ..sort((a, b) => a.text
-                                  .toLowerCase()
-                                  .compareTo(b.text.toLowerCase())))
-                            .map((g) => g.id)
-                            .toList();
-                    return GoalListWidget(
-                      goalMap: goalMap,
-                      goalIds: goalIds,
-                      onSelected: onSelected,
-                      onExpanded: onExpanded,
-                      onFocused: onFocused,
-                      hoverActions: HoverActionsWidget(
-                          onMerge: onMerge,
-                          onUnarchive: onUnarchive,
-                          onArchive: onArchive,
-                          onDone: onDone,
-                          onSnooze: onSnooze,
-                          onActive: onActive,
-                          onClearSelection: onClearSelection,
-                          goalMap: widget.goalMap),
-                      depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                      onAddGoal: this.onAddGoal,
-                    );
                   })),
         ),
       ],
