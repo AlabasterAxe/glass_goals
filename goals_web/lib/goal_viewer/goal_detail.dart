@@ -1,27 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_riverpod/src/consumer.dart';
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart'
     show ArchiveNoteLogEntry, GoalDelta, GoalLogEntry, NoteLogEntry;
 import 'package:goals_core/util.dart' show formatDate;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
+import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/styles.dart' show mainTextStyle, uiUnit;
+import 'package:hooks_riverpod/hooks_riverpod.dart'
+    show ConsumerState, ConsumerStatefulWidget, ConsumerWidget;
+
+class Breadcrumb extends ConsumerWidget {
+  final Goal goal;
+  const Breadcrumb({
+    super.key,
+    required this.goal,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+        child: Text(goal.text),
+        onTap: () {
+          ref.read(focusedGoalProvider.notifier).set(goal.id);
+        });
+  }
+}
 
 class NoteCard extends StatefulWidget {
-  final String goalId;
+  final Goal goal;
   final NoteLogEntry entry;
   final Function() onRefresh;
-  final bool editable;
-  final String? goalText;
+  final bool childNote;
   const NoteCard({
     super.key,
-    required this.goalId,
+    required this.goal,
     required this.entry,
     required this.onRefresh,
-    required this.editable,
-    this.goalText,
+    required this.childNote,
   });
 
   @override
@@ -52,7 +71,7 @@ class _NoteCardState extends State<NoteCard> {
     _textController.selection =
         TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
     AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-        id: widget.goalId,
+        id: widget.goal.id,
         logEntry: NoteLogEntry(
             id: widget.entry.id,
             creationTime: DateTime.now(),
@@ -80,12 +99,12 @@ class _NoteCardState extends State<NoteCard> {
               Row(
                 children: [
                   Text(formatDate(widget.entry.creationTime)),
-                  widget.goalText != null
-                      ? Text(' - ${widget.goalText!}')
-                      : Container()
+                  ...(widget.childNote
+                      ? [const Text(' - '), Breadcrumb(goal: widget.goal)]
+                      : [Container()])
                 ],
               ),
-              widget.editable
+              !widget.childNote
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -93,7 +112,7 @@ class _NoteCardState extends State<NoteCard> {
                             onPressed: () {
                               AppContext.of(context).syncClient.modifyGoal(
                                   GoalDelta(
-                                      id: widget.goalId,
+                                      id: widget.goal.id,
                                       logEntry: ArchiveNoteLogEntry(
                                           id: widget.entry.id,
                                           creationTime: DateTime.now())));
@@ -130,7 +149,7 @@ class _NoteCardState extends State<NoteCard> {
                     data: _textController.text,
                     selectable: true,
                     onTapText: () {
-                      if (widget.editable) {
+                      if (!widget.childNote) {
                         setState(() {
                           _editing = true;
                           _focusNode.requestFocus();
@@ -147,23 +166,21 @@ class _NoteCardState extends State<NoteCard> {
   }
 }
 
-class GoalDetail extends StatefulWidget {
+class GoalDetail extends ConsumerStatefulWidget {
   final Goal goal;
   const GoalDetail({super.key, required this.goal});
 
   @override
-  State<GoalDetail> createState() => _GoalDetailState();
+  ConsumerState<GoalDetail> createState() => _GoalDetailState();
 }
 
 class DetailViewLogEntryItem {
-  final String goalId;
-  final String goalText;
+  final Goal goal;
   final GoalLogEntry entry;
-  const DetailViewLogEntryItem(
-      {required this.goalId, required this.goalText, required this.entry});
+  const DetailViewLogEntryItem({required this.goal, required this.entry});
 }
 
-class _GoalDetailState extends State<GoalDetail> {
+class _GoalDetailState extends ConsumerState<GoalDetail> {
   List<DetailViewLogEntryItem> _computeNoteLog(
       List<DetailViewLogEntryItem> log) {
     Map<String, DetailViewLogEntryItem> items = {};
@@ -178,8 +195,7 @@ class _GoalDetailState extends State<GoalDetail> {
               creationTime: originalNoteDate ?? entry.creationTime,
               text: entry.text,
             ),
-            goalId: item.goalId,
-            goalText: item.goalText);
+            goal: item.goal);
       } else if (entry is ArchiveNoteLogEntry) {
         items.remove(entry.id);
       }
@@ -189,35 +205,49 @@ class _GoalDetailState extends State<GoalDetail> {
       ..sort((a, b) => b.entry.creationTime.compareTo(a.entry.creationTime));
   }
 
+  Widget breadcrumbs() {
+    final List<Widget> widgets = [];
+    Goal? curGoal = widget.goal.superGoals.firstOrNull;
+    while (curGoal != null) {
+      widgets.add(Breadcrumb(goal: curGoal));
+      widgets.add(const Icon(Icons.chevron_right));
+      curGoal = curGoal.superGoals.firstOrNull;
+    }
+    if (widgets.isNotEmpty) {
+      widgets.removeLast();
+    }
+    return Row(children: widgets.reversed.toList());
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<DetailViewLogEntryItem> logItems = [];
     for (final goal in [...widget.goal.subGoals, widget.goal]) {
-      logItems.addAll(goal.log.map((entry) => DetailViewLogEntryItem(
-          goalId: goal.id, goalText: goal.text, entry: entry)));
+      logItems.addAll(goal.log
+          .map((entry) => DetailViewLogEntryItem(goal: goal, entry: entry)));
     }
     final textTheme = Theme.of(context).textTheme;
     final noteLog = _computeNoteLog(logItems);
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Padding(
-        padding: EdgeInsets.all(uiUnit(2)),
-        child: Text(widget.goal.text, style: textTheme.headlineMedium),
-      ),
-      SizedBox(height: uiUnit(2)),
-      noteLog.firstOrNull == null ||
-              formatDate(noteLog.first.entry.creationTime) !=
-                  formatDate(DateTime.now()) ||
-              noteLog.first.goalId != widget.goal.id
-          ? AddNoteCard(goalId: widget.goal.id)
-          : Container(),
-      for (final entry in noteLog)
-        NoteCard(
-            key: ValueKey((entry.entry as NoteLogEntry).id),
-            goalId: widget.goal.id,
-            entry: entry.entry as NoteLogEntry,
-            editable: entry.goalId == widget.goal.id,
-            goalText: entry.goalId != widget.goal.id ? entry.goalText : null,
-            onRefresh: () => setState(() {})),
-    ]);
+    return Padding(
+      padding: EdgeInsets.all(uiUnit(2)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text(widget.goal.text, style: textTheme.headlineMedium),
+        breadcrumbs(),
+        SizedBox(height: uiUnit(2)),
+        noteLog.firstOrNull == null ||
+                formatDate(noteLog.first.entry.creationTime) !=
+                    formatDate(DateTime.now()) ||
+                noteLog.first.goal.id != widget.goal.id
+            ? AddNoteCard(goalId: widget.goal.id)
+            : Container(),
+        for (final entry in noteLog)
+          NoteCard(
+              key: ValueKey((entry.entry as NoteLogEntry).id),
+              goal: entry.goal,
+              entry: entry.entry as NoteLogEntry,
+              childNote: entry.goal.id != widget.goal.id,
+              onRefresh: () => setState(() {})),
+      ]),
+    );
   }
 }
