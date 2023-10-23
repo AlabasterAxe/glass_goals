@@ -280,16 +280,16 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                             focusNode: _focusNode,
                           ),
                         )
-                      : GestureDetector(
-                          onDoubleTap: _editing || !isSelected
-                              ? null
-                              : () => {
-                                    setState(() {
-                                      _editing = true;
-                                      _focusNode.requestFocus();
-                                    })
-                                  },
-                          child: Flexible(
+                      : Flexible(
+                          child: GestureDetector(
+                            onDoubleTap: _editing || !isSelected
+                                ? null
+                                : () => {
+                                      setState(() {
+                                        _editing = true;
+                                        _focusNode.requestFocus();
+                                      })
+                                    },
                             child: Text(
                                 '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
                                 style: (widget.focused
