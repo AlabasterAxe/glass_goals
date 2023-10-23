@@ -1,4 +1,4 @@
-import 'package:goals_core/util.dart' show statusIsBetweenDates;
+import 'package:goals_core/util.dart' show statusIsBetweenDatesInclusive;
 import 'package:goals_types/goals_types.dart' show GoalStatus, StatusLogEntry;
 import 'package:test/expect.dart' show isFalse, isTrue;
 import 'package:test/test.dart' show test, expect;
@@ -24,35 +24,43 @@ void main() {
     final noStartNoEnd = StatusLogEntry(
         creationTime: DateTime(2020, 1, 1, 12), status: GoalStatus.active);
 
-    expect(statusIsBetweenDates(startAndEnd, null, null), isTrue);
+    expect(statusIsBetweenDatesInclusive(startAndEnd, null, null), isTrue);
     expect(
-        statusIsBetweenDates(startAndEnd, DateTime(2020, 1, 1, 11, 30), null),
+        statusIsBetweenDatesInclusive(
+            startAndEnd, DateTime(2020, 1, 1, 11, 30), null),
         isTrue);
     expect(
-        statusIsBetweenDates(startAndEnd, DateTime(2020, 1, 1, 12, 30), null),
+        statusIsBetweenDatesInclusive(
+            startAndEnd, DateTime(2020, 1, 1, 12, 30), null),
         isFalse);
     expect(
-        statusIsBetweenDates(startAndEnd, DateTime(2020, 1, 1, 13, 30), null),
+        statusIsBetweenDatesInclusive(
+            startAndEnd, DateTime(2020, 1, 1, 13, 30), null),
         isFalse);
     expect(
-        statusIsBetweenDates(startAndEnd, DateTime(2020, 1, 1, 12, 00), null),
+        statusIsBetweenDatesInclusive(
+            startAndEnd, DateTime(2020, 1, 1, 12, 00), null),
         isFalse);
 
     expect(
-        statusIsBetweenDates(startAndEnd, null, DateTime(2020, 1, 1, 13, 30)),
+        statusIsBetweenDatesInclusive(
+            startAndEnd, null, DateTime(2020, 1, 1, 13, 30)),
         isTrue);
     expect(
-        statusIsBetweenDates(startAndEnd, null, DateTime(2020, 1, 1, 11, 30)),
+        statusIsBetweenDatesInclusive(
+            startAndEnd, null, DateTime(2020, 1, 1, 11, 30)),
         isFalse);
     expect(
-        statusIsBetweenDates(startAndEnd, null, DateTime(2020, 1, 1, 12, 30)),
+        statusIsBetweenDatesInclusive(
+            startAndEnd, null, DateTime(2020, 1, 1, 12, 30)),
         isFalse);
     expect(
-        statusIsBetweenDates(startAndEnd, null, DateTime(2020, 1, 1, 13, 00)),
+        statusIsBetweenDatesInclusive(
+            startAndEnd, null, DateTime(2020, 1, 1, 13, 00)),
         isFalse);
 
-    expect(statusIsBetweenDates(noStart, null, null), isTrue);
-    expect(statusIsBetweenDates(noEnd, null, null), isTrue);
-    expect(statusIsBetweenDates(noStartNoEnd, null, null), isTrue);
+    expect(statusIsBetweenDatesInclusive(noStart, null, null), isTrue);
+    expect(statusIsBetweenDatesInclusive(noEnd, null, null), isTrue);
+    expect(statusIsBetweenDatesInclusive(noStartNoEnd, null, null), isTrue);
   });
 }

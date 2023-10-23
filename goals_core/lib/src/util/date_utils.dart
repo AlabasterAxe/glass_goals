@@ -6,22 +6,25 @@ formatDate(DateTime date) {
       DateFormat('EE').format(date).substring(0, 2).toUpperCase();
 }
 
-bool statusIsBetweenDates(
+bool statusIsBetweenDatesInclusive(
     StatusLogEntry status, DateTime? start, DateTime? end) {
   if (end != null && start != null && end.isBefore(start)) {
     throw ArgumentError('end must be after start');
   }
   return (start == null ||
-          (status.startTime != null && status.startTime!.isAfter(start))) &&
+          (status.startTime != null &&
+              status.startTime!
+                  .isAfter(start.subtract(const Duration(seconds: 1))))) &&
       (end == null ||
-          (status.endTime != null && status.endTime!.isBefore(end)));
+          (status.endTime != null &&
+              status.endTime!.isBefore(end.add(const Duration(seconds: 1)))));
 }
 
 isWithinDay(
   DateTime now,
   StatusLogEntry status,
 ) {
-  return statusIsBetweenDates(
+  return statusIsBetweenDatesInclusive(
     status,
     now.startOfDay,
     now.endOfDay.add(const Duration(seconds: 1)),
@@ -60,22 +63,20 @@ isWithinCalendarWeek(
   DateTime now,
   StatusLogEntry status,
 ) {
-  return statusIsBetweenDates(
-      status, now.startOfWeek, now.endOfWeek.add(const Duration(seconds: 1)));
+  return statusIsBetweenDatesInclusive(status, now.startOfWeek, now.endOfWeek);
 }
 
 /// Whether or not this goal status is completely contained within the current month.
 isWithinCalendarMonth(DateTime now, StatusLogEntry status) {
-  return statusIsBetweenDates(
-      status, now.startOfMonth, now.endOfMonth.add(const Duration(seconds: 1)));
+  return statusIsBetweenDatesInclusive(
+      status, now.startOfMonth, now.endOfMonth);
 }
 
 isWithinQuarter(DateTime now, StatusLogEntry status) {
-  return statusIsBetweenDates(status, now.startOfQuarter,
+  return statusIsBetweenDatesInclusive(status, now.startOfQuarter,
       now.endOfQuarter.add(const Duration(seconds: 1)));
 }
 
 isWithinCalendarYear(DateTime now, StatusLogEntry status) {
-  return statusIsBetweenDates(
-      status, now.startOfYear, now.endOfYear.add(const Duration(seconds: 1)));
+  return statusIsBetweenDatesInclusive(status, now.startOfYear, now.endOfYear);
 }

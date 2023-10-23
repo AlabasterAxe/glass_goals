@@ -219,13 +219,6 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                   onPressed: widget.onArchive,
                 ),
               ),
-        Tooltip(
-          message: 'Merge',
-          child: IconButton(
-            icon: const Icon(Icons.merge),
-            onPressed: selectedGoals.length > 1 ? widget.onMerge : null,
-          ),
-        ),
       ],
     );
   }

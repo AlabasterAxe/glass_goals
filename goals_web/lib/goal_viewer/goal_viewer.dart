@@ -267,43 +267,22 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         logEntry: SetParentLogEntry(
             parentId: parentId, creationTime: DateTime.now())));
 
-    bool shouldSetStatus = false;
-    DateTime? endDate;
-    switch (timeSlice) {
-      case TimeSlice.today:
-        shouldSetStatus = true;
-        endDate = DateTime.now().endOfDay;
-        break;
-      case TimeSlice.this_week:
-        shouldSetStatus = true;
-        endDate = DateTime.now().endOfWeek;
-        break;
-      case TimeSlice.this_month:
-        shouldSetStatus = true;
-        endDate = DateTime.now().endOfMonth;
-        break;
-      case TimeSlice.this_quarter:
-        shouldSetStatus = true;
-        endDate = DateTime.now().endOfQuarter;
-        break;
-      case TimeSlice.this_year:
-        shouldSetStatus = true;
-        endDate = DateTime.now().endOfYear;
-        break;
-      case TimeSlice.long_term:
-        shouldSetStatus = true;
-        break;
-      default:
-        break;
-    }
-    if (shouldSetStatus) {
+    // If we're adding a goal within another goal
+    // we'll just leave it as todo since we won't have to worry about it disappearing
+    if (timeSlice != null && parentId == null) {
       AppContext.of(context).syncClient.modifyGoal(GoalDelta(
           id: id,
           logEntry: StatusLogEntry(
               creationTime: DateTime.now(),
               status: GoalStatus.active,
-              startTime: DateTime.now(),
-              endTime: endDate)));
+              // Setting startTime in the past might seem unintuitive, but this avoids the goal showing up
+              // in the smaller time period in the case that we're at the
+              // end of the larger time period
+              // e.g. if we're in the last quarter of the year and we add a goal for the year
+              // we don't want it to show up for "This Quarter" even though
+              // This year and this quarter end at the same time.
+              startTime: timeSlice.startTime(DateTime.now()),
+              endTime: timeSlice.endTime(DateTime.now()))));
     }
   }
 

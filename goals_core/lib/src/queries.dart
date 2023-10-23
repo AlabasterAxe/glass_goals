@@ -294,13 +294,12 @@ Map<String, Goal> getGoalsForDateRange(
     }
     if (smallerWindowStart != null &&
         smallerWindowEnd != null &&
-        statusIsBetweenDates(status, smallerWindowStart,
-            smallerWindowEnd.add(const Duration(seconds: 1)))) {
+        statusIsBetweenDatesInclusive(
+            status, smallerWindowStart, smallerWindowEnd)) {
       return false;
     }
 
-    return statusIsBetweenDates(
-        status, start, end?.add(const Duration(seconds: 1)));
+    return statusIsBetweenDatesInclusive(status, start, end);
   });
 
   final snoozedGoalsEndingWithinWindow =
