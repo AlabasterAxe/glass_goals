@@ -77,7 +77,12 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
         DragTarget<String>(
           onAccept: (droppedGoalId) {
             final selectedAndDraggedGoals = {...selectedGoals, droppedGoalId};
-            moveGoals(rootGoal.id, selectedAndDraggedGoals);
+            moveGoals(
+                rootGoal.id,
+                selectedGoals.contains(droppedGoalId)
+                    ? selectedAndDraggedGoals
+                    : {droppedGoalId});
+            ref.read(selectedGoalsProvider.notifier).clear();
           },
           onMove: (_) {
             setState(() {

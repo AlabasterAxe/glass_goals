@@ -187,9 +187,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
             const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
         child: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Text(
-              (isSelected ? selectedGoals.length : selectedGoals.length + 1)
-                  .toString(),
+          child: Text((isSelected ? selectedGoals.length : 1).toString(),
               style: const TextStyle(
                   fontSize: 20,
                   decoration: TextDecoration.none,
