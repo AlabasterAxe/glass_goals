@@ -23,6 +23,7 @@ void main() {
           delta: GoalDelta(
               id: '0',
               logEntry: StatusLogEntry(
+                  id: '1',
                   status: GoalStatus.active,
                   creationTime: DateTime(2020, 1, 1, 12),
                   startTime: DateTime(2020, 1, 1, 12),
@@ -49,6 +50,7 @@ void main() {
           delta: GoalDelta(
               id: '0',
               logEntry: StatusLogEntry(
+                  id: '1',
                   status: GoalStatus.active,
                   creationTime: DateTime(2020, 1, 1, 12),
                   startTime: DateTime(2020, 1, 1, 12),
@@ -58,6 +60,7 @@ void main() {
           delta: GoalDelta(
               id: '0',
               logEntry: StatusLogEntry(
+                  id: '2',
                   creationTime: DateTime(2020, 1, 1, 13),
                   startTime: DateTime(2020, 1, 1, 13)))),
     ]);
@@ -82,6 +85,7 @@ void main() {
           delta: GoalDelta(
               id: '0',
               logEntry: StatusLogEntry(
+                  id: '1',
                   status: GoalStatus.active,
                   creationTime: DateTime(2020, 1, 1, 12),
                   startTime: DateTime(2020, 1, 1, 12),
@@ -113,6 +117,7 @@ void main() {
           delta: GoalDelta(
               id: '0',
               logEntry: StatusLogEntry(
+                  id: '1',
                   status: GoalStatus.active,
                   creationTime: DateTime(2020, 1, 1, 12),
                   startTime: DateTime(2020, 1, 1, 12),
@@ -122,6 +127,7 @@ void main() {
           delta: GoalDelta(
               id: '0',
               logEntry: StatusLogEntry(
+                  id: '2',
                   creationTime: DateTime(2020, 1, 1, 13),
                   startTime: DateTime(2020, 1, 1, 13),
                   endTime: DateTime(2020, 1, 1, 14)))),
@@ -130,6 +136,7 @@ void main() {
           delta: GoalDelta(
               id: '0',
               logEntry: StatusLogEntry(
+                  id: '3',
                   creationTime: DateTime(2020, 1, 1, 15),
                   startTime: DateTime(2020, 1, 1, 15),
                   endTime: DateTime(2020, 1, 1, 16)))),
@@ -138,6 +145,7 @@ void main() {
           delta: GoalDelta(
               id: '0',
               logEntry: StatusLogEntry(
+                  id: '4',
                   creationTime: DateTime(2020, 1, 1, 17),
                   status: GoalStatus.pending,
                   startTime: DateTime(2020, 1, 1, 17),
@@ -189,15 +197,15 @@ void main() {
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: '1',
-            logEntry:
-                SetParentLogEntry(creationTime: DateTime.now(), parentId: '0')),
+            logEntry: SetParentLogEntry(
+                id: '3', creationTime: DateTime.now(), parentId: '0')),
       ),
       Op(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: '2',
-            logEntry:
-                SetParentLogEntry(creationTime: DateTime.now(), parentId: '0')),
+            logEntry: SetParentLogEntry(
+                id: '4', creationTime: DateTime.now(), parentId: '0')),
       ),
     ]);
 
@@ -228,20 +236,24 @@ void main() {
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'root',
-            logEntry: StatusLogEntry(creationTime: DateTime(2020, 1, 1, 12))),
+            logEntry: StatusLogEntry(
+                id: '1', creationTime: DateTime(2020, 1, 1, 12))),
       ),
       Op(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'child',
             logEntry: SetParentLogEntry(
-                parentId: 'root', creationTime: DateTime(2020, 1, 1, 12))),
+                id: '2',
+                parentId: 'root',
+                creationTime: DateTime(2020, 1, 1, 12))),
       ),
       Op(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'child',
             logEntry: StatusLogEntry(
+                id: '3',
                 status: GoalStatus.active,
                 creationTime: DateTime(2020, 1, 1, 12))),
       ),
@@ -250,13 +262,16 @@ void main() {
         delta: GoalDelta(
             id: 'sub-child-1',
             logEntry: SetParentLogEntry(
-                parentId: 'child', creationTime: DateTime(2020, 1, 1, 12))),
+                id: '4',
+                parentId: 'child',
+                creationTime: DateTime(2020, 1, 1, 12))),
       ),
       Op(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'sub-child-1',
             logEntry: StatusLogEntry(
+                id: '5',
                 status: GoalStatus.active,
                 creationTime: DateTime(2020, 1, 1, 12))),
       ),
@@ -265,13 +280,16 @@ void main() {
         delta: GoalDelta(
             id: 'sub-child-2',
             logEntry: SetParentLogEntry(
-                parentId: 'child', creationTime: DateTime(2020, 1, 1, 12))),
+                id: '6',
+                parentId: 'child',
+                creationTime: DateTime(2020, 1, 1, 12))),
       ),
       Op(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'sub-child-2',
             logEntry: StatusLogEntry(
+                id: '7',
                 status: GoalStatus.active,
                 creationTime: DateTime(2020, 1, 1, 12))),
       ),

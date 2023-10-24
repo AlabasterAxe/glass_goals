@@ -12,8 +12,8 @@ Map<String, Goal> testGoals() {
     text: 'bar',
   );
 
-  subGoal.log
-      .add(SetParentLogEntry(parentId: '0', creationTime: DateTime.now()));
+  subGoal.log.add(
+      SetParentLogEntry(id: '3', parentId: '0', creationTime: DateTime.now()));
 
   final testRootGoal = Goal(id: '0', text: 'root', subGoals: [subGoal]);
 
@@ -41,7 +41,7 @@ void main() {
                 id: '1',
                 text: 'foo',
                 logEntry: SetParentLogEntry(
-                    parentId: '0', creationTime: DateTime.now()))));
+                    id: '3', parentId: '0', creationTime: DateTime.now()))));
     expect(goals['0']!.subGoals.length, equals(2));
 
     expect(goals['0']!.subGoals[1].text, equals('foo'));
@@ -59,7 +59,7 @@ void main() {
                 id: '3',
                 text: 'foo',
                 logEntry: SetParentLogEntry(
-                    parentId: '0', creationTime: DateTime.now()))));
+                    id: '3', parentId: '0', creationTime: DateTime.now()))));
     expect(goals['0']!.subGoals.length, equals(1));
 
     expect(goals['0']!.subGoals[0].text, equals('bar'));
@@ -80,7 +80,7 @@ void main() {
                 id: '2',
                 text: 'foo',
                 logEntry: SetParentLogEntry(
-                    parentId: '0', creationTime: DateTime.now()))));
+                    id: '3', parentId: '0', creationTime: DateTime.now()))));
     expect(goals['0']!.subGoals.length, equals(1));
 
     expect(goals['0']!.subGoals[0].text, equals('foo'));
@@ -99,14 +99,14 @@ void main() {
               id: '3',
               text: 'foo',
               logEntry: SetParentLogEntry(
-                  parentId: '2', creationTime: DateTime.now()))),
+                  id: '3', parentId: '2', creationTime: DateTime.now()))),
       Op(
           hlcTimestamp: hlc.increment().pack(),
           delta: GoalDelta(
               id: '4',
               text: 'baz',
               logEntry: SetParentLogEntry(
-                  parentId: '3', creationTime: DateTime.now()))),
+                  id: '4', parentId: '3', creationTime: DateTime.now()))),
     ]);
 
     final parentGoal = goals['3']!;
@@ -142,7 +142,7 @@ void main() {
               id: '3',
               text: 'foo',
               logEntry: SetParentLogEntry(
-                  parentId: '2', creationTime: DateTime.now()))),
+                  id: '3', parentId: '2', creationTime: DateTime.now()))),
     );
 
     final parentGoal = goals['2']!;
@@ -160,7 +160,7 @@ void main() {
               id: '3',
               text: 'foo',
               logEntry: SetParentLogEntry(
-                  parentId: '0', creationTime: DateTime.now()))),
+                  id: '4', parentId: '0', creationTime: DateTime.now()))),
     );
 
     expect(parentGoal.subGoals.length, equals(0));

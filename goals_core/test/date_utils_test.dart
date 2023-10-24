@@ -6,23 +6,28 @@ import 'package:test/test.dart' show test, expect;
 void main() {
   test('status is between dates', () {
     final startAndEnd = StatusLogEntry(
+        id: 'start-and-end',
         creationTime: DateTime(2020, 1, 1, 12),
         status: GoalStatus.active,
         startTime: DateTime(2020, 1, 1, 12),
         endTime: DateTime(2020, 1, 1, 13));
 
     final noStart = StatusLogEntry(
+        id: 'no-start',
         creationTime: DateTime(2020, 1, 1, 12),
         status: GoalStatus.active,
         endTime: DateTime(2020, 1, 1, 13));
 
     final noEnd = StatusLogEntry(
+        id: 'no-end',
         creationTime: DateTime(2020, 1, 1, 12),
         status: GoalStatus.active,
         startTime: DateTime(2020, 1, 1, 12));
 
     final noStartNoEnd = StatusLogEntry(
-        creationTime: DateTime(2020, 1, 1, 12), status: GoalStatus.active);
+        id: 'no-start-no-end',
+        creationTime: DateTime(2020, 1, 1, 12),
+        status: GoalStatus.active);
 
     expect(statusIsBetweenDatesInclusive(startAndEnd, null, null), isTrue);
     expect(
