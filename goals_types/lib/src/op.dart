@@ -349,7 +349,7 @@ class ArchiveStatusLogEntry extends GoalLogEntry {
     }
     return ArchiveStatusLogEntry(
       id: json['id'],
-      creationTime: json['creationTime']!,
+      creationTime: DateTime.parse(json['creationTime']).toLocal(),
     );
   }
 

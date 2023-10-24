@@ -109,8 +109,7 @@ String getSnoozedDateString(DateTime now, StatusLogEntry status) {
   }
 }
 
-String getGoalStatusString(WorldContext context, Goal goal) {
-  final status = getGoalStatus(context, goal);
+String getGoalStatusString(WorldContext context, StatusLogEntry status) {
   switch (status.status) {
     case GoalStatus.active:
       return getActiveDateString(context.time, status);
@@ -125,8 +124,7 @@ String getGoalStatusString(WorldContext context, Goal goal) {
   }
 }
 
-Color getGoalStatusBackgroundColor(WorldContext context, Goal goal) {
-  final status = getGoalStatus(context, goal);
+Color getGoalStatusBackgroundColor(StatusLogEntry status) {
   switch (status.status) {
     case GoalStatus.active:
       return paleGreenColor;
@@ -141,8 +139,7 @@ Color getGoalStatusBackgroundColor(WorldContext context, Goal goal) {
   }
 }
 
-Color getGoalStatusTextColor(WorldContext context, Goal goal) {
-  final status = getGoalStatus(context, goal);
+Color getGoalStatusTextColor(StatusLogEntry status) {
   switch (status.status) {
     case GoalStatus.active:
       return darkGreenColor;
@@ -206,6 +203,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     final isSelected = selectedGoals.contains(widget.goal.id);
     final worldContext = ref.watch(worldContextProvider);
     final isNarrow = MediaQuery.of(context).size.width < 600;
+    final goalStatus = getGoalStatus(worldContext, widget.goal);
     final bullet = SizedBox(
       width: uiUnit(10),
       height: uiUnit(10),
@@ -302,20 +300,46 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                           ),
                         ),
                   SizedBox(width: uiUnit(2)),
-                  // chip like container widget around text status widget:
+                  // chip-like container widget around text status widget:
                   Container(
                     decoration: BoxDecoration(
-                      color: getGoalStatusBackgroundColor(
-                          worldContext, widget.goal),
+                      color: getGoalStatusBackgroundColor(goalStatus),
                       borderRadius: BorderRadius.circular(1),
                     ),
-                    padding: EdgeInsets.symmetric(
-                        vertical: uiUnit() / 2, horizontal: uiUnit()),
-                    child: Text(
-                      getGoalStatusString(worldContext, widget.goal),
-                      style: smallTextStyle.copyWith(
-                          color: getGoalStatusTextColor(
-                              worldContext, widget.goal)),
+                    padding: EdgeInsets.only(
+                      top: uiUnit() / 2,
+                      bottom: uiUnit() / 2,
+                      left: uiUnit(),
+                      right: uiUnit() / 2,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          getGoalStatusString(worldContext, goalStatus),
+                          style: smallTextStyle.copyWith(
+                              color: getGoalStatusTextColor(goalStatus)),
+                        ),
+                        SizedBox(width: uiUnit() / 2),
+                        goalStatus.status != null
+                            ? SizedBox(
+                                width: 18.0,
+                                height: 18.0,
+                                child: IconButton(
+                                  padding: EdgeInsets.zero,
+                                  icon: const Icon(Icons.close, size: 16.0),
+                                  onPressed: () {
+                                    AppContext.of(context)
+                                        .syncClient
+                                        .modifyGoal(GoalDelta(
+                                            id: widget.goal.id,
+                                            logEntry: ArchiveStatusLogEntry(
+                                                creationTime: DateTime.now(),
+                                                id: goalStatus.id)));
+                                  },
+                                ),
+                              )
+                            : Container()
+                      ],
                     ),
                   ),
                   IconButton(
