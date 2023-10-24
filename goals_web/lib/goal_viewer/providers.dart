@@ -20,6 +20,9 @@ final isEditingTextProvider =
 
 final editingEventStream = BehaviorSubject<EditingEvent>();
 
+final debugProvider = StateNotifierProvider<_BooleanStateNotifier, bool>(
+    (ref) => _BooleanStateNotifier(false));
+
 enum EditingEvent {
   accept,
   discard,

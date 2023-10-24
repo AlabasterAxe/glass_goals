@@ -337,17 +337,21 @@ StatusLogEntry getGoalStatus(WorldContext context, Goal goal) {
   final now = context.time;
   goal.log;
 
-  final StatusLogEntry? lastStatus = (goal.log
-        ..sort((a, b) => b.creationTime.compareTo(a.creationTime)))
-      .whereType<StatusLogEntry>()
-      .where((entry) =>
-          entry.startTime == null ||
-          entry.startTime!.isBefore(now) &&
-              (entry.endTime == null || entry.endTime!.isAfter(now)))
-      .firstOrNull;
-  return lastStatus ??
-      StatusLogEntry(
-          id: 'default', creationTime: DateTime(1970, 1, 1), status: null);
+  Set<String> archivedStatuses = {};
+  for (final entry in (goal.log
+    ..sort((a, b) => b.creationTime.compareTo(a.creationTime)))) {
+    if (entry is StatusLogEntry &&
+        !archivedStatuses.contains(entry.id) &&
+        (entry.startTime == null || entry.startTime!.isBefore(now)) &&
+        (entry.endTime == null || entry.endTime!.isAfter(now))) {
+      return entry;
+    }
+    if (entry is ArchiveStatusLogEntry) {
+      archivedStatuses.add(entry.id);
+    }
+  }
+  return StatusLogEntry(
+      id: 'default-status', creationTime: DateTime(1970, 1, 1), status: null);
 }
 
 StatusLogEntry? goalHasStatus(

@@ -15,6 +15,7 @@ import 'package:flutter/widgets.dart'
 import 'package:goals_core/model.dart' show Goal, WorldContext, goalHasStatus;
 import 'package:goals_core/sync.dart'
     show GoalDelta, GoalStatus, StatusLogEntry;
+import 'package:uuid/uuid.dart';
 
 import '../styles.dart' show subTitleStyle;
 import '../util/app_context.dart';
@@ -56,6 +57,7 @@ class GoalCard extends StatelessWidget {
                                 .modifyGoal(GoalDelta(
                                     id: goal.id,
                                     logEntry: StatusLogEntry(
+                                      id: const Uuid().v4(),
                                       status: GoalStatus.archived,
                                       creationTime: DateTime.now(),
                                     )));
@@ -66,6 +68,7 @@ class GoalCard extends StatelessWidget {
                                 .modifyGoal(GoalDelta(
                                     id: goal.id,
                                     logEntry: StatusLogEntry(
+                                      id: const Uuid().v4(),
                                       status: GoalStatus.done,
                                       creationTime: DateTime.now(),
                                       startTime: DateTime.now(),
@@ -76,6 +79,7 @@ class GoalCard extends StatelessWidget {
                                 GoalDelta(
                                     id: goal.id,
                                     logEntry: StatusLogEntry(
+                                        id: const Uuid().v4(),
                                         status: GoalStatus.active,
                                         creationTime: DateTime.now(),
                                         startTime: DateTime.now(),

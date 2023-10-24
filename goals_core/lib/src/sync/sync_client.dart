@@ -35,6 +35,7 @@ class SyncClient {
   }
 
   void modifyGoal(GoalDelta delta) {
+    print("modifying goal");
     hlc = hlc.increment();
     List<String> unsyncedOps =
         (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)

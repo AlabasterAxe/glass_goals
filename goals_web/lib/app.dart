@@ -32,10 +32,12 @@ import 'styles.dart';
 class WebGoals extends ConsumerStatefulWidget {
   final bool shouldAuthenticate;
   final PersistenceService persistenceService;
+  final bool debug;
   const WebGoals({
     super.key,
     this.shouldAuthenticate = true,
     required this.persistenceService,
+    this.debug = false,
   });
 
   @override
@@ -66,6 +68,7 @@ class _WebGoalsState extends ConsumerState<WebGoals>
         widget.shouldAuthenticate) {
       Navigator.pushReplacementNamed(context, '/sign-in');
     }
+    ref.read(debugProvider.notifier).set(widget.debug);
   }
 
   @override

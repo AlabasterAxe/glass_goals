@@ -52,10 +52,12 @@ abstract class GoalLogEntry extends Equatable {
     switch (type) {
       case 'note':
         return NoteLogEntry.fromJsonMap(json, version);
-      case 'status':
-        return StatusLogEntry.fromJsonMap(json, version);
       case 'archiveNote':
         return ArchiveNoteLogEntry.fromJsonMap(json, version);
+      case 'status':
+        return StatusLogEntry.fromJsonMap(json, version);
+      case 'archiveStatus':
+        return ArchiveStatusLogEntry.fromJsonMap(json, version);
       case 'setParent':
         return SetParentLogEntry.fromJsonMap(json, version);
       default:
@@ -66,6 +68,9 @@ abstract class GoalLogEntry extends Equatable {
   static Map<String, dynamic> toJsonMap(GoalLogEntry entry) {
     if (entry is StatusLogEntry) {
       return StatusLogEntry.toJsonMap(entry);
+    }
+    if (entry is ArchiveStatusLogEntry) {
+      return ArchiveStatusLogEntry.toJsonMap(entry);
     }
     if (entry is NoteLogEntry) {
       return NoteLogEntry.toJsonMap(entry);
@@ -315,7 +320,46 @@ class StatusLogEntry extends GoalLogEntry {
   }
 
   @override
-  List<Object?> get props => [status, startTime, endTime, creationTime];
+  List<Object?> get props => [id, status, startTime, endTime, creationTime];
+
+  @override
+  String toString() {
+    return 'Status: $status ${startTime != null ? 'from ${startTime}' : ''} ${endTime != null ? 'until ${startTime}' : ''} {id: $id, creationTime: $creationTime}';
+  }
+}
+
+class ArchiveStatusLogEntry extends GoalLogEntry {
+  static const FIRST_VERSION = 4;
+  const ArchiveStatusLogEntry({
+    required super.creationTime,
+    required super.id,
+  });
+
+  @override
+  List<Object?> get props => [id, creationTime];
+
+  static ArchiveStatusLogEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    return ArchiveStatusLogEntry(
+      id: json['id'],
+      creationTime: json['creationTime']!,
+    );
+  }
+
+  static Map<String, dynamic> toJsonMap(ArchiveStatusLogEntry entry) {
+    return {
+      'type': 'archiveStatus',
+      'id': entry.id,
+      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+    };
+  }
 }
 
 class GoalDelta extends Equatable {

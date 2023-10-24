@@ -17,6 +17,7 @@ void main() async {
   runApp(ProviderScope(
       child: WebGoals(
           shouldAuthenticate: false,
+          debug: true,
           persistenceService: InMemoryPersistenceService(ops: [
             {
               'hlcTimestamp':

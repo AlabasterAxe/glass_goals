@@ -84,6 +84,7 @@ class GoalMenu extends StatelessWidget {
                   id: const Uuid().v4(),
                   text: text,
                   logEntry: StatusLogEntry(
+                    id: const Uuid().v4(),
                     status: GoalStatus.active,
                     creationTime: DateTime.now(),
                     startTime: DateTime.now(),

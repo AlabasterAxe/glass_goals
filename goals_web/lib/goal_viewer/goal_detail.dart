@@ -221,6 +221,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
 
   @override
   Widget build(BuildContext context) {
+    final isDebugMode = ref.watch(debugProvider);
     final List<DetailViewLogEntryItem> logItems = [];
     for (final goal in [...widget.goal.subGoals, widget.goal]) {
       logItems.addAll(goal.log
@@ -247,6 +248,14 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
               entry: entry.entry as NoteLogEntry,
               childNote: entry.goal.id != widget.goal.id,
               onRefresh: () => setState(() {})),
+        if (isDebugMode) ...[
+          SizedBox(height: uiUnit(2)),
+          Text('Debug Info', style: textTheme.headlineSmall),
+          SizedBox(height: uiUnit(2)),
+          Text('Goal ID: ${widget.goal.id}'),
+          SizedBox(height: uiUnit(2)),
+          for (final entry in widget.goal.log) Text(entry.toString())
+        ],
       ]),
     );
   }
