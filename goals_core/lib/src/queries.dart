@@ -346,7 +346,8 @@ StatusLogEntry getGoalStatus(WorldContext context, Goal goal) {
               (entry.endTime == null || entry.endTime!.isAfter(now)))
       .firstOrNull;
   return lastStatus ??
-      StatusLogEntry(creationTime: DateTime(1970, 1, 1), status: null);
+      StatusLogEntry(
+          id: 'default', creationTime: DateTime(1970, 1, 1), status: null);
 }
 
 StatusLogEntry? goalHasStatus(

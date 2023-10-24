@@ -1,7 +1,6 @@
 import 'dart:convert' show jsonDecode, jsonEncode;
 import 'package:goals_types_03/goals_types.dart' as prev_goal_types;
 import 'package:equatable/equatable.dart' show Equatable;
-
 import 'version.dart' show TYPES_VERSION;
 
 enum GoalStatus {
@@ -29,7 +28,8 @@ fromPreviousGoalStatus(prev_goal_types.GoalStatus? status) {
 abstract class GoalLogEntry extends Equatable {
   static const FIRST_VERSION = 3;
   final DateTime creationTime;
-  const GoalLogEntry({required this.creationTime});
+  final String id;
+  const GoalLogEntry({required this.creationTime, required this.id});
   static GoalLogEntry fromJsonMap(dynamic json, int? version) {
     if (version != null && version > TYPES_VERSION) {
       throw Exception('Unsupported version: $version');
@@ -98,11 +98,10 @@ abstract class GoalLogEntry extends Equatable {
 class NoteLogEntry extends GoalLogEntry {
   static const FIRST_VERSION = 3;
   final String text;
-  final String id;
   const NoteLogEntry({
     required super.creationTime,
+    required super.id,
     required this.text,
-    required this.id,
   });
 
   @override
@@ -150,10 +149,9 @@ class NoteLogEntry extends GoalLogEntry {
 
 class ArchiveNoteLogEntry extends GoalLogEntry {
   static const FIRST_VERSION = 3;
-  final String id;
   const ArchiveNoteLogEntry({
     required super.creationTime,
-    required this.id,
+    required super.id,
   });
 
   @override
@@ -202,12 +200,13 @@ class SetParentLogEntry extends GoalLogEntry {
   static const FIRST_VERSION = 4;
   final String? parentId;
   const SetParentLogEntry({
+    required super.id,
     required super.creationTime,
     required this.parentId,
   });
 
   @override
-  List<Object?> get props => [parentId, creationTime];
+  List<Object?> get props => [id, parentId, creationTime];
 
   static SetParentLogEntry fromJsonMap(dynamic json, int? version) {
     if (version != null && version > TYPES_VERSION) {
@@ -218,17 +217,20 @@ class SetParentLogEntry extends GoalLogEntry {
       throw Exception(
           'Invalid data: $version is before first version: $FIRST_VERSION');
     }
+    final creationTime = json['creationTime'] != null
+        ? DateTime.parse(json['creationTime']).toLocal()
+        : DateTime(2023, 1, 1);
     return SetParentLogEntry(
+      id: json['id'] ?? '${creationTime.millisecondsSinceEpoch}',
       parentId: json['parentId'],
-      creationTime: json['creationTime'] != null
-          ? DateTime.parse(json['creationTime']).toLocal()
-          : DateTime(2023, 1, 1),
+      creationTime: creationTime,
     );
   }
 
   static Map<String, dynamic> toJsonMap(SetParentLogEntry entry) {
     return {
       'type': 'setParent',
+      'id': entry.id,
       'parentId': entry.parentId,
       'creationTime': entry.creationTime.toUtc().toIso8601String(),
     };
@@ -244,6 +246,7 @@ class StatusLogEntry extends GoalLogEntry {
   final DateTime? startTime;
   final DateTime? endTime;
   const StatusLogEntry({
+    required super.id,
     required super.creationTime,
     this.status,
     this.startTime,
@@ -259,13 +262,15 @@ class StatusLogEntry extends GoalLogEntry {
       throw Exception(
           'Invalid data: $version is before first version: $FIRST_VERSION');
     }
+    final creationTime = json['creationTime'] != null
+        ? DateTime.parse(json['creationTime']).toLocal()
+        : DateTime(2023, 1, 1);
     return StatusLogEntry(
+      id: json['id'] ?? '${creationTime.millisecondsSinceEpoch}',
       status: json['status'] != null
           ? GoalStatus.values.byName(json['status'])
           : null,
-      creationTime: json['creationTime'] != null
-          ? DateTime.parse(json['creationTime']).toLocal()
-          : DateTime(2023, 1, 1),
+      creationTime: creationTime,
       startTime: json['startTime'] != null
           ? DateTime.parse(json['startTime']).toLocal()
           : null,
@@ -290,6 +295,7 @@ class StatusLogEntry extends GoalLogEntry {
     }
 
     return StatusLogEntry(
+      id: '${legacyEntry.creationTime.millisecondsSinceEpoch}',
       status: fromPreviousGoalStatus(legacyEntry.status),
       creationTime: legacyEntry.creationTime,
       startTime: legacyEntry.startTime,
@@ -300,6 +306,7 @@ class StatusLogEntry extends GoalLogEntry {
   static Map<String, dynamic> toJsonMap(StatusLogEntry statusLogEntry) {
     return {
       'type': 'status',
+      'id': statusLogEntry.id,
       'status': statusLogEntry.status?.name,
       'creationTime': statusLogEntry.creationTime.toUtc().toIso8601String(),
       'startTime': statusLogEntry.startTime?.toUtc().toIso8601String(),
@@ -358,6 +365,7 @@ class GoalDelta extends Equatable {
           id: legacyGoalDelta.id,
           text: legacyGoalDelta.text,
           logEntry: SetParentLogEntry(
+              id: '${DateTime(2023, 1, 1).millisecondsSinceEpoch}',
               creationTime: DateTime(2023, 1, 1),
               parentId: legacyGoalDelta.parentId!));
     } else {

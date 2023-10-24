@@ -222,6 +222,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       goalDeltas.add(GoalDelta(
           id: goalId,
           logEntry: StatusLogEntry(
+            id: const Uuid().v4(),
             creationTime: DateTime.now(),
             status: GoalStatus.archived,
           )));
@@ -231,7 +232,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
           goalDeltas.add(GoalDelta(
             id: childGoal.id,
             logEntry: SetParentLogEntry(
-                parentId: winningGoalId, creationTime: DateTime.now()),
+                id: const Uuid().v4(),
+                parentId: winningGoalId,
+                creationTime: DateTime.now()),
           ));
         }
       }
@@ -249,7 +252,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       goalDeltas.add(GoalDelta(
         id: goalId,
         logEntry: StatusLogEntry(
-            creationTime: DateTime.now(), startTime: DateTime.now()),
+            id: const Uuid().v4(),
+            creationTime: DateTime.now(),
+            startTime: DateTime.now()),
       ));
     }
 
@@ -265,7 +270,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         id: id,
         text: text,
         logEntry: SetParentLogEntry(
-            parentId: parentId, creationTime: DateTime.now())));
+            id: Uuid().v4(),
+            parentId: parentId,
+            creationTime: DateTime.now())));
 
     // If we're adding a goal within another goal
     // we'll just leave it as todo since we won't have to worry about it disappearing
@@ -273,6 +280,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       AppContext.of(context).syncClient.modifyGoal(GoalDelta(
           id: id,
           logEntry: StatusLogEntry(
+              id: const Uuid().v4(),
               creationTime: DateTime.now(),
               status: GoalStatus.active,
               // Setting startTime in the past might seem unintuitive, but this avoids the goal showing up
@@ -292,6 +300,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       goalDeltas.add(GoalDelta(
         id: goalId,
         logEntry: StatusLogEntry(
+            id: Uuid().v4(),
             creationTime: DateTime.now(),
             status: GoalStatus.archived,
             startTime: DateTime.now()),
@@ -310,6 +319,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       goalDeltas.add(GoalDelta(
         id: goalId,
         logEntry: StatusLogEntry(
+            id: Uuid().v4(),
             creationTime: DateTime.now(),
             status: GoalStatus.done,
             startTime: DateTime.now()),
@@ -329,6 +339,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       goalDeltas.add(GoalDelta(
         id: goalId,
         logEntry: StatusLogEntry(
+          id: Uuid().v4(),
           creationTime: DateTime.now(),
           status: GoalStatus.pending,
           startTime: DateTime.now(),
@@ -355,6 +366,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       goalDeltas.add(GoalDelta(
         id: goalId,
         logEntry: StatusLogEntry(
+          id: const Uuid().v4(),
           creationTime: DateTime.now(),
           status: GoalStatus.active,
           startTime: DateTime.now(),

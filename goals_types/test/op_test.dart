@@ -11,7 +11,9 @@ void main() {
           id: '1',
           text: 'foo',
           logEntry: StatusLogEntry(
-              creationTime: DateTime(2023), status: GoalStatus.active)),
+              id: '2',
+              creationTime: DateTime(2023),
+              status: GoalStatus.active)),
     );
 
     final json = Op.toJson(op);

@@ -5,6 +5,7 @@ repository: https://github.com/AlabasterAxe/glass_goals
 dependencies:
   equatable: ^2.0.5
   goals_types_03: 3.0.0
+  uuid: ^4.1.0
 environment:
   sdk: ">=3.0.0 <4.0.0"
 dev_dependencies:

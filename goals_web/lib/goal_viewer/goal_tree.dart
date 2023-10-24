@@ -15,6 +15,7 @@ import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../app_context.dart';
 import '../styles.dart' show uiUnit;
@@ -57,7 +58,9 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
       goalDeltas.add(GoalDelta(
           id: goalId,
           logEntry: SetParentLogEntry(
-              parentId: newParentId, creationTime: DateTime.now())));
+              id: Uuid().v4(),
+              parentId: newParentId,
+              creationTime: DateTime.now())));
     }
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
   }
