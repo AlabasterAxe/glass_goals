@@ -15,7 +15,7 @@ dependencies:
   hive: ^2.2.3
   hlc: ^1.0.3
   rxdart: ^0.27.7
-  uuid: ^3.0.7
+  uuid: ^4.1.0
   cloud_firestore: ^4.9.2
   firebase_auth: ^4.10.0
   goals_types: 
