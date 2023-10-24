@@ -897,6 +897,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         onExpanded: this.onExpanded,
         onFocused: this.onFocused,
         onSelected: this.onSelected,
+        onAddGoal: (String? parentId, String text) =>
+            this.onAddGoal(parentId ?? focusedGoalId, text),
         hoverActions: HoverActionsWidget(
             onMerge: this.onMerge,
             onUnarchive: this.onUnarchive,

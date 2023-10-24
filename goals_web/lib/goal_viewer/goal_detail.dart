@@ -173,6 +173,7 @@ class GoalDetail extends ConsumerStatefulWidget {
   final Function(String goalId) onSelected;
   final Function(String goalId, {bool expanded}) onExpanded;
   final Function(String goalId) onFocused;
+  final Function(String? parentId, String text) onAddGoal;
   final Widget hoverActions;
   const GoalDetail({
     super.key,
@@ -182,6 +183,7 @@ class GoalDetail extends ConsumerStatefulWidget {
     required this.onExpanded,
     required this.onFocused,
     required this.hoverActions,
+    required this.onAddGoal,
   });
 
   @override
@@ -260,15 +262,17 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
           Text('Subgoals', style: textTheme.headlineSmall),
           SizedBox(height: uiUnit(1)),
           GoalListWidget(
-              goalMap: subgoalMap,
-              goalIds: widget.goal.subGoals
-                  .where((g) => subgoalMap.containsKey(g.id))
-                  .map((g) => g.id)
-                  .toList(),
-              onSelected: widget.onSelected,
-              onExpanded: widget.onExpanded,
-              onFocused: widget.onFocused,
-              hoverActions: widget.hoverActions)
+            goalMap: subgoalMap,
+            goalIds: widget.goal.subGoals
+                .where((g) => subgoalMap.containsKey(g.id))
+                .map((g) => g.id)
+                .toList(),
+            onSelected: widget.onSelected,
+            onExpanded: widget.onExpanded,
+            onFocused: widget.onFocused,
+            hoverActions: widget.hoverActions,
+            onAddGoal: widget.onAddGoal,
+          )
         ],
         SizedBox(height: uiUnit(2)),
         Text('Notes', style: textTheme.headlineSmall),
