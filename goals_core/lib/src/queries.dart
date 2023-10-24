@@ -230,7 +230,7 @@ Map<String, Goal> getGoalsRequiringAttention(
   final transitivelyUnscheduledGoals = unscheduledRootGoals.values
       .map((goal) => getTransitiveSubGoals(goalMap, goal.id,
           predicate: (goal) => getGoalStatus(context, goal).status == null))
-      .reduce((value, element) => value..addAll(element));
+      .fold(<String, Goal>{}, (value, element) => value..addAll(element));
 
   result.addAll(transitivelyUnscheduledGoals);
 

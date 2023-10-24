@@ -9,6 +9,7 @@ import 'package:flutter/material.dart'
         Icons,
         ListTile,
         Scaffold,
+        TextButton,
         Theme,
         Tooltip;
 import 'package:flutter/services.dart'
@@ -25,10 +26,10 @@ import 'package:goals_core/model.dart'
         getGoalsRequiringAttention;
 import 'package:goals_core/sync.dart'
     show GoalDelta, GoalStatus, SetParentLogEntry, StatusLogEntry;
+import 'package:goals_core/util.dart' show DateTimeExtension;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
-import 'package:goals_core/util.dart' show DateTimeExtension;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
@@ -767,7 +768,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                               onClearSelection: onClearSelection,
                               goalMap: widget.goalMap),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                          onAddGoal: this.onAddGoal,
                         );
 
                       case GoalFilter.pending:
@@ -854,9 +854,16 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Text(
-                                      timeSlice.displayName,
-                                      style: theme.headlineSmall,
+                                    TextButton(
+                                      onPressed: () => {
+                                        // kinda gross that we're sharing names between enums here but w/e
+                                        onSwitchFilter(GoalFilter.values
+                                            .byName(timeSlice.name))
+                                      },
+                                      child: Text(
+                                        timeSlice.displayName,
+                                        style: theme.headlineSmall,
+                                      ),
                                     ),
                                   ],
                                 ),
