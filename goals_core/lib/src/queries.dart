@@ -221,60 +221,18 @@ Map<String, Goal> getGoalsRequiringAttention(
   ///  - Don't show tasks if any of their children are marked active
   ///  - Show tasks that don't currently have a setting (i.e. they were previously active and have become inactive)
   final result = <String, Goal>{};
-  final uncategorizedGoals =
+  final unscheduledRootGoals =
       getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
     final status = getGoalStatus(context, goal);
-    return status.status == null;
+    return status.status == null && goal.superGoals.isEmpty;
   });
 
-  final snoozedGoals = getGoalsMatchingPredicate(context, goalMap,
-      (Goal goal) => getGoalStatus(context, goal).status == GoalStatus.pending);
+  final transitivelyUnscheduledGoals = unscheduledRootGoals.values
+      .map((goal) => getTransitiveSubGoals(goalMap, goal.id,
+          predicate: (goal) => getGoalStatus(context, goal).status == null))
+      .reduce((value, element) => value..addAll(element));
 
-  final transitivelySnoozedGoals = snoozedGoals.isNotEmpty
-      ? snoozedGoals.values
-          .map((goal) => getTransitiveSubGoals(goalMap, goal.id))
-          .reduce((value, element) => value..addAll(element))
-      : {};
-
-  ///  - Don't show tasks if any of their children are marked active
-  for (final goal in uncategorizedGoals.values) {
-    if (goal.subGoals.any((g) => uncategorizedGoals.containsKey(g.id))) {
-      continue;
-    }
-
-    // If a goal is a child of a snoozed goal.
-    if (transitivelySnoozedGoals.containsKey(goal.id)) {
-      continue;
-    }
-    result[goal.id] = goal;
-  }
-
-  final goalsToAdd = <String>{};
-  for (final goal in result.values) {
-    for (final parent in goal.superGoals) {
-      goalsToAdd.add(parent.id);
-    }
-  }
-
-  // // find latest common ancestor of all goals
-  // final latestCommonAncestor = findLatestCommonAncestor(goalMap, result.values);
-
-  // if (latestCommonAncestor != null) {
-  //   result[latestCommonAncestor] = goalMap[latestCommonAncestor]!;
-  // }
-
-  // // fill all parents up to that ancestor
-  // for (final goal in result.values) {
-  //   final pathToAncestor =
-  //       getGoalsToAncestor(goalMap, goal.id, ancestorId: latestCommonAncestor);
-  //   for (final goalId in pathToAncestor) {
-  //     goalsToAdd.add(goalId);
-  //   }
-  // }
-
-  for (final goalId in goalsToAdd) {
-    result[goalId] = goalMap[goalId]!;
-  }
+  result.addAll(transitivelyUnscheduledGoals);
 
   return result;
 }
@@ -321,13 +279,8 @@ Map<String, Goal> getGoalsForDateRange(
         (end == null || status.endTime!.isBefore(end));
   });
 
-  for (final goal in [
-    ...activeGoalsWithinWindow.values,
-    ...snoozedGoalsEndingWithinWindow.values
-  ]) {
-    result.addAll(getTransitiveSubGoals(goalMap, goal.id,
-        predicate: (g) => getGoalStatus(context, g).status == null));
-  }
+  result.addAll(activeGoalsWithinWindow);
+  result.addAll(snoozedGoalsEndingWithinWindow);
 
   return result;
 }

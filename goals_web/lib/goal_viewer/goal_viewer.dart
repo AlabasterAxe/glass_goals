@@ -274,9 +274,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             parentId: parentId,
             creationTime: DateTime.now())));
 
-    // If we're adding a goal within another goal
-    // we'll just leave it as todo since we won't have to worry about it disappearing
-    if (timeSlice != null && parentId == null) {
+    if (timeSlice != null) {
       AppContext.of(context).syncClient.modifyGoal(GoalDelta(
           id: id,
           logEntry: StatusLogEntry(
@@ -462,6 +460,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   _viewSwitcher(bool drawer) {
     final sidebarFilters = [
       GoalFilter.schedule,
+      GoalFilter.to_review,
       GoalFilter.all,
     ];
     return SizedBox(
@@ -887,6 +886,19 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       key: const ValueKey('detail'),
       child: GoalDetail(
         goal: focusedGoal,
+        goalMap: widget.goalMap,
+        onExpanded: this.onExpanded,
+        onFocused: this.onFocused,
+        onSelected: this.onSelected,
+        hoverActions: HoverActionsWidget(
+            onMerge: this.onMerge,
+            onUnarchive: this.onUnarchive,
+            onArchive: this.onArchive,
+            onDone: this.onDone,
+            onSnooze: this.onSnooze,
+            onActive: this.onActive,
+            onClearSelection: this.onClearSelection,
+            goalMap: widget.goalMap),
       ),
     );
   }

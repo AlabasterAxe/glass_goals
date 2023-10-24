@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flutter_riverpod/src/consumer.dart';
-import 'package:goals_core/model.dart' show Goal;
+import 'package:goals_core/model.dart'
+    show Goal, getGoalStatus, getGoalsMatchingPredicate;
 import 'package:goals_core/sync.dart'
-    show ArchiveNoteLogEntry, GoalDelta, GoalLogEntry, NoteLogEntry;
+    show ArchiveNoteLogEntry, GoalDelta, GoalLogEntry, GoalStatus, NoteLogEntry;
 import 'package:goals_core/util.dart' show formatDate;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
+import 'package:goals_web/goal_viewer/goal_list.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/styles.dart' show mainTextStyle, uiUnit;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show ConsumerState, ConsumerStatefulWidget, ConsumerWidget;
+    show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
 
 class Breadcrumb extends ConsumerWidget {
   final Goal goal;
@@ -168,7 +169,20 @@ class _NoteCardState extends State<NoteCard> {
 
 class GoalDetail extends ConsumerStatefulWidget {
   final Goal goal;
-  const GoalDetail({super.key, required this.goal});
+  final Map<String, Goal> goalMap;
+  final Function(String goalId) onSelected;
+  final Function(String goalId, {bool expanded}) onExpanded;
+  final Function(String goalId) onFocused;
+  final Widget hoverActions;
+  const GoalDetail({
+    super.key,
+    required this.goal,
+    required this.goalMap,
+    required this.onSelected,
+    required this.onExpanded,
+    required this.onFocused,
+    required this.hoverActions,
+  });
 
   @override
   ConsumerState<GoalDetail> createState() => _GoalDetailState();
@@ -222,6 +236,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
   @override
   Widget build(BuildContext context) {
     final isDebugMode = ref.watch(debugProvider);
+    final worldContext = ref.watch(worldContextProvider);
     final List<DetailViewLogEntryItem> logItems = [];
     for (final goal in [...widget.goal.subGoals, widget.goal]) {
       logItems.addAll(goal.log
@@ -229,12 +244,35 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     }
     final textTheme = Theme.of(context).textTheme;
     final noteLog = _computeNoteLog(logItems);
+    final subgoalMap =
+        getGoalsMatchingPredicate(worldContext, widget.goalMap, (goal) {
+      final status = getGoalStatus(worldContext, goal);
+      return status.status != GoalStatus.archived &&
+          status.status != GoalStatus.done;
+    });
     return Padding(
       padding: EdgeInsets.all(uiUnit(2)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Text(widget.goal.text, style: textTheme.headlineMedium),
         breadcrumbs(),
+        if (widget.goal.subGoals.isNotEmpty) ...[
+          SizedBox(height: uiUnit(2)),
+          Text('Subgoals', style: textTheme.headlineSmall),
+          SizedBox(height: uiUnit(1)),
+          GoalListWidget(
+              goalMap: subgoalMap,
+              goalIds: widget.goal.subGoals
+                  .where((g) => subgoalMap.containsKey(g.id))
+                  .map((g) => g.id)
+                  .toList(),
+              onSelected: widget.onSelected,
+              onExpanded: widget.onExpanded,
+              onFocused: widget.onFocused,
+              hoverActions: widget.hoverActions)
+        ],
         SizedBox(height: uiUnit(2)),
+        Text('Notes', style: textTheme.headlineSmall),
+        SizedBox(height: uiUnit(1)),
         noteLog.firstOrNull == null ||
                 formatDate(noteLog.first.entry.creationTime) !=
                     formatDate(DateTime.now()) ||
