@@ -47,7 +47,7 @@ class WebGoals extends ConsumerStatefulWidget {
 class _WebGoalsState extends ConsumerState<WebGoals>
     with SingleTickerProviderStateMixin {
   late SyncClient syncClient =
-      SyncClient(persistenceService: widget.persistenceService);
+      SyncClient(persistenceService: this.widget.persistenceService);
 
   // responsible for updating the world state so the UI updates according with the current time
   late Timer refreshTimer;
@@ -55,26 +55,28 @@ class _WebGoalsState extends ConsumerState<WebGoals>
   late StreamSubscription stateSubscription;
 
   Future<void> appInit(context) async {
-    await syncClient.init();
+    await this.syncClient.init();
     refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      ref.read(worldContextProvider.notifier).poke();
+      this.ref.read(worldContextProvider.notifier).poke();
     });
-    stateSubscription = syncClient.stateSubject
+    stateSubscription = this
+        .syncClient
+        .stateSubject
         .asBroadcastStream()
         .listen((Map<String, Goal> goalMap) {
-      ref.read(worldContextProvider.notifier).poke();
+      this.ref.read(worldContextProvider.notifier).poke();
     });
     if (FirebaseAuth.instance.currentUser == null &&
-        widget.shouldAuthenticate) {
+        this.widget.shouldAuthenticate) {
       Navigator.pushReplacementNamed(context, '/sign-in');
     }
-    ref.read(debugProvider.notifier).set(widget.debug);
+    this.ref.read(debugProvider.notifier).set(this.widget.debug);
   }
 
   @override
   void dispose() {
-    refreshTimer.cancel();
-    stateSubscription.cancel();
+    this.refreshTimer.cancel();
+    this.stateSubscription.cancel();
     super.dispose();
   }
 

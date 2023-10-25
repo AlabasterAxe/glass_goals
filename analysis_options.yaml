@@ -1,0 +1,6 @@
+include: package:lints/recommended.yaml
+
+linter:
+  rules:
+    unnecessary_this: false
+    constant_identifier_names: false

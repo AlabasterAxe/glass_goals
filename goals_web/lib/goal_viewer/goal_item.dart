@@ -25,7 +25,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
   final bool hovered;
   final bool focused;
   final Goal? parent;
-  final Widget hoverActions;
+  final Widget Function(String) hoverActionsBuilder;
   final bool hasRenderableChildren;
   final bool showExpansionArrow;
   final GoalItemDragHandle dragHandle;
@@ -40,7 +40,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
     this.hovered = false,
     this.focused = false,
     this.parent,
-    required this.hoverActions,
+    required this.hoverActionsBuilder,
     required this.hasRenderableChildren,
     this.showExpansionArrow = true,
     this.dragHandle = GoalItemDragHandle.none,
@@ -145,11 +145,6 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
           hoverEventStream.add(this.widget.goal.id);
         });
       },
-      onExit: (event) {
-        setState(() {
-          _hovering = false;
-        });
-      },
       child: GestureDetector(
         onTap: _editing
             ? null
@@ -234,8 +229,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                 : Icons.add)),
                 ]),
               ),
-              isSelected && !isNarrow && !_editing
-                  ? widget.hoverActions
+              !isNarrow && !_editing && (isSelected || _hovering)
+                  ? widget.hoverActionsBuilder(widget.goal.id)
                   : Container(),
             ],
           ),

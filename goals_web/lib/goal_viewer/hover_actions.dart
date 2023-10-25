@@ -22,14 +22,18 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 import 'providers.dart';
 
 class HoverActionsWidget extends ConsumerStatefulWidget {
-  final Function() onUnarchive;
-  final Function() onArchive;
-  final Function() onDone;
-  final Function(DateTime? endDate) onSnooze;
-  final Function() onClearSelection;
-  final Function(DateTime? endDate) onActive;
+  final Function(String?) onUnarchive;
+  final Function(String?) onArchive;
+  final Function(String?) onDone;
+  final Function(String?, DateTime? endDate) onSnooze;
+  final Function(String?, DateTime? endDate) onActive;
   final Map<String, Goal> goalMap;
   final MainAxisSize mainAxisSize;
+
+  /// If this HoverActionsWidget is associated with a specific goal
+  /// you can supply that goal's id here.
+  final String? goalId;
+
   const HoverActionsWidget({
     super.key,
     required this.onUnarchive,
@@ -37,9 +41,9 @@ class HoverActionsWidget extends ConsumerStatefulWidget {
     required this.onDone,
     required this.onSnooze,
     required this.onActive,
-    required this.onClearSelection,
     required this.goalMap,
     this.mainAxisSize = MainAxisSize.min,
+    this.goalId,
   });
 
   @override
@@ -75,8 +79,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
             menuChildren: [
               MenuItemButton(
                 child: const Text('For an hour'),
-                onPressed: () => widget
-                    .onActive(DateTime.now().add(const Duration(hours: 1))),
+                onPressed: () => widget.onActive(widget.goalId,
+                    DateTime.now().add(const Duration(hours: 1))),
               ),
               MenuItemButton(
                   child: const Text('Later Today...'),
@@ -86,29 +90,36 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                       initialTime: TimeOfDay.now(),
                     );
                     if (time != null) {
-                      widget.onActive(DateTime.now().copyWith(
-                          hour: time.hour, minute: time.minute, second: 0));
+                      widget.onActive(
+                          widget.goalId,
+                          DateTime.now().copyWith(
+                              hour: time.hour, minute: time.minute, second: 0));
                     }
                   }),
               MenuItemButton(
                 child: const Text('Today'),
-                onPressed: () => widget.onActive(DateTime.now().endOfDay),
+                onPressed: () =>
+                    widget.onActive(widget.goalId, DateTime.now().endOfDay),
               ),
               MenuItemButton(
                 child: const Text('This Week'),
-                onPressed: () => widget.onActive(DateTime.now().endOfWeek),
+                onPressed: () =>
+                    widget.onActive(widget.goalId, DateTime.now().endOfWeek),
               ),
               MenuItemButton(
                 child: const Text('This Month'),
-                onPressed: () => widget.onActive(DateTime.now().endOfMonth),
+                onPressed: () =>
+                    widget.onActive(widget.goalId, DateTime.now().endOfMonth),
               ),
               MenuItemButton(
                 child: const Text('This Quarter'),
-                onPressed: () => widget.onActive(DateTime.now().endOfQuarter),
+                onPressed: () =>
+                    widget.onActive(widget.goalId, DateTime.now().endOfQuarter),
               ),
               MenuItemButton(
                 child: const Text('This Year'),
-                onPressed: () => widget.onActive(DateTime.now().endOfYear),
+                onPressed: () =>
+                    widget.onActive(widget.goalId, DateTime.now().endOfYear),
               ),
               MenuItemButton(
                   child: const Text('Until a future Date...'),
@@ -121,12 +132,12 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                       locale: const Locale('en', 'GB'),
                     );
                     if (date != null) {
-                      widget.onActive(date.endOfDay);
+                      widget.onActive(widget.goalId, date.endOfDay);
                     }
                   }),
               MenuItemButton(
                 child: const Text('Forever'),
-                onPressed: () => widget.onActive(null),
+                onPressed: () => widget.onActive(widget.goalId, null),
               ),
             ],
             child: IconButton(
@@ -144,8 +155,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
             menuChildren: [
               MenuItemButton(
                 child: const Text('An hour'),
-                onPressed: () => widget
-                    .onSnooze(DateTime.now().add(const Duration(hours: 1))),
+                onPressed: () => widget.onSnooze(widget.goalId,
+                    DateTime.now().add(const Duration(hours: 1))),
               ),
               MenuItemButton(
                   child: const Text('Later Today...'),
@@ -155,21 +166,23 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                       initialTime: TimeOfDay.now(),
                     );
                     if (time != null) {
-                      widget.onSnooze(DateTime.now().copyWith(
-                          hour: time.hour, minute: time.minute, second: 0));
+                      widget.onSnooze(
+                          widget.goalId,
+                          DateTime.now().copyWith(
+                              hour: time.hour, minute: time.minute, second: 0));
                     }
                   }),
               MenuItemButton(
                 child: const Text('Tomorrow'),
                 onPressed: () {
-                  widget.onSnooze(
+                  widget.onSnooze(widget.goalId,
                       DateTime.now().add(const Duration(days: 1)).startOfDay);
                 },
               ),
               MenuItemButton(
                 child: const Text('Next week'),
                 onPressed: () {
-                  widget.onSnooze(DateTime.now().endOfWeek);
+                  widget.onSnooze(widget.goalId, DateTime.now().endOfWeek);
                 },
               ),
               MenuItemButton(
@@ -183,7 +196,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                       locale: const Locale('en', 'GB'),
                     );
                     if (day != null) {
-                      widget.onSnooze(day);
+                      widget.onSnooze(widget.goalId, day);
                     }
                   }),
             ],
@@ -199,7 +212,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
           message: 'Mark Done',
           child: IconButton(
             icon: const Icon(Icons.done_outline_rounded),
-            onPressed: widget.onDone,
+            onPressed: () => widget.onDone(widget.goalId),
           ),
         ),
         allArchived
@@ -207,14 +220,14 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 message: 'Unarchive',
                 child: IconButton(
                   icon: const Icon(Icons.unarchive),
-                  onPressed: widget.onUnarchive,
+                  onPressed: () => widget.onUnarchive(widget.goalId),
                 ),
               )
             : Tooltip(
                 message: 'Archive',
                 child: IconButton(
                   icon: const Icon(Icons.archive),
-                  onPressed: widget.onArchive,
+                  onPressed: () => widget.onArchive(widget.goalId),
                 ),
               ),
       ],

@@ -210,25 +210,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     });
   }
 
-  onUnarchive() {
-    final List<GoalDelta> goalDeltas = [];
-    for (final String goalId in ref.read(selectedGoalsProvider)) {
-      goalDeltas.add(GoalDelta(
-        id: goalId,
-        logEntry: StatusLogEntry(
-            id: const Uuid().v4(),
-            creationTime: DateTime.now(),
-            startTime: DateTime.now()),
-      ));
-    }
-
-    setState(() {
-      AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-      ref.read(selectedGoalsProvider.notifier).clear();
-    });
-  }
-
-  onAddGoal(String? parentId, String text, [TimeSlice? timeSlice]) {
+  _onAddGoal(String? parentId, String text, [TimeSlice? timeSlice]) {
     final id = const Uuid().v4();
     AppContext.of(context).syncClient.modifyGoal(GoalDelta(
         id: id,
@@ -256,93 +238,63 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
   }
 
-  onArchive() {
-    final List<GoalDelta> goalDeltas = [];
-    for (final String goalId in ref.read(selectedGoalsProvider)) {
-      goalDeltas.add(GoalDelta(
-        id: goalId,
-        logEntry: StatusLogEntry(
-            id: Uuid().v4(),
-            creationTime: DateTime.now(),
-            status: GoalStatus.archived,
-            startTime: DateTime.now()),
-      ));
-    }
-
-    setState(() {
-      AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-      ref.read(selectedGoalsProvider.notifier).clear();
-    });
-  }
-
-  onDone() {
+  _onSetStatus(String? goalId, GoalStatus? status, [DateTime? endTime]) {
     final List<GoalDelta> goalDeltas = [];
     final selectedGoals = ref.read(selectedGoalsProvider);
-    for (final String goalId in selectedGoals) {
-      goalDeltas.add(GoalDelta(
-        id: goalId,
-        logEntry: StatusLogEntry(
-            id: Uuid().v4(),
-            creationTime: DateTime.now(),
-            status: GoalStatus.done,
-            startTime: DateTime.now()),
-      ));
-    }
-
-    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    ref.read(selectedGoalsProvider.notifier).clear();
-    final focusedGoalId = ref.read(focusedGoalProvider);
-    if (selectedGoals.contains(focusedGoalId)) {
-      ref.read(focusedGoalProvider.notifier).set(null);
-    }
-  }
-
-  onSnooze(DateTime? endDate) {
-    final List<GoalDelta> goalDeltas = [];
-    for (final String goalId in ref.read(selectedGoalsProvider)) {
-      goalDeltas.add(GoalDelta(
-        id: goalId,
-        logEntry: StatusLogEntry(
-          id: Uuid().v4(),
-          creationTime: DateTime.now(),
-          status: GoalStatus.pending,
-          startTime: DateTime.now(),
-          endTime: endDate ?? DateTime.now().add(const Duration(days: 7)),
-        ),
-      ));
-    }
-
-    setState(() {
-      AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-      ref.read(selectedGoalsProvider.notifier).clear();
-    });
-  }
-
-  onClearSelection() {
-    setState(() {
-      ref.read(selectedGoalsProvider.notifier).clear();
-    });
-  }
-
-  onActive(DateTime? endDate) {
-    final List<GoalDelta> goalDeltas = [];
-    for (final String goalId in ref.read(selectedGoalsProvider)) {
+    if (goalId == null || selectedGoals.contains(goalId)) {
+      for (final String selectedGoalId in selectedGoals) {
+        goalDeltas.add(GoalDelta(
+          id: selectedGoalId,
+          logEntry: StatusLogEntry(
+              id: const Uuid().v4(),
+              creationTime: DateTime.now(),
+              status: status,
+              startTime: DateTime.now()),
+        ));
+      }
+    } else {
       goalDeltas.add(GoalDelta(
         id: goalId,
         logEntry: StatusLogEntry(
           id: const Uuid().v4(),
           creationTime: DateTime.now(),
-          status: GoalStatus.active,
+          status: status,
           startTime: DateTime.now(),
-          endTime: endDate,
+          endTime: endTime,
         ),
       ));
     }
 
-    setState(() {
-      AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-      ref.read(selectedGoalsProvider.notifier).clear();
-    });
+    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
+    ref.read(selectedGoalsProvider.notifier).clear();
+  }
+
+  onUnarchive(String? goalId) {
+    this._onSetStatus(goalId, null);
+  }
+
+  onArchive(String? goalId) {
+    this._onSetStatus(goalId, GoalStatus.archived);
+  }
+
+  onDone(String? goalId) {
+    var focusedGoalId = this.ref.read(focusedGoalProvider);
+    if (focusedGoalId == goalId ||
+        this
+            .ref
+            .read(selectedGoalsProvider)
+            .containsAll([focusedGoalId, goalId])) {
+      this.ref.read(focusedGoalProvider.notifier).set(null);
+    }
+    this._onSetStatus(goalId, GoalStatus.done);
+  }
+
+  onSnooze(String? goalId, DateTime? endDate) {
+    this._onSetStatus(goalId, GoalStatus.pending, endDate);
+  }
+
+  onActive(String? goalId, DateTime? endDate) {
+    this._onSetStatus(goalId, GoalStatus.active, endDate);
   }
 
   _handlePopState(_) {
@@ -548,7 +500,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                               onDone: onDone,
                               onSnooze: onSnooze,
                               onActive: onActive,
-                              onClearSelection: onClearSelection,
                               goalMap: widget.goalMap,
                               mainAxisSize: MainAxisSize.max,
                             ),
@@ -595,17 +546,18 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       onSelected: onSelected,
       onExpanded: onExpanded,
       onFocused: onFocused,
-      hoverActions: HoverActionsWidget(
-          onUnarchive: onUnarchive,
-          onArchive: onArchive,
-          onDone: onDone,
-          onSnooze: onSnooze,
-          onActive: onActive,
-          onClearSelection: onClearSelection,
-          goalMap: widget.goalMap),
+      hoverActionsBuilder: (String goalId) => HoverActionsWidget(
+        goalId: goalId,
+        onUnarchive: onUnarchive,
+        onArchive: onArchive,
+        onDone: onDone,
+        onSnooze: onSnooze,
+        onActive: onActive,
+        goalMap: widget.goalMap,
+      ),
       depthLimit: _mode == GoalViewMode.list ? 1 : null,
       onAddGoal: (String? parentId, String text) =>
-          this.onAddGoal(parentId, text, slice),
+          this._onAddGoal(parentId, text, slice),
     );
   }
 
@@ -681,16 +633,17 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onSelected: onSelected,
                           onExpanded: onExpanded,
                           onFocused: onFocused,
-                          hoverActions: HoverActionsWidget(
-                              onUnarchive: onUnarchive,
-                              onArchive: onArchive,
-                              onDone: onDone,
-                              onSnooze: onSnooze,
-                              onActive: onActive,
-                              onClearSelection: onClearSelection,
-                              goalMap: widget.goalMap),
+                          hoverActionsBuilder: (String goalId) =>
+                              HoverActionsWidget(
+                                  goalId: goalId,
+                                  onUnarchive: onUnarchive,
+                                  onArchive: onArchive,
+                                  onDone: onDone,
+                                  onSnooze: onSnooze,
+                                  onActive: onActive,
+                                  goalMap: widget.goalMap),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                          onAddGoal: this.onAddGoal,
+                          onAddGoal: this._onAddGoal,
                         );
                       case GoalFilter.to_review:
                         goalMap = getGoalsRequiringAttention(
@@ -720,13 +673,13 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onSelected: onSelected,
                           onExpanded: onExpanded,
                           onFocused: onFocused,
-                          hoverActions: HoverActionsWidget(
+                          hoverActionsBuilder: (goalId) => HoverActionsWidget(
+                              goalId: goalId,
                               onUnarchive: onUnarchive,
                               onArchive: onArchive,
                               onDone: onDone,
                               onSnooze: onSnooze,
                               onActive: onActive,
-                              onClearSelection: onClearSelection,
                               goalMap: widget.goalMap),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
                         );
@@ -764,16 +717,17 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onSelected: onSelected,
                           onExpanded: onExpanded,
                           onFocused: onFocused,
-                          hoverActions: HoverActionsWidget(
-                              onUnarchive: onUnarchive,
-                              onArchive: onArchive,
-                              onDone: onDone,
-                              onSnooze: onSnooze,
-                              onActive: onActive,
-                              onClearSelection: onClearSelection,
-                              goalMap: widget.goalMap),
+                          hoverActionsBuilder: (String goalId) =>
+                              HoverActionsWidget(
+                                  goalId: goalId,
+                                  onUnarchive: onUnarchive,
+                                  onArchive: onArchive,
+                                  onDone: onDone,
+                                  onSnooze: onSnooze,
+                                  onActive: onActive,
+                                  goalMap: widget.goalMap),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                          onAddGoal: this.onAddGoal,
+                          onAddGoal: this._onAddGoal,
                         );
                       case GoalFilter.today:
                         return _timeSlice(worldContext, TimeSlice.today) ??
@@ -858,14 +812,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         onFocused: this.onFocused,
         onSelected: this.onSelected,
         onAddGoal: (String? parentId, String text) =>
-            this.onAddGoal(parentId ?? focusedGoalId, text),
-        hoverActions: HoverActionsWidget(
+            this._onAddGoal(parentId ?? focusedGoalId, text),
+        hoverActionsBuilder: (String goalId) => HoverActionsWidget(
+            goalId: goalId,
             onUnarchive: this.onUnarchive,
             onArchive: this.onArchive,
             onDone: this.onDone,
             onSnooze: this.onSnooze,
             onActive: this.onActive,
-            onClearSelection: this.onClearSelection,
             goalMap: widget.goalMap),
       ),
     );

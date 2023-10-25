@@ -175,7 +175,7 @@ class GoalDetail extends ConsumerStatefulWidget {
   final Function(String goalId, {bool expanded}) onExpanded;
   final Function(String goalId) onFocused;
   final Function(String? parentId, String text) onAddGoal;
-  final Widget hoverActions;
+  final Widget Function(String goalId) hoverActionsBuilder;
   const GoalDetail({
     super.key,
     required this.goal,
@@ -183,7 +183,7 @@ class GoalDetail extends ConsumerStatefulWidget {
     required this.onSelected,
     required this.onExpanded,
     required this.onFocused,
-    required this.hoverActions,
+    required this.hoverActionsBuilder,
     required this.onAddGoal,
   });
 
@@ -267,7 +267,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                   SizedBox(width: uiUnit(2)),
                   StatusChip(goal: widget.goal)
                 ]),
-            widget.hoverActions,
+            widget.hoverActionsBuilder(widget.goal.id),
           ],
         ),
         breadcrumbs(),
@@ -284,7 +284,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
             onSelected: widget.onSelected,
             onExpanded: widget.onExpanded,
             onFocused: widget.onFocused,
-            hoverActions: widget.hoverActions,
+            hoverActionsBuilder: widget.hoverActionsBuilder,
             onAddGoal: widget.onAddGoal,
           )
         ],
