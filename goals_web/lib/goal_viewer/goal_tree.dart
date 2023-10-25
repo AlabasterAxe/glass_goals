@@ -99,9 +99,6 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
           },
           builder: (context, _, __) => GoalItemWidget(
             goal: rootGoal,
-            onSelected: (value) {
-              widget.onSelected(rootGoal.id);
-            },
             onDragEnd: () {
               setState(() {
                 hovered = false;

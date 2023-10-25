@@ -578,7 +578,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       child: isEditingText
                           ? const TextEditingControls()
                           : HoverActionsWidget(
-                              onMerge: onMerge,
                               onUnarchive: onUnarchive,
                               onArchive: onArchive,
                               onDone: onDone,
@@ -632,7 +631,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       onExpanded: onExpanded,
       onFocused: onFocused,
       hoverActions: HoverActionsWidget(
-          onMerge: onMerge,
           onUnarchive: onUnarchive,
           onArchive: onArchive,
           onDone: onDone,
@@ -719,7 +717,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onExpanded: onExpanded,
                           onFocused: onFocused,
                           hoverActions: HoverActionsWidget(
-                              onMerge: onMerge,
                               onUnarchive: onUnarchive,
                               onArchive: onArchive,
                               onDone: onDone,
@@ -759,7 +756,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onExpanded: onExpanded,
                           onFocused: onFocused,
                           hoverActions: HoverActionsWidget(
-                              onMerge: onMerge,
                               onUnarchive: onUnarchive,
                               onArchive: onArchive,
                               onDone: onDone,
@@ -804,7 +800,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onExpanded: onExpanded,
                           onFocused: onFocused,
                           hoverActions: HoverActionsWidget(
-                              onMerge: onMerge,
                               onUnarchive: onUnarchive,
                               onArchive: onArchive,
                               onDone: onDone,
@@ -900,7 +895,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         onAddGoal: (String? parentId, String text) =>
             this.onAddGoal(parentId ?? focusedGoalId, text),
         hoverActions: HoverActionsWidget(
-            onMerge: this.onMerge,
             onUnarchive: this.onUnarchive,
             onArchive: this.onArchive,
             onDone: this.onDone,

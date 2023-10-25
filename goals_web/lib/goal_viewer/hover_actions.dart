@@ -22,7 +22,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 import 'providers.dart';
 
 class HoverActionsWidget extends ConsumerStatefulWidget {
-  final Function() onMerge;
   final Function() onUnarchive;
   final Function() onArchive;
   final Function() onDone;
@@ -33,7 +32,6 @@ class HoverActionsWidget extends ConsumerStatefulWidget {
   final MainAxisSize mainAxisSize;
   const HoverActionsWidget({
     super.key,
-    required this.onMerge,
     required this.onUnarchive,
     required this.onArchive,
     required this.onDone,

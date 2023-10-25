@@ -8,6 +8,7 @@ import 'package:goals_core/sync.dart'
 import 'package:goals_core/util.dart' show formatDate;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
+import 'package:goals_web/goal_viewer/goal_item.dart';
 import 'package:goals_web/goal_viewer/goal_list.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/styles.dart' show mainTextStyle, uiUnit;
@@ -255,7 +256,15 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     return Padding(
       padding: EdgeInsets.all(uiUnit(2)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text(widget.goal.text, style: textTheme.headlineMedium),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(widget.goal.text, style: textTheme.headlineMedium)
+            ]),
+            widget.hoverActions,
+          ],
+        ),
         breadcrumbs(),
         if (widget.goal.subGoals.isNotEmpty) ...[
           SizedBox(height: uiUnit(2)),
