@@ -83,7 +83,7 @@ class SyncClient {
         if (superGoal.id == goalId) {
           return true;
         }
-        if (!seenIds.contains(superGoal)) {
+        if (!seenIds.contains(superGoal.id)) {
           newFrontierIds.add(superGoal.id);
           seenIds.add(superGoal.id);
         }

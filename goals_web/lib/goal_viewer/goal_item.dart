@@ -1,15 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:goals_core/model.dart' show Goal, WorldContext, getGoalStatus;
+import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
-import 'package:goals_core/util.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart' show DateFormat;
 
 import '../app_context.dart';
 import '../styles.dart';
 import 'providers.dart'
-    show expandedGoalsProvider, selectedGoalsProvider, worldContextProvider;
+    show expandedGoalsProvider, hoverEventStream, selectedGoalsProvider;
 
 enum GoalItemDragHandle {
   none,
@@ -58,6 +58,22 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
   final FocusNode _focusNode = FocusNode();
   bool _hovering = false;
 
+  List<StreamSubscription> subscriptions = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    subscriptions.add(hoverEventStream.listen((id) => {
+          if (id != widget.goal.id)
+            {
+              setState(() {
+                _hovering = false;
+              })
+            }
+        }));
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -67,6 +83,15 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     } else {
       _textController!.text = widget.goal.text;
     }
+  }
+
+  @override
+  void dispose() {
+    for (final subscription in this.subscriptions) {
+      subscription.cancel();
+    }
+
+    super.dispose();
   }
 
   Widget _dragWrapWidget(
@@ -99,9 +124,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         ref.watch(expandedGoalsProvider).contains(widget.goal.id);
     final selectedGoals = ref.watch(selectedGoalsProvider);
     final isSelected = selectedGoals.contains(widget.goal.id);
-    final worldContext = ref.watch(worldContextProvider);
     final isNarrow = MediaQuery.of(context).size.width < 600;
-    final goalStatus = getGoalStatus(worldContext, widget.goal);
     final bullet = SizedBox(
       width: uiUnit(10),
       height: uiUnit(10),
@@ -119,6 +142,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
       onHover: (event) {
         setState(() {
           _hovering = true;
+          hoverEventStream.add(this.widget.goal.id);
         });
       },
       onExit: (event) {

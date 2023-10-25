@@ -210,43 +210,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     });
   }
 
-  onMerge() {
-    final goalIds = ref.read(selectedGoalsProvider);
-    final winningGoalId = goalIds.first;
-    final syncClient = AppContext.of(context).syncClient;
-    final List<GoalDelta> goalDeltas = [];
-    for (final String goalId in goalIds) {
-      if (goalId == winningGoalId) {
-        continue;
-      }
-
-      goalDeltas.add(GoalDelta(
-          id: goalId,
-          logEntry: StatusLogEntry(
-            id: const Uuid().v4(),
-            creationTime: DateTime.now(),
-            status: GoalStatus.archived,
-          )));
-      final goal = widget.goalMap[goalId];
-      if (goal != null) {
-        for (final Goal childGoal in goal.subGoals) {
-          goalDeltas.add(GoalDelta(
-            id: childGoal.id,
-            logEntry: SetParentLogEntry(
-                id: const Uuid().v4(),
-                parentId: winningGoalId,
-                creationTime: DateTime.now()),
-          ));
-        }
-      }
-    }
-
-    setState(() {
-      syncClient.modifyGoals(goalDeltas);
-      ref.read(selectedGoalsProvider.notifier).clear();
-    });
-  }
-
   onUnarchive() {
     final List<GoalDelta> goalDeltas = [];
     for (final String goalId in ref.read(selectedGoalsProvider)) {
@@ -314,7 +277,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   onDone() {
     final List<GoalDelta> goalDeltas = [];
-    for (final String goalId in ref.read(selectedGoalsProvider)) {
+    final selectedGoals = ref.read(selectedGoalsProvider);
+    for (final String goalId in selectedGoals) {
       goalDeltas.add(GoalDelta(
         id: goalId,
         logEntry: StatusLogEntry(
@@ -325,11 +289,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       ));
     }
 
-    setState(() {
-      AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-      ref.read(selectedGoalsProvider.notifier).clear();
+    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
+    ref.read(selectedGoalsProvider.notifier).clear();
+    final focusedGoalId = ref.read(focusedGoalProvider);
+    if (selectedGoals.contains(focusedGoalId)) {
       ref.read(focusedGoalProvider.notifier).set(null);
-    });
+    }
   }
 
   onSnooze(DateTime? endDate) {

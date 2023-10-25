@@ -8,9 +8,9 @@ import 'package:goals_core/sync.dart'
 import 'package:goals_core/util.dart' show formatDate;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
-import 'package:goals_web/goal_viewer/goal_item.dart';
 import 'package:goals_web/goal_viewer/goal_list.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
+import 'package:goals_web/goal_viewer/status_chip.dart';
 import 'package:goals_web/styles.dart' show mainTextStyle, uiUnit;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
@@ -259,9 +259,14 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              Text(widget.goal.text, style: textTheme.headlineMedium)
-            ]),
+            Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(widget.goal.text, style: textTheme.headlineMedium),
+                  SizedBox(width: uiUnit(2)),
+                  StatusChip(goal: widget.goal)
+                ]),
             widget.hoverActions,
           ],
         ),
