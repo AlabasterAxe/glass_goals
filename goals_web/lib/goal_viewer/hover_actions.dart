@@ -201,7 +201,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                   }),
             ],
             child: IconButton(
-              icon: const Icon(Icons.snooze),
+              icon: const Icon(Icons.hotel),
               onPressed: () {
                 _snoozeMenuController.open();
               },

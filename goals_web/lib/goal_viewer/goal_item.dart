@@ -141,8 +141,10 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     final content = MouseRegion(
       onHover: (event) {
         setState(() {
-          _hovering = true;
-          hoverEventStream.add(this.widget.goal.id);
+          if (!_hovering) {
+            _hovering = true;
+            hoverEventStream.add(this.widget.goal.id);
+          }
         });
       },
       child: GestureDetector(
