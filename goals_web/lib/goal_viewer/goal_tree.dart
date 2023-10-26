@@ -13,6 +13,7 @@ import 'package:flutter/widgets.dart'
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
+import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -30,7 +31,7 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
   final Function(String?, String)? onAddGoal;
   final int? depthLimit;
   final bool showParentName;
-  final Widget Function(String goalId) hoverActionsBuilder;
+  final HoverActionsBuilder hoverActionsBuilder;
   const GoalTreeWidget({
     super.key,
     required this.goalMap,

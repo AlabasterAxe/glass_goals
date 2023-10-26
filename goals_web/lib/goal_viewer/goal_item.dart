@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
+import 'package:goals_web/goal_viewer/hover_actions.dart'
+    show HoverActionsBuilder;
 import 'package:goals_web/goal_viewer/status_chip.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -25,7 +27,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
   final bool hovered;
   final bool focused;
   final Goal? parent;
-  final Widget Function(String) hoverActionsBuilder;
+  final HoverActionsBuilder hoverActionsBuilder;
   final bool hasRenderableChildren;
   final bool showExpansionArrow;
   final GoalItemDragHandle dragHandle;
@@ -231,9 +233,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                 : Icons.add)),
                 ]),
               ),
-              !isNarrow && !_editing && (isSelected || _hovering)
-                  ? widget.hoverActionsBuilder(widget.goal.id)
-                  : Container(),
+              widget.hoverActionsBuilder(widget.goal.id,
+                  !isNarrow && !_editing && (isSelected || _hovering))
             ],
           ),
         ),

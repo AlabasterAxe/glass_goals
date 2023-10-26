@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart'
     show BuildContext, Column, Container, StatelessWidget, Widget;
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
+import 'package:goals_web/goal_viewer/hover_actions.dart';
 
 import 'goal_tree.dart' show GoalTreeWidget;
 
@@ -13,7 +14,7 @@ class GoalListWidget extends StatelessWidget {
   final Function(String goalId) onFocused;
   final int? depthLimit;
   final Function(String?, String)? onAddGoal;
-  final Widget Function(String goalId) hoverActionsBuilder;
+  final HoverActionsBuilder hoverActionsBuilder;
   const GoalListWidget({
     super.key,
     required this.goalMap,

@@ -13,13 +13,15 @@ import 'package:flutter/material.dart'
         showTimePicker;
 import 'package:flutter/rendering.dart' show MainAxisAlignment, MainAxisSize;
 import 'package:flutter/widgets.dart'
-    show BuildContext, Icon, Row, Text, Widget;
+    show BuildContext, Container, Icon, Row, Text, Widget;
 import 'package:goals_core/model.dart' show Goal, getGoalStatus;
 import 'package:goals_core/sync.dart' show GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
 import 'providers.dart';
+
+typedef HoverActionsBuilder = Widget Function(String? goalId, bool shown);
 
 class HoverActionsWidget extends ConsumerStatefulWidget {
   final Function(String?) onUnarchive;
@@ -50,6 +52,8 @@ class HoverActionsWidget extends ConsumerStatefulWidget {
   ConsumerState<HoverActionsWidget> createState() => _HoverActionsWidgetState();
 }
 
+const _TOOLTIP_DELAY = Duration(milliseconds: 200);
+
 class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
   final _snoozeMenuController = MenuController();
   final _activateMenuController = MenuController();
@@ -59,7 +63,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
     final selectedGoals = ref.watch(selectedGoalsProvider);
     final worldContext = ref.watch(worldContextProvider);
 
-    bool allArchived = true;
+    bool allArchived = selectedGoals.isNotEmpty;
     for (final selectedGoalId in selectedGoals) {
       if (widget.goalMap.containsKey(selectedGoalId) &&
           getGoalStatus(worldContext, widget.goalMap[selectedGoalId]!).status !=
@@ -73,6 +77,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         Tooltip(
+          waitDuration: _TOOLTIP_DELAY,
+          showDuration: Duration.zero,
           message: 'Schedule',
           child: MenuAnchor(
             controller: _activateMenuController,
@@ -149,6 +155,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
           ),
         ),
         Tooltip(
+          waitDuration: _TOOLTIP_DELAY,
+          showDuration: Duration.zero,
           message: 'Snooze',
           child: MenuAnchor(
             controller: _snoozeMenuController,
@@ -209,6 +217,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
           ),
         ),
         Tooltip(
+          waitDuration: _TOOLTIP_DELAY,
+          showDuration: Duration.zero,
           message: 'Mark Done',
           child: IconButton(
             icon: const Icon(Icons.done_outline_rounded),
@@ -217,6 +227,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
         ),
         allArchived
             ? Tooltip(
+                waitDuration: _TOOLTIP_DELAY,
+                showDuration: Duration.zero,
                 message: 'Unarchive',
                 child: IconButton(
                   icon: const Icon(Icons.unarchive),
@@ -224,6 +236,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 ),
               )
             : Tooltip(
+                waitDuration: _TOOLTIP_DELAY,
+                showDuration: Duration.zero,
                 message: 'Archive',
                 child: IconButton(
                   icon: const Icon(Icons.archive),

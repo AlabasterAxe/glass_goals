@@ -9,6 +9,7 @@ import 'package:goals_core/util.dart' show formatDate;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
 import 'package:goals_web/goal_viewer/goal_list.dart';
+import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
 import 'package:goals_web/styles.dart' show mainTextStyle, uiUnit;
@@ -175,7 +176,7 @@ class GoalDetail extends ConsumerStatefulWidget {
   final Function(String goalId, {bool expanded}) onExpanded;
   final Function(String goalId) onFocused;
   final Function(String? parentId, String text) onAddGoal;
-  final Widget Function(String goalId) hoverActionsBuilder;
+  final HoverActionsBuilder hoverActionsBuilder;
   const GoalDetail({
     super.key,
     required this.goal,
@@ -267,7 +268,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                   SizedBox(width: uiUnit(2)),
                   StatusChip(goal: widget.goal)
                 ]),
-            widget.hoverActionsBuilder(widget.goal.id),
+            widget.hoverActionsBuilder(widget.goal.id, true),
           ],
         ),
         breadcrumbs(),
