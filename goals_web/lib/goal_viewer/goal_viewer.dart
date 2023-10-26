@@ -246,10 +246,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         goalDeltas.add(GoalDelta(
           id: selectedGoalId,
           logEntry: StatusLogEntry(
-              id: const Uuid().v4(),
-              creationTime: DateTime.now(),
-              status: status,
-              startTime: DateTime.now()),
+            id: const Uuid().v4(),
+            creationTime: DateTime.now(),
+            status: status,
+            startTime: DateTime.now(),
+            endTime: endTime,
+          ),
         ));
       }
     } else {
