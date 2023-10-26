@@ -277,7 +277,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     this._onSetStatus(goalId, GoalStatus.archived);
   }
 
-  onDone(String? goalId) {
+  onDone(String? goalId, DateTime? endDate) {
     var focusedGoalId = this.ref.read(focusedGoalProvider);
     if (focusedGoalId == goalId ||
         this
@@ -286,7 +286,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             .containsAll([focusedGoalId, goalId])) {
       this.ref.read(focusedGoalProvider.notifier).set(null);
     }
-    this._onSetStatus(goalId, GoalStatus.done);
+    this._onSetStatus(goalId, GoalStatus.done, endDate);
   }
 
   onSnooze(String? goalId, DateTime? endDate) {
@@ -546,7 +546,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       onSelected: onSelected,
       onExpanded: onExpanded,
       onFocused: onFocused,
-      hoverActionsBuilder: (String goalId) => HoverActionsWidget(
+      hoverActionsBuilder: (goalId) => HoverActionsWidget(
         goalId: goalId,
         onUnarchive: onUnarchive,
         onArchive: onArchive,
@@ -633,15 +633,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onSelected: onSelected,
                           onExpanded: onExpanded,
                           onFocused: onFocused,
-                          hoverActionsBuilder: (String goalId) =>
-                              HoverActionsWidget(
-                                  goalId: goalId,
-                                  onUnarchive: onUnarchive,
-                                  onArchive: onArchive,
-                                  onDone: onDone,
-                                  onSnooze: onSnooze,
-                                  onActive: onActive,
-                                  goalMap: widget.goalMap),
+                          hoverActionsBuilder: (goalId) => HoverActionsWidget(
+                            goalId: goalId,
+                            onUnarchive: onUnarchive,
+                            onArchive: onArchive,
+                            onDone: onDone,
+                            onSnooze: onSnooze,
+                            onActive: onActive,
+                            goalMap: widget.goalMap,
+                          ),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
                           onAddGoal: this._onAddGoal,
                         );
@@ -674,13 +674,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onExpanded: onExpanded,
                           onFocused: onFocused,
                           hoverActionsBuilder: (goalId) => HoverActionsWidget(
-                              goalId: goalId,
-                              onUnarchive: onUnarchive,
-                              onArchive: onArchive,
-                              onDone: onDone,
-                              onSnooze: onSnooze,
-                              onActive: onActive,
-                              goalMap: widget.goalMap),
+                            goalId: goalId,
+                            onUnarchive: onUnarchive,
+                            onArchive: onArchive,
+                            onDone: onDone,
+                            onSnooze: onSnooze,
+                            onActive: onActive,
+                            goalMap: widget.goalMap,
+                          ),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
                         );
 
@@ -717,15 +718,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onSelected: onSelected,
                           onExpanded: onExpanded,
                           onFocused: onFocused,
-                          hoverActionsBuilder: (String goalId) =>
-                              HoverActionsWidget(
-                                  goalId: goalId,
-                                  onUnarchive: onUnarchive,
-                                  onArchive: onArchive,
-                                  onDone: onDone,
-                                  onSnooze: onSnooze,
-                                  onActive: onActive,
-                                  goalMap: widget.goalMap),
+                          hoverActionsBuilder: (goalId) => HoverActionsWidget(
+                              goalId: goalId,
+                              onUnarchive: onUnarchive,
+                              onArchive: onArchive,
+                              onDone: onDone,
+                              onSnooze: onSnooze,
+                              onActive: onActive,
+                              goalMap: widget.goalMap),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
                           onAddGoal: this._onAddGoal,
                         );
@@ -813,7 +813,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         onSelected: this.onSelected,
         onAddGoal: (String? parentId, String text) =>
             this._onAddGoal(parentId ?? focusedGoalId, text),
-        hoverActionsBuilder: (String goalId) => HoverActionsWidget(
+        hoverActionsBuilder: (goalId) => HoverActionsWidget(
             goalId: goalId,
             onUnarchive: this.onUnarchive,
             onArchive: this.onArchive,

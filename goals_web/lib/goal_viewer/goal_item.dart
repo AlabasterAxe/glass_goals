@@ -233,8 +233,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                 : Icons.add)),
                 ]),
               ),
-              widget.hoverActionsBuilder(widget.goal.id,
-                  !isNarrow && !_editing && (isSelected || _hovering))
+              if (!isNarrow && !_editing && (isSelected || _hovering))
+                widget.hoverActionsBuilder(widget.goal.id)
             ],
           ),
         ),

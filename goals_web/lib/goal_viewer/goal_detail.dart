@@ -268,7 +268,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                   SizedBox(width: uiUnit(2)),
                   StatusChip(goal: widget.goal)
                 ]),
-            widget.hoverActionsBuilder(widget.goal.id, true),
+            widget.hoverActionsBuilder(widget.goal.id),
           ],
         ),
         breadcrumbs(),

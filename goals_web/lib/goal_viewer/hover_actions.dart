@@ -13,7 +13,7 @@ import 'package:flutter/material.dart'
         showTimePicker;
 import 'package:flutter/rendering.dart' show MainAxisAlignment, MainAxisSize;
 import 'package:flutter/widgets.dart'
-    show BuildContext, Container, Icon, Row, Text, Widget;
+    show BuildContext, Icon, Row, Text, Widget;
 import 'package:goals_core/model.dart' show Goal, getGoalStatus;
 import 'package:goals_core/sync.dart' show GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
@@ -21,12 +21,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
 import 'providers.dart';
 
-typedef HoverActionsBuilder = Widget Function(String? goalId, bool shown);
+typedef HoverActionsBuilder = Widget Function(String? goalId);
 
 class HoverActionsWidget extends ConsumerStatefulWidget {
   final Function(String?) onUnarchive;
   final Function(String?) onArchive;
-  final Function(String?) onDone;
+  final Function(String?, DateTime? endDate) onDone;
   final Function(String?, DateTime? endDate) onSnooze;
   final Function(String?, DateTime? endDate) onActive;
   final Map<String, Goal> goalMap;
@@ -57,6 +57,7 @@ const _TOOLTIP_DELAY = Duration(milliseconds: 200);
 class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
   final _snoozeMenuController = MenuController();
   final _activateMenuController = MenuController();
+  final _doneMenuController = MenuController();
 
   @override
   Widget build(BuildContext context) {
@@ -83,25 +84,6 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
           child: MenuAnchor(
             controller: _activateMenuController,
             menuChildren: [
-              MenuItemButton(
-                child: const Text('For an hour'),
-                onPressed: () => widget.onActive(widget.goalId,
-                    DateTime.now().add(const Duration(hours: 1))),
-              ),
-              MenuItemButton(
-                  child: const Text('Later Today...'),
-                  onPressed: () async {
-                    final time = await showTimePicker(
-                      context: context,
-                      initialTime: TimeOfDay.now(),
-                    );
-                    if (time != null) {
-                      widget.onActive(
-                          widget.goalId,
-                          DateTime.now().copyWith(
-                              hour: time.hour, minute: time.minute, second: 0));
-                    }
-                  }),
               MenuItemButton(
                 child: const Text('Today'),
                 onPressed: () =>
@@ -220,9 +202,59 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
           waitDuration: _TOOLTIP_DELAY,
           showDuration: Duration.zero,
           message: 'Mark Done',
-          child: IconButton(
-            icon: const Icon(Icons.done_outline_rounded),
-            onPressed: () => widget.onDone(widget.goalId),
+          child: MenuAnchor(
+            controller: _doneMenuController,
+            menuChildren: [
+              MenuItemButton(
+                child: const Text('For Today'),
+                onPressed: () =>
+                    widget.onDone(widget.goalId, DateTime.now().endOfDay),
+              ),
+              MenuItemButton(
+                child: const Text('For This Week'),
+                onPressed: () =>
+                    widget.onDone(widget.goalId, DateTime.now().endOfWeek),
+              ),
+              MenuItemButton(
+                child: const Text('For This Month'),
+                onPressed: () =>
+                    widget.onDone(widget.goalId, DateTime.now().endOfMonth),
+              ),
+              MenuItemButton(
+                child: const Text('For This Quarter'),
+                onPressed: () =>
+                    widget.onDone(widget.goalId, DateTime.now().endOfQuarter),
+              ),
+              MenuItemButton(
+                child: const Text('For This Year'),
+                onPressed: () =>
+                    widget.onDone(widget.goalId, DateTime.now().endOfYear),
+              ),
+              MenuItemButton(
+                  child: const Text('Until a future Date...'),
+                  onPressed: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2100),
+                      locale: const Locale('en', 'GB'),
+                    );
+                    if (date != null) {
+                      widget.onDone(widget.goalId, date.endOfDay);
+                    }
+                  }),
+              MenuItemButton(
+                child: const Text('Forever'),
+                onPressed: () => widget.onDone(widget.goalId, null),
+              ),
+            ],
+            child: IconButton(
+              icon: const Icon(Icons.done_outline_rounded),
+              onPressed: () {
+                _doneMenuController.open();
+              },
+            ),
           ),
         ),
         allArchived
