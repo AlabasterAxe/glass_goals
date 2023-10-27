@@ -138,7 +138,7 @@ Iterable<String> getGoalsToAncestor(Map<String, Goal> goalMap, String goalId,
     {String? ancestorId}) {
   List<String>? result;
   _visitAncestors(goalMap, goalId, (String id, List<String> path) {
-    if (id == ancestorId) {
+    if (id == ancestorId || ancestorId == null) {
       result = path;
       return true;
     }
@@ -281,6 +281,32 @@ Map<String, Goal> getGoalsForDateRange(
 
   result.addAll(activeGoalsWithinWindow);
   result.addAll(snoozedGoalsEndingWithinWindow);
+
+  final goalsToRemove = <String>{};
+  for (final goal in result.values) {
+    final goalStatus = getGoalStatus(context, goal);
+    Goal? ancestor = goal.superGoals.firstOrNull;
+    while (ancestor != null) {
+      final ancestorStatus = getGoalStatus(context, ancestor);
+      // if any of these goals have an ancestor that has an active status
+      // that is completely contained within this goal, we won't show this goal
+      if (ancestorStatus.status == GoalStatus.active &&
+          (ancestorStatus.endTime != null ||
+              ancestorStatus.startTime != null) &&
+          statusIsBetweenDatesInclusive(
+              ancestorStatus,
+              goalStatus.startTime?.add(Duration(seconds: 1)),
+              goalStatus.endTime?.subtract(Duration(seconds: 1)))) {
+        goalsToRemove.add(goal.id);
+        break;
+      }
+      ancestor = ancestor.superGoals.firstOrNull;
+    }
+  }
+
+  for (final goalId in goalsToRemove) {
+    result.remove(goalId);
+  }
 
   return result;
 }
