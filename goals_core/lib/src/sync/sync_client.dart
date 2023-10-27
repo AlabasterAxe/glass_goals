@@ -144,9 +144,18 @@ class SyncClient {
   }
 
   Iterable<Op> _getOpsFromBox(String fieldName) {
+    final hlcs = <String>{};
     final boxContents =
         appBox.get(fieldName, defaultValue: []) as List<dynamic>;
-    return boxContents.cast<String>().map(Op.fromJson).toList();
+    final result = <Op>[];
+    for (final String opString in boxContents.cast<String>()) {
+      final op = Op.fromJson(opString);
+      if (!hlcs.contains(op.hlcTimestamp)) {
+        hlcs.add(op.hlcTimestamp);
+        result.add(op);
+      }
+    }
+    return result;
   }
 
   _computeState() {
