@@ -144,10 +144,14 @@ class StatusChip extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Text(
-            getGoalStatusString(worldContext, goalStatus),
-            style: smallTextStyle.copyWith(
-                color: getGoalStatusTextColor(goalStatus)),
+          Tooltip(
+            message:
+                '${goalStatus.startTime != null ? DateFormat.yMd().format(goalStatus.startTime!) : 'The Big Bang'} - ${goalStatus.endTime != null ? DateFormat.yMd().format(goalStatus.endTime!) : 'The Heat Death of the Universe'}',
+            child: Text(
+              getGoalStatusString(worldContext, goalStatus),
+              style: smallTextStyle.copyWith(
+                  color: getGoalStatusTextColor(goalStatus)),
+            ),
           ),
           SizedBox(width: uiUnit() / 2),
           goalStatus.status != null

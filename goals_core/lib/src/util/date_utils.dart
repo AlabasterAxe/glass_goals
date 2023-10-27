@@ -41,7 +41,8 @@ extension DateTimeExtension on DateTime {
       .add(const Duration(days: 7))
       .subtract(const Duration(seconds: 1));
 
-  DateTime get startOfMonth => this.copyWith(day: 1);
+  DateTime get startOfMonth =>
+      this.copyWith(day: 1, hour: 0, minute: 0, second: 0);
   DateTime get endOfMonth => DateTime(this.year, this.month + 1, 1)
       .subtract(const Duration(seconds: 1));
   DateTime get startOfQuarter =>
