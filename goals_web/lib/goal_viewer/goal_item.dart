@@ -55,7 +55,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
 }
 
 class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
-  TextEditingController? _textController;
+  final TextEditingController _textController = TextEditingController();
   bool _editing = false;
   final FocusNode _focusNode = FocusNode();
   bool _hovering = false;
@@ -77,13 +77,11 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void didUpdateWidget(oldWidget) {
+    super.didUpdateWidget(oldWidget);
 
-    if (_textController == null) {
-      _textController = TextEditingController(text: widget.goal.text);
-    } else {
-      _textController!.text = widget.goal.text;
+    if (widget.goal.text != _textController.text) {
+      _textController.text = widget.goal.text;
     }
   }
 
@@ -184,7 +182,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                               AppContext.of(context).syncClient.modifyGoal(
                                   GoalDelta(
                                       id: widget.goal.id,
-                                      text: _textController!.text));
+                                      text: _textController.text));
                               setState(() {
                                 _editing = false;
                               });

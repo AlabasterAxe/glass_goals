@@ -199,6 +199,19 @@ class DetailViewLogEntryItem {
 }
 
 class _GoalDetailState extends ConsumerState<GoalDetail> {
+  var _editing = false;
+  late final _textController = TextEditingController(text: widget.goal.text);
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void didUpdateWidget(oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.goal.text != oldWidget.goal.text) {
+      _textController.text = widget.goal.text;
+    }
+  }
+
   List<DetailViewLogEntryItem> _computeNoteLog(
       List<DetailViewLogEntryItem> log) {
     Map<String, DetailViewLogEntryItem> items = {};
@@ -264,7 +277,46 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(widget.goal.text, style: textTheme.headlineMedium),
+                  _editing
+                      ? IntrinsicWidth(
+                          child: TextField(
+                            autocorrect: false,
+                            controller: _textController,
+                            decoration: null,
+                            style: textTheme.headlineMedium,
+                            onEditingComplete: () {
+                              AppContext.of(context).syncClient.modifyGoal(
+                                  GoalDelta(
+                                      id: widget.goal.id,
+                                      text: _textController.text));
+                              setState(() {
+                                _editing = false;
+                              });
+                            },
+                            onTapOutside: (_) {
+                              setState(() {
+                                _editing = false;
+                              });
+                            },
+                            focusNode: _focusNode,
+                          ),
+                        )
+                      : Flexible(
+                          child: GestureDetector(
+                            onDoubleTap: _editing
+                                ? null
+                                : () => {
+                                      setState(() {
+                                        _editing = true;
+                                        _focusNode.requestFocus();
+                                      })
+                                    },
+                            child: Text(
+                              widget.goal.text,
+                              style: textTheme.headlineMedium,
+                            ),
+                          ),
+                        ),
                   SizedBox(width: uiUnit(2)),
                   StatusChip(goal: widget.goal)
                 ]),
