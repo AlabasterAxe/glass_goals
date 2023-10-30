@@ -347,7 +347,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               _mode = GoalViewMode.tree;
             }
             final filterString = box.get('goalViewerFilter',
-                defaultValue: GoalFilter.pending.name);
+                defaultValue: GoalFilter.schedule.name);
             try {
               _filter = GoalFilter.values.byName(filterString);
             } catch (_) {
@@ -563,6 +563,45 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     );
   }
 
+  Widget _orphanedGoals(WorldContext context) {
+    final goalMap = getGoalsRequiringAttention(context, widget.goalMap);
+
+    final goalIds = _mode == GoalViewMode.tree
+        ? goalMap.values
+            .where((goal) {
+              for (final superGoal in goal.superGoals) {
+                if (goalMap.containsKey(superGoal.id)) {
+                  return false;
+                }
+              }
+              return true;
+            })
+            .map((e) => e.id)
+            .toList()
+        : (goalMap.values.toList(growable: false)
+              ..sort((a, b) =>
+                  a.text.toLowerCase().compareTo(b.text.toLowerCase())))
+            .map((g) => g.id)
+            .toList();
+    return GoalListWidget(
+      goalMap: goalMap,
+      goalIds: goalIds,
+      onSelected: onSelected,
+      onExpanded: onExpanded,
+      onFocused: onFocused,
+      hoverActionsBuilder: (goalId) => HoverActionsWidget(
+        goalId: goalId,
+        onUnarchive: onUnarchive,
+        onArchive: onArchive,
+        onDone: onDone,
+        onSnooze: onSnooze,
+        onActive: onActive,
+        goalMap: widget.goalMap,
+      ),
+      depthLimit: _mode == GoalViewMode.list ? 1 : null,
+    );
+  }
+
   Widget _listView(WorldContext worldContext) {
     final theme = Theme.of(context).textTheme;
     return Column(
@@ -648,44 +687,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onAddGoal: this._onAddGoal,
                         );
                       case GoalFilter.to_review:
-                        goalMap = getGoalsRequiringAttention(
-                            worldContext, widget.goalMap);
-
-                        final goalIds = _mode == GoalViewMode.tree
-                            ? goalMap.values
-                                .where((goal) {
-                                  for (final superGoal in goal.superGoals) {
-                                    if (goalMap.containsKey(superGoal.id)) {
-                                      return false;
-                                    }
-                                  }
-                                  return true;
-                                })
-                                .map((e) => e.id)
-                                .toList()
-                            : (goalMap.values.toList(growable: false)
-                                  ..sort((a, b) => a.text
-                                      .toLowerCase()
-                                      .compareTo(b.text.toLowerCase())))
-                                .map((g) => g.id)
-                                .toList();
-                        return GoalListWidget(
-                          goalMap: goalMap,
-                          goalIds: goalIds,
-                          onSelected: onSelected,
-                          onExpanded: onExpanded,
-                          onFocused: onFocused,
-                          hoverActionsBuilder: (goalId) => HoverActionsWidget(
-                            goalId: goalId,
-                            onUnarchive: onUnarchive,
-                            onArchive: onArchive,
-                            onDone: onDone,
-                            onSnooze: onSnooze,
-                            onActive: onActive,
-                            goalMap: widget.goalMap,
-                          ),
-                          depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                        );
+                        return _orphanedGoals(worldContext);
 
                       case GoalFilter.pending:
                         goalMap = getGoalsMatchingPredicate(
