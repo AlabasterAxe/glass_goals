@@ -10,7 +10,7 @@ import 'package:goals_core/util.dart'
         isWithinDay,
         isWithinQuarter;
 import 'package:goals_web/app_context.dart';
-import 'package:goals_web/goal_viewer/providers.dart' show worldContextProvider;
+import 'package:goals_web/goal_viewer/providers.dart' show debugProvider, worldContextProvider;
 import 'package:goals_web/styles.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart' show DateFormat;
@@ -129,6 +129,7 @@ class StatusChip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final worldContext = ref.watch(worldContextProvider);
+    final isDebugMode = ref.watch(debugProvider);
     final goalStatus = getGoalStatus(worldContext, goal);
 
     return Container(
@@ -144,7 +145,7 @@ class StatusChip extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Tooltip(
+          isDebugMode ? Tooltip(
             message:
                 '${goalStatus.startTime != null ? DateFormat.yMd().format(goalStatus.startTime!) : 'The Big Bang'} - ${goalStatus.endTime != null ? DateFormat.yMd().format(goalStatus.endTime!) : 'The Heat Death of the Universe'}',
             child: Text(
@@ -152,7 +153,11 @@ class StatusChip extends ConsumerWidget {
               style: smallTextStyle.copyWith(
                   color: getGoalStatusTextColor(goalStatus)),
             ),
-          ),
+          ): Text(
+              getGoalStatusString(worldContext, goalStatus),
+              style: smallTextStyle.copyWith(
+                  color: getGoalStatusTextColor(goalStatus)),
+            ),
           SizedBox(width: uiUnit() / 2),
           goalStatus.status != null
               ? SizedBox(

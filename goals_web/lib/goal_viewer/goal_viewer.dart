@@ -563,6 +563,59 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     );
   }
 
+  Widget _yesterdaysActiveGoals(WorldContext context) {
+    final yesterdayContext = WorldContext(
+        time: context.time
+            .subtract(const Duration(days: 1))
+            .copyWith(hour: 22, minute: 0, second: 0));
+    var goalMap = getGoalsForDateRange(
+        yesterdayContext,
+        widget.goalMap,
+        TimeSlice.today.startTime(yesterdayContext.time),
+        TimeSlice.today.endTime(yesterdayContext.time));
+
+    goalMap = {
+      for (final key in goalMap.keys)
+        if (getGoalStatus(context, goalMap[key]!).status == null)
+          key: goalMap[key]!
+    };
+
+    final goalIds = _mode == GoalViewMode.tree
+        ? goalMap.values
+            .where((goal) {
+              for (final superGoal in goal.superGoals) {
+                if (goalMap.containsKey(superGoal.id)) {
+                  return false;
+                }
+              }
+              return true;
+            })
+            .map((e) => e.id)
+            .toList()
+        : (goalMap.values.toList(growable: false)
+              ..sort((a, b) =>
+                  a.text.toLowerCase().compareTo(b.text.toLowerCase())))
+            .map((g) => g.id)
+            .toList();
+    return GoalListWidget(
+      goalMap: goalMap,
+      goalIds: goalIds,
+      onSelected: onSelected,
+      onExpanded: onExpanded,
+      onFocused: onFocused,
+      hoverActionsBuilder: (goalId) => HoverActionsWidget(
+        goalId: goalId,
+        onUnarchive: onUnarchive,
+        onArchive: onArchive,
+        onDone: onDone,
+        onSnooze: onSnooze,
+        onActive: onActive,
+        goalMap: widget.goalMap,
+      ),
+      depthLimit: _mode == GoalViewMode.list ? 1 : null,
+    );
+  }
+
   Widget _orphanedGoals(WorldContext context) {
     final goalMap = getGoalsRequiringAttention(context, widget.goalMap);
 
@@ -687,7 +740,22 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onAddGoal: this._onAddGoal,
                         );
                       case GoalFilter.to_review:
-                        return _orphanedGoals(worldContext);
+                        return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.all(uiUnit(2)),
+                                child: Text('Unscheduled Goals',
+                                    style: theme.headlineSmall),
+                              ),
+                              _orphanedGoals(worldContext),
+                              Padding(
+                                padding: EdgeInsets.all(uiUnit(2)),
+                                child: Text('Yesterday\'s Active Goals',
+                                    style: theme.headlineSmall),
+                              ),
+                              _yesterdaysActiveGoals(worldContext),
+                            ]);
 
                       case GoalFilter.pending:
                         goalMap = getGoalsMatchingPredicate(
@@ -767,23 +835,18 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           if (slice != null) {
                             children.addAll([
                               Padding(
-                                padding: EdgeInsets.all(uiUnit(2)),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    TextButton(
-                                      onPressed: () => {
-                                        // kinda gross that we're sharing names between enums here but w/e
-                                        onSwitchFilter(GoalFilter.values
-                                            .byName(timeSlice.name))
-                                      },
-                                      child: Text(
-                                        timeSlice.displayName,
-                                        style: theme.headlineSmall,
-                                      ),
-                                    ),
-                                  ],
+                                padding:
+                                    EdgeInsets.symmetric(vertical: uiUnit(2)),
+                                child: TextButton(
+                                  onPressed: () => {
+                                    // kinda gross that we're sharing names between enums here but w/e
+                                    onSwitchFilter(GoalFilter.values
+                                        .byName(timeSlice.name))
+                                  },
+                                  child: Text(
+                                    timeSlice.displayName,
+                                    style: theme.headlineSmall,
+                                  ),
                                 ),
                               ),
                               slice,
@@ -791,6 +854,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           }
                         }
                         return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: children,
                         );
                     }
