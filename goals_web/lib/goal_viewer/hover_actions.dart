@@ -17,6 +17,7 @@ import 'package:flutter/widgets.dart'
 import 'package:goals_core/model.dart' show Goal, getGoalStatus;
 import 'package:goals_core/sync.dart' show GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
+import 'package:goals_web/styles.dart' show darkElementColor;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
 import 'providers.dart';
@@ -134,7 +135,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
               ),
             ],
             child: IconButton(
-              icon: const Icon(Icons.schedule),
+              icon: const Icon(Icons.schedule, color: darkElementColor),
               onPressed: () {
                 _activateMenuController.open();
               },
@@ -196,7 +197,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                   }),
             ],
             child: IconButton(
-              icon: const Icon(Icons.hotel),
+              icon: const Icon(Icons.hotel, color: darkElementColor),
               onPressed: () {
                 _snoozeMenuController.open();
               },
@@ -255,7 +256,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
               ),
             ],
             child: IconButton(
-              icon: const Icon(Icons.done_outline_rounded),
+              icon: const Icon(Icons.done_outline_rounded,
+                  color: darkElementColor),
               onPressed: () {
                 _doneMenuController.open();
               },
@@ -268,7 +270,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 showDuration: Duration.zero,
                 message: 'Unarchive',
                 child: IconButton(
-                  icon: const Icon(Icons.unarchive),
+                  icon: const Icon(Icons.unarchive, color: darkElementColor),
                   onPressed: () => widget.onUnarchive(widget.goalId),
                 ),
               )
@@ -277,7 +279,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 showDuration: Duration.zero,
                 message: 'Archive',
                 child: IconButton(
-                  icon: const Icon(Icons.archive),
+                  icon: const Icon(Icons.archive, color: darkElementColor),
                   onPressed: () => widget.onArchive(widget.goalId),
                 ),
               ),
