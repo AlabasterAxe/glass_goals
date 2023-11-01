@@ -267,62 +267,64 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
       return status.status != GoalStatus.archived &&
           status.status != GoalStatus.done;
     });
+    final isNarrow = MediaQuery.of(context).size.width < 600;
     return Padding(
       padding: EdgeInsets.all(uiUnit(2)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _editing
-                      ? IntrinsicWidth(
-                          child: TextField(
-                            autocorrect: false,
-                            controller: _textController,
-                            decoration: null,
-                            style: textTheme.headlineMedium,
-                            onEditingComplete: () {
-                              AppContext.of(context).syncClient.modifyGoal(
-                                  GoalDelta(
-                                      id: widget.goal.id,
-                                      text: _textController.text));
-                              setState(() {
-                                _editing = false;
-                              });
-                            },
-                            onTapOutside: (_) {
-                              setState(() {
-                                _editing = false;
-                              });
-                            },
-                            focusNode: _focusNode,
-                          ),
-                        )
-                      : Flexible(
-                          child: GestureDetector(
-                            onDoubleTap: _editing
-                                ? null
-                                : () => {
-                                      setState(() {
-                                        _editing = true;
-                                        _focusNode.requestFocus();
-                                      })
-                                    },
-                            child: Text(
-                              widget.goal.text,
+        if (!isNarrow)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _editing
+                        ? IntrinsicWidth(
+                            child: TextField(
+                              autocorrect: false,
+                              controller: _textController,
+                              decoration: null,
                               style: textTheme.headlineMedium,
+                              onEditingComplete: () {
+                                AppContext.of(context).syncClient.modifyGoal(
+                                    GoalDelta(
+                                        id: widget.goal.id,
+                                        text: _textController.text));
+                                setState(() {
+                                  _editing = false;
+                                });
+                              },
+                              onTapOutside: (_) {
+                                setState(() {
+                                  _editing = false;
+                                });
+                              },
+                              focusNode: _focusNode,
+                            ),
+                          )
+                        : Flexible(
+                            child: GestureDetector(
+                              onDoubleTap: _editing
+                                  ? null
+                                  : () => {
+                                        setState(() {
+                                          _editing = true;
+                                          _focusNode.requestFocus();
+                                        })
+                                      },
+                              child: Text(
+                                widget.goal.text,
+                                style: textTheme.headlineMedium,
+                              ),
                             ),
                           ),
-                        ),
-                  SizedBox(width: uiUnit(2)),
-                  StatusChip(goal: widget.goal)
-                ]),
-            widget.hoverActionsBuilder(widget.goal.id),
-          ],
-        ),
+                    SizedBox(width: uiUnit(2)),
+                    StatusChip(goal: widget.goal)
+                  ]),
+              widget.hoverActionsBuilder(widget.goal.id),
+            ],
+          ),
         breadcrumbs(),
         if (widget.goal.subGoals.isNotEmpty) ...[
           SizedBox(height: uiUnit(2)),

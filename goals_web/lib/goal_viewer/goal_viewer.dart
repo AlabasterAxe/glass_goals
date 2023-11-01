@@ -61,7 +61,7 @@ enum TimeSlice {
   final TimeSlice? zoomDown;
   final String displayName;
 
-  startTime(DateTime now) {
+  DateTime? startTime(DateTime now) {
     switch (this) {
       case TimeSlice.today:
         return now.startOfDay;
@@ -78,7 +78,7 @@ enum TimeSlice {
     }
   }
 
-  endTime(DateTime now) {
+  DateTime? endTime(DateTime now) {
     switch (this) {
       case TimeSlice.today:
         return now.endOfDay;
@@ -411,7 +411,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   @override
   Widget build(BuildContext context) {
-    final focusedGoal = ref.watch(focusedGoalProvider);
+    final focusedGoalId = ref.watch(focusedGoalProvider);
     final worldContext = ref.watch(worldContextProvider);
     final selectedGoals = ref.watch(selectedGoalsProvider);
     final isEditingText = ref.watch(isEditingTextProvider);
@@ -424,12 +424,19 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       children.add(_viewSwitcher(false));
     }
 
-    if (!isNarrow || focusedGoal == null) {
+    var appBarTitle = 'Glass Goals';
+    if (!isNarrow || focusedGoalId == null) {
       children.add(_listView(worldContext));
+      if (isNarrow) {
+        appBarTitle = _filter.displayName;
+      }
     }
 
-    if (focusedGoal != null) {
+    if (focusedGoalId != null) {
       children.add(_detailView());
+      if (isNarrow) {
+        appBarTitle = widget.goalMap[focusedGoalId]!.text;
+      }
     }
 
     return RawKeyboardListener(
@@ -451,12 +458,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                   ),
                 ),
               ),
-              const Text('Glass Goals'),
+              Text(appBarTitle),
             ],
           ),
           centerTitle: false,
           leading: isNarrow
-              ? focusedGoal != null
+              ? focusedGoalId != null
                   ? IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () {
@@ -471,7 +478,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                     })
               : null,
         ),
-        drawer: isNarrow && focusedGoal == null
+        drawer: isNarrow && focusedGoalId == null
             ? Drawer(
                 child: _viewSwitcher(true),
               )
@@ -488,27 +495,26 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         children: children,
                       )),
             ),
-            isNarrow && selectedGoals.isNotEmpty
-                ? Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: uiUnit(16),
-                    child: Container(
-                      color: lightBackground,
-                      child: isEditingText
-                          ? const TextEditingControls()
-                          : HoverActionsWidget(
-                              onUnarchive: onUnarchive,
-                              onArchive: onArchive,
-                              onDone: onDone,
-                              onSnooze: onSnooze,
-                              onActive: onActive,
-                              goalMap: widget.goalMap,
-                              mainAxisSize: MainAxisSize.max,
-                            ),
-                    ))
-                : Container(),
+            if (isNarrow && (selectedGoals.isNotEmpty || focusedGoalId != null))
+              Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: uiUnit(16),
+                  child: Container(
+                    color: lightBackground,
+                    child: isEditingText
+                        ? const TextEditingControls()
+                        : HoverActionsWidget(
+                            onUnarchive: onUnarchive,
+                            onArchive: onArchive,
+                            onDone: onDone,
+                            onSnooze: onSnooze,
+                            onActive: onActive,
+                            goalMap: widget.goalMap,
+                            mainAxisSize: MainAxisSize.max,
+                          ),
+                  ))
           ],
         ),
       ),
@@ -565,16 +571,23 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     );
   }
 
-  Widget _yesterdaysActiveGoals(WorldContext context) {
-    final yesterdayContext = WorldContext(
-        time: context.time
-            .subtract(const Duration(days: 1))
-            .copyWith(hour: 22, minute: 0, second: 0));
+  Widget? _previousTimeSliceGoals(WorldContext context, TimeSlice slice) {
+    final endOfPreviousSlice =
+        slice.startTime(context.time)?.subtract(const Duration(seconds: 1));
+
+    if (endOfPreviousSlice == null) {
+      return null;
+    }
+    final yesterdayContext = WorldContext(time: endOfPreviousSlice);
+
     var goalMap = getGoalsForDateRange(
-        yesterdayContext,
-        widget.goalMap,
-        TimeSlice.today.startTime(yesterdayContext.time),
-        TimeSlice.today.endTime(yesterdayContext.time));
+      yesterdayContext,
+      widget.goalMap,
+      slice.startTime(yesterdayContext.time),
+      slice.endTime(yesterdayContext.time),
+      slice.zoomDown?.startTime(yesterdayContext.time),
+      slice.zoomDown?.endTime(yesterdayContext.time),
+    );
 
     goalMap = {
       for (final key in goalMap.keys)
@@ -599,6 +612,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                   a.text.toLowerCase().compareTo(b.text.toLowerCase())))
             .map((g) => g.id)
             .toList();
+
+    if (goalMap.isEmpty || goalIds.isEmpty) {
+      return null;
+    }
+
     return GoalListWidget(
       goalMap: goalMap,
       goalIds: goalIds,
@@ -618,7 +636,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     );
   }
 
-  Widget _orphanedGoals(WorldContext context) {
+  Widget? _orphanedGoals(WorldContext context) {
     final goalMap = getGoalsRequiringAttention(context, widget.goalMap);
 
     final goalIds = _mode == GoalViewMode.tree
@@ -638,6 +656,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                   a.text.toLowerCase().compareTo(b.text.toLowerCase())))
             .map((g) => g.id)
             .toList();
+
+    if (goalMap.isEmpty || goalIds.isEmpty) {
+      return null;
+    }
     return GoalListWidget(
       goalMap: goalMap,
       goalIds: goalIds,
@@ -659,41 +681,24 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   Widget _listView(WorldContext worldContext) {
     final theme = Theme.of(context).textTheme;
+    final isNarrow = MediaQuery.of(context).size.width < 600;
     return Column(
       key: const ValueKey('list'),
       children: [
-        Padding(
-          padding: EdgeInsets.all(uiUnit(2)),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                _filter.displayName,
-                style: theme.headlineMedium,
-              ),
-              _mode == GoalViewMode.list
-                  ? Tooltip(
-                      message: 'View goals as a tree',
-                      child: IconButton(
-                        icon: const Icon(Icons.account_tree),
-                        onPressed: () {
-                          onSwitchDisplayMode(GoalViewMode.tree);
-                        },
-                      ),
-                    )
-                  : Tooltip(
-                      message: 'View goals as a list',
-                      child: IconButton(
-                        icon: const Icon(Icons.list),
-                        onPressed: () {
-                          onSwitchDisplayMode(GoalViewMode.list);
-                        },
-                      ),
-                    )
-            ],
+        if (!isNarrow)
+          Padding(
+            padding: EdgeInsets.all(uiUnit(2)),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  _filter.displayName,
+                  style: theme.headlineMedium,
+                ),
+              ],
+            ),
           ),
-        ),
         Expanded(
           child: SingleChildScrollView(
               child: FutureBuilder<void>(
@@ -742,23 +747,30 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onAddGoal: this._onAddGoal,
                         );
                       case GoalFilter.to_review:
-                        return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: EdgeInsets.all(uiUnit(2)),
-                                child: Text('Unscheduled Goals',
-                                    style: theme.headlineSmall),
-                              ),
-                              _orphanedGoals(worldContext),
-                              Padding(
-                                padding: EdgeInsets.all(uiUnit(2)),
-                                child: Text('Yesterday\'s Active Goals',
-                                    style: theme.headlineSmall),
-                              ),
-                              _yesterdaysActiveGoals(worldContext),
-                            ]);
+                        final toReview = {
+                          'Orphaned Goals': _orphanedGoals(worldContext),
+                          'Yesterday\'s Active Goals': _previousTimeSliceGoals(
+                              worldContext, TimeSlice.today),
+                        };
 
+                        final nothingToReview =
+                            toReview.values.every((element) => element == null);
+
+                        return nothingToReview
+                            ? Text('All caught up!', style: theme.headlineSmall)
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                    for (final entry in toReview.entries)
+                                      if (entry.value != null) ...[
+                                        Padding(
+                                          padding: EdgeInsets.all(uiUnit(2)),
+                                          child: Text(entry.key,
+                                              style: theme.headlineSmall),
+                                        ),
+                                        entry.value!
+                                      ]
+                                  ]);
                       case GoalFilter.pending:
                         goalMap = getGoalsMatchingPredicate(
                             worldContext,
@@ -804,8 +816,27 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           onAddGoal: this._onAddGoal,
                         );
                       case GoalFilter.today:
-                        return _timeSlice(worldContext, TimeSlice.today) ??
-                            Text('No Goals!');
+                        final additionalSections = {
+                          'Yesterday': _previousTimeSliceGoals(
+                              worldContext, TimeSlice.today),
+                          'This Week':
+                              _timeSlice(worldContext, TimeSlice.this_week),
+                        };
+                        return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _timeSlice(worldContext, TimeSlice.today) ??
+                                  Text('No Goals!'),
+                              for (final entry in additionalSections.entries)
+                                if (entry.value != null) ...[
+                                  Padding(
+                                    padding: EdgeInsets.all(uiUnit(2)),
+                                    child: Text(entry.key,
+                                        style: theme.headlineSmall),
+                                  ),
+                                  entry.value!
+                                ]
+                            ]);
                       case GoalFilter.this_week:
                         return _timeSlice(worldContext, TimeSlice.this_week) ??
                             Text('No Goals!');
