@@ -238,7 +238,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
   }
 
-  _onSetStatus(String? goalId, GoalStatus? status, [DateTime? endTime]) {
+  _onSetStatus(String? goalId, GoalStatus? status,
+      {DateTime? startTime, DateTime? endTime}) {
     final List<GoalDelta> goalDeltas = [];
     final selectedGoals = ref.read(selectedGoalsProvider);
     if (goalId == null || selectedGoals.contains(goalId)) {
@@ -249,7 +250,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             id: const Uuid().v4(),
             creationTime: DateTime.now(),
             status: status,
-            startTime: DateTime.now(),
+            startTime: startTime ?? DateTime.now(),
             endTime: endTime,
           ),
         ));
@@ -261,7 +262,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
           id: const Uuid().v4(),
           creationTime: DateTime.now(),
           status: status,
-          startTime: DateTime.now(),
+          startTime: startTime ?? DateTime.now(),
           endTime: endTime,
         ),
       ));
@@ -288,15 +289,16 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             .containsAll([focusedGoalId, goalId])) {
       this.ref.read(focusedGoalProvider.notifier).set(null);
     }
-    this._onSetStatus(goalId, GoalStatus.done, endDate);
+    this._onSetStatus(goalId, GoalStatus.done, endTime: endDate);
   }
 
   onSnooze(String? goalId, DateTime? endDate) {
-    this._onSetStatus(goalId, GoalStatus.pending, endDate);
+    this._onSetStatus(goalId, GoalStatus.pending, endTime: endDate);
   }
 
-  onActive(String? goalId, DateTime? endDate) {
-    this._onSetStatus(goalId, GoalStatus.active, endDate);
+  onActive(String? goalId, {DateTime? startTime, DateTime? endTime}) {
+    this._onSetStatus(goalId, GoalStatus.active,
+        startTime: startTime, endTime: endTime);
   }
 
   _handlePopState(_) {

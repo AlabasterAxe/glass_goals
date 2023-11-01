@@ -26,9 +26,9 @@ typedef HoverActionsBuilder = Widget Function(String? goalId);
 class HoverActionsWidget extends ConsumerStatefulWidget {
   final Function(String?) onUnarchive;
   final Function(String?) onArchive;
-  final Function(String?, DateTime? endDate) onDone;
-  final Function(String?, DateTime? endDate) onSnooze;
-  final Function(String?, DateTime? endDate) onActive;
+  final Function(String?, DateTime?) onDone;
+  final Function(String?, DateTime?) onSnooze;
+  final Function(String?, {DateTime startTime, DateTime? endTime}) onActive;
   final Map<String, Goal> goalMap;
   final MainAxisSize mainAxisSize;
 
@@ -86,28 +86,33 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
             menuChildren: [
               MenuItemButton(
                 child: const Text('Today'),
-                onPressed: () =>
-                    widget.onActive(widget.goalId, DateTime.now().endOfDay),
+                onPressed: () => widget.onActive(widget.goalId,
+                    startTime: DateTime.now().startOfDay,
+                    endTime: DateTime.now().endOfDay),
               ),
               MenuItemButton(
                 child: const Text('This Week'),
-                onPressed: () =>
-                    widget.onActive(widget.goalId, DateTime.now().endOfWeek),
+                onPressed: () => widget.onActive(widget.goalId,
+                    startTime: DateTime.now().startOfWeek,
+                    endTime: DateTime.now().endOfWeek),
               ),
               MenuItemButton(
                 child: const Text('This Month'),
-                onPressed: () =>
-                    widget.onActive(widget.goalId, DateTime.now().endOfMonth),
+                onPressed: () => widget.onActive(widget.goalId,
+                    startTime: DateTime.now().startOfMonth,
+                    endTime: DateTime.now().endOfMonth),
               ),
               MenuItemButton(
                 child: const Text('This Quarter'),
-                onPressed: () =>
-                    widget.onActive(widget.goalId, DateTime.now().endOfQuarter),
+                onPressed: () => widget.onActive(widget.goalId,
+                    startTime: DateTime.now().startOfQuarter,
+                    endTime: DateTime.now().endOfQuarter),
               ),
               MenuItemButton(
                 child: const Text('This Year'),
-                onPressed: () =>
-                    widget.onActive(widget.goalId, DateTime.now().endOfYear),
+                onPressed: () => widget.onActive(widget.goalId,
+                    startTime: DateTime.now().startOfYear,
+                    endTime: DateTime.now().endOfYear),
               ),
               MenuItemButton(
                   child: const Text('Until a future Date...'),
@@ -120,12 +125,12 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                       locale: const Locale('en', 'GB'),
                     );
                     if (date != null) {
-                      widget.onActive(widget.goalId, date.endOfDay);
+                      widget.onActive(widget.goalId, endTime: date.endOfDay);
                     }
                   }),
               MenuItemButton(
                 child: const Text('Forever'),
-                onPressed: () => widget.onActive(widget.goalId, null),
+                onPressed: () => widget.onActive(widget.goalId),
               ),
             ],
             child: IconButton(
