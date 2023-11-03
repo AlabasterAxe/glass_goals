@@ -14,11 +14,10 @@ bool statusIsBetweenDatesInclusive(
   return (start == null ||
           (status.startTime != null &&
               status.startTime!
-                  .isAfter(start.subtract(const Duration(microseconds: 1))))) &&
+                  .isAfter(start.subtract(const Duration(seconds: 1))))) &&
       (end == null ||
           (status.endTime != null &&
-              status.endTime!
-                  .isBefore(end.add(const Duration(microseconds: 1)))));
+              status.endTime!.isBefore(end.add(const Duration(seconds: 1)))));
 }
 
 isWithinDay(
