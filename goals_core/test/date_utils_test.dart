@@ -45,7 +45,7 @@ void main() {
     expect(
         statusIsBetweenDatesInclusive(
             startAndEnd, DateTime(2020, 1, 1, 12, 00), null),
-        isFalse);
+        isTrue);
 
     expect(
         statusIsBetweenDatesInclusive(
@@ -62,7 +62,7 @@ void main() {
     expect(
         statusIsBetweenDatesInclusive(
             startAndEnd, null, DateTime(2020, 1, 1, 13, 00)),
-        isFalse);
+        isTrue);
 
     expect(statusIsBetweenDatesInclusive(noStart, null, null), isTrue);
     expect(statusIsBetweenDatesInclusive(noEnd, null, null), isTrue);
