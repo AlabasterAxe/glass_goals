@@ -24,6 +24,5 @@ void main() async {
   usePathUrlStrategy();
   runApp(ProviderScope(
       child: WebGoals(
-          debug: true,
-          persistenceService: FirestorePersistenceService(readonly: true))));
+          debug: true, persistenceService: FirestorePersistenceService())));
 }

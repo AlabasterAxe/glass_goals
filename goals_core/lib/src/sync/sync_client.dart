@@ -198,17 +198,18 @@ class SyncClient {
     final int? cursor = appBox.get('syncCursor');
     final List<String> ops =
         (appBox.get('ops', defaultValue: []) as List<dynamic>).cast<String>();
-    final Set<String> localOps =
-        Set.from(_getOpsFromBox('ops').map((op) => op.hlcTimestamp));
+    String? maxHlcTimestamp;
+    final Set<String> localOps = Set.from(_getOpsFromBox('ops').map((op) {
+      if (maxHlcTimestamp == null ||
+          op.hlcTimestamp.compareTo(maxHlcTimestamp!) > 0) {
+        maxHlcTimestamp = op.hlcTimestamp;
+      }
+      return op.hlcTimestamp;
+    }));
 
     final result = await persistenceService!.load(cursor: cursor);
     appBox.put('syncCursor', result.cursor);
-    String? maxHlcTimestamp;
     for (Op op in result.ops) {
-      if (maxHlcTimestamp == null ||
-          op.hlcTimestamp.compareTo(maxHlcTimestamp) > 0) {
-        maxHlcTimestamp = op.hlcTimestamp;
-      }
       if (!localOps.contains(op.hlcTimestamp)) {
         ops.add(Op.toJson(op));
       }
@@ -217,7 +218,7 @@ class SyncClient {
     Iterable<Op> unsyncedOps = _getOpsFromBox('unsyncedOps');
     if (unsyncedOps.isNotEmpty) {
       unsyncedOps = _reHlcOps(
-          maxHlcTimestamp != null ? HLC.unpack(maxHlcTimestamp) : null,
+          maxHlcTimestamp != null ? HLC.unpack(maxHlcTimestamp!) : null,
           unsyncedOps.toList().reversed);
       try {
         await persistenceService!.save(unsyncedOps);

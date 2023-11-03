@@ -1,4 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart' show FirebaseFirestore;
+import 'package:cloud_firestore/cloud_firestore.dart'
+    show FieldPath, FirebaseFirestore;
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:flutter/foundation.dart';
 import 'package:gsheets/gsheets.dart' show GSheets, Worksheet;
@@ -17,7 +18,7 @@ Future<Map<String, dynamic>> loadSheetsSpec() async {
 
 class LoadOpsResp {
   final List<Op> ops;
-  final int cursor;
+  final int? cursor;
   LoadOpsResp(this.ops, this.cursor);
 }
 
@@ -94,13 +95,16 @@ class FirestorePersistenceService implements PersistenceService {
 
   @override
   Future<LoadOpsResp> load({int? cursor}) async {
+    if (FirebaseAuth.instance.currentUser == null) {
+      return LoadOpsResp([], null);
+    }
     List<Op> newOps = [];
-    final rowQuery = db
+    var rowQuery = db
         .collection('ops')
         .where('viewers', arrayContains: FirebaseAuth.instance.currentUser!.uid)
-        .orderBy('id');
+        .orderBy(FieldPath.documentId);
     if (cursor != null) {
-      rowQuery.startAfter(['00${cursor - 60000}']);
+      rowQuery = rowQuery.startAfter(['00${cursor - 60000}']);
     }
 
     final allRows = await rowQuery.get();
