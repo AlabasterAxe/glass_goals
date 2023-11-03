@@ -324,7 +324,7 @@ class StatusLogEntry extends GoalLogEntry {
 
   @override
   String toString() {
-    return 'Status: $status ${startTime != null ? 'from ${startTime}' : ''} ${endTime != null ? 'until ${startTime}' : ''} {id: $id, creationTime: $creationTime}';
+    return 'Status: $status ${startTime != null ? 'from ${startTime}' : ''} ${endTime != null ? 'until ${endTime}' : ''} {id: $id, creationTime: $creationTime}';
   }
 }
 

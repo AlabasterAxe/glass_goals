@@ -14,10 +14,11 @@ bool statusIsBetweenDatesInclusive(
   return (start == null ||
           (status.startTime != null &&
               status.startTime!
-                  .isAfter(start.subtract(const Duration(seconds: 1))))) &&
+                  .isAfter(start.subtract(const Duration(microseconds: 1))))) &&
       (end == null ||
           (status.endTime != null &&
-              status.endTime!.isBefore(end.add(const Duration(seconds: 1)))));
+              status.endTime!
+                  .isBefore(end.add(const Duration(microseconds: 1)))));
 }
 
 isWithinDay(
@@ -27,36 +28,38 @@ isWithinDay(
   return statusIsBetweenDatesInclusive(
     status,
     now.startOfDay,
-    now.endOfDay.add(const Duration(seconds: 1)),
+    now.endOfDay,
   );
 }
 
 extension DateTimeExtension on DateTime {
-  DateTime get startOfDay => this.copyWith(hour: 0, minute: 0, second: 0);
-  DateTime get endOfDay => this.copyWith(hour: 23, minute: 59, second: 59);
+  DateTime get startOfDay => this
+      .copyWith(hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
+  DateTime get endOfDay => this.copyWith(
+      hour: 23, minute: 59, second: 59, millisecond: 999, microsecond: 999);
   DateTime get startOfWeek =>
       this.startOfDay.subtract(Duration(days: this.weekday - 1));
   DateTime get endOfWeek => this
       .startOfWeek
       .add(const Duration(days: 7))
-      .subtract(const Duration(seconds: 1));
+      .subtract(const Duration(microseconds: 1));
 
-  DateTime get startOfMonth =>
-      this.copyWith(day: 1, hour: 0, minute: 0, second: 0);
-  DateTime get endOfMonth => DateTime(this.year, this.month + 1, 1)
-      .subtract(const Duration(seconds: 1));
+  DateTime get startOfMonth => this.copyWith(
+      day: 1, hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
+  DateTime get endOfMonth => DateTime(this.year, this.month + 1)
+      .subtract(const Duration(microseconds: 1));
   DateTime get startOfQuarter =>
-      DateTime(this.year, (this.month / 3).ceil() * 3 - 2, 1);
+      DateTime(this.year, (this.month / 3).ceil() * 3 - 2);
   DateTime get endOfQuarter {
     final currentQuarter = (this.month / 3).ceil();
     return currentQuarter == 4
-        ? DateTime(this.year + 1, 1, 1).subtract(const Duration(seconds: 1))
-        : DateTime(this.year, currentQuarter * 3 + 1, 1)
-            .subtract(const Duration(seconds: 1));
+        ? DateTime(this.year + 1).subtract(const Duration(microseconds: 1))
+        : DateTime(this.year, currentQuarter * 3 + 1)
+            .subtract(const Duration(microseconds: 1));
   }
 
-  DateTime get startOfYear => DateTime(this.year, 1, 1);
-  DateTime get endOfYear => DateTime(this.year, 12, 31, 23, 59, 59);
+  DateTime get startOfYear => DateTime(this.year);
+  DateTime get endOfYear => DateTime(this.year, 12, 31, 23, 59, 59, 999, 999);
 }
 
 /// Whether or not this goal status is completely contained within the current week.
@@ -74,8 +77,8 @@ isWithinCalendarMonth(DateTime now, StatusLogEntry status) {
 }
 
 isWithinQuarter(DateTime now, StatusLogEntry status) {
-  return statusIsBetweenDatesInclusive(status, now.startOfQuarter,
-      now.endOfQuarter.add(const Duration(seconds: 1)));
+  return statusIsBetweenDatesInclusive(
+      status, now.startOfQuarter, now.endOfQuarter);
 }
 
 isWithinCalendarYear(DateTime now, StatusLogEntry status) {
