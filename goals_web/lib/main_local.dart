@@ -1,6 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:firebase_core/firebase_core.dart' show Firebase;
-import 'package:firebase_ui_auth/firebase_ui_auth.dart';
-import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show FirebaseFirestore;
+import 'package:firebase_ui_auth/firebase_ui_auth.dart' show FirebaseUIAuth;
+import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart'
+    show GoogleProvider;
 import 'package:flutter/material.dart';
 import 'package:goals_core/sync.dart' show FirestorePersistenceService;
 import 'package:goals_web/firebase_options.dart';
@@ -13,17 +16,18 @@ import 'app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await Hive.initFlutter();
+  FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
+  await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
 
   FirebaseUIAuth.configureProviders([
     GoogleProvider(
         clientId:
             '114797465949-keupvd032s4to34t1bkftge1baoguld5.apps.googleusercontent.com'),
   ]);
+  await Hive.initFlutter();
 
   usePathUrlStrategy();
   runApp(ProviderScope(
       child: WebGoals(
-          debug: true,
-          persistenceService: FirestorePersistenceService(readonly: true))));
+          debug: true, persistenceService: FirestorePersistenceService())));
 }

@@ -95,10 +95,15 @@ class FirestorePersistenceService implements PersistenceService {
   @override
   Future<LoadOpsResp> load({int? cursor}) async {
     List<Op> newOps = [];
-    final allRows = await db
+    final rowQuery = db
         .collection('ops')
         .where('viewers', arrayContains: FirebaseAuth.instance.currentUser!.uid)
-        .get();
+        .orderBy('id');
+    if (cursor != null) {
+      rowQuery.startAfter(['00${cursor - 60000}']);
+    }
+
+    final allRows = await rowQuery.get();
 
     for (final row in allRows.docs) {
       final rowData = row.data();
@@ -107,7 +112,7 @@ class FirestorePersistenceService implements PersistenceService {
       newOps.add(Op(hlcTimestamp: hlcTimestamp, delta: delta));
     }
 
-    return LoadOpsResp(newOps, 0);
+    return LoadOpsResp(newOps, DateTime.now().millisecondsSinceEpoch);
   }
 
   @override

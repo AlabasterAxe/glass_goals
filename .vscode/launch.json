@@ -36,5 +36,11 @@
             "type": "dart",
             "program": "goals_web/lib/main_unauthed.dart",
         },
+        {
+            "name": "goals_web (local server)",
+            "request": "launch",
+            "type": "dart",
+            "program": "goals_web/lib/main_local.dart",
+        },
     ]
 }

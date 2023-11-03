@@ -1,0 +1,33 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{databaseId}/documents {
+    match /ops/{opId} {
+        function isSignedIn() {
+          return request.auth != null;
+        }
+        
+        function inViewers(rsc) {
+          return request.auth.uid in rsc.data.viewers;
+        }
+        
+        function getTimestamp(hlc) {
+          return int(hlc.split(':')[0]);
+        }
+        
+        function isTooOld(hlc) {
+          return getTimestamp(hlc) < (request.time.toMillis() - 60000);
+        }
+        
+        function isValidNewOp() {
+          return resource == null && inViewers(request.resource) && !isTooOld(request.resource.id);
+        }
+        
+        allow write: if isValidNewOp();
+        allow read: if isSignedIn() && inViewers(resource);
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

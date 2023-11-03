@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:collection/collection.dart';
 import 'package:hive/hive.dart' show Box, Hive;
 import 'package:hlc/hlc.dart';
 import 'package:rxdart/rxdart.dart' show BehaviorSubject, Subject;
@@ -17,9 +18,10 @@ class SyncClient {
   Subject<Map<String, Goal>> stateSubject =
       BehaviorSubject.seeded(initialGoalState());
   late HLC hlc;
-  String? clientId;
+  late String clientId;
   late Box appBox;
   final PersistenceService? persistenceService;
+  Future<void> syncFuture = Future.value();
 
   SyncClient({this.persistenceService});
 
@@ -170,7 +172,26 @@ class SyncClient {
     return stateSubject.add(goals);
   }
 
+  Iterable<Op> _reHlcOps(HLC? remote, Iterable<Op> ops) {
+    if (remote != null) {
+      this.hlc.receive(remote);
+    }
+
+    List<Op> result = [];
+    for (Op op
+        in ops.sorted(((a, b) => a.hlcTimestamp.compareTo(b.hlcTimestamp)))) {
+      result
+          .add(Op.fromJsonMap(Op.toJsonMap(op)..['hlcTimestamp'] = hlc.pack()));
+      this.hlc = this.hlc.increment();
+    }
+    return result;
+  }
+
   Future<void> sync() async {
+    final currentSyncFuture = this.syncFuture;
+    final syncCompleter = Completer<void>();
+    this.syncFuture = syncCompleter.future;
+    await currentSyncFuture;
     if (persistenceService == null) {
       return;
     }
@@ -182,14 +203,22 @@ class SyncClient {
 
     final result = await persistenceService!.load(cursor: cursor);
     appBox.put('syncCursor', result.cursor);
+    String? maxHlcTimestamp;
     for (Op op in result.ops) {
+      if (maxHlcTimestamp == null ||
+          op.hlcTimestamp.compareTo(maxHlcTimestamp) > 0) {
+        maxHlcTimestamp = op.hlcTimestamp;
+      }
       if (!localOps.contains(op.hlcTimestamp)) {
         ops.add(Op.toJson(op));
       }
     }
 
-    final Iterable<Op> unsyncedOps = _getOpsFromBox('unsyncedOps');
+    Iterable<Op> unsyncedOps = _getOpsFromBox('unsyncedOps');
     if (unsyncedOps.isNotEmpty) {
+      unsyncedOps = _reHlcOps(
+          maxHlcTimestamp != null ? HLC.unpack(maxHlcTimestamp) : null,
+          unsyncedOps.toList().reversed);
       try {
         await persistenceService!.save(unsyncedOps);
         ops.addAll(unsyncedOps.map(Op.toJson));
@@ -200,6 +229,7 @@ class SyncClient {
     }
     await appBox.put('ops', ops);
     await appBox.put('lastSyncDateTime', DateTime.now().toIso8601String());
+    syncCompleter.complete();
     _computeState();
   }
 }

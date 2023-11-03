@@ -245,7 +245,7 @@ packages:
       path: "../goals_types"
       relative: true
     source: path
-    version: "2.0.0"
+    version: "4.0.0"
   goals_types_01:
     dependency: transitive
     description:
@@ -254,6 +254,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.1"
+  goals_types_02:
+    dependency: transitive
+    description:
+      name: goals_types_02
+      sha256: "5fdf7e3a86bbcd429b1933ea49c035b360de7e5cda67da2c38c9847faf3cc1ab"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
+  goals_types_03:
+    dependency: transitive
+    description:
+      name: goals_types_03
+      sha256: b31eab20dfa49b957400fdb38cb6f936a70c174bec984433a5701d5910faf74e
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
   googleapis:
     dependency: transitive
     description:
@@ -326,6 +342,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.3.0"
+  intl:
+    dependency: transitive
+    description:
+      name: intl
+      sha256: "3bc132a9dbce73a7e4a21a17d06e1878839ffbf975568bc875c60537824b0c4d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.18.1"
   js:
     dependency: transitive
     description:
@@ -562,6 +586,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
+  sprintf:
+    dependency: transitive
+    description:
+      name: sprintf
+      sha256: "1fc9ffe69d4df602376b52949af107d8f5703b77cda567c4d7d86a0693120f23"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.0.0"
   stack_trace:
     dependency: transitive
     description:
@@ -614,10 +646,10 @@ packages:
     dependency: "direct main"
     description:
       name: uuid
-      sha256: "648e103079f7c64a36dc7d39369cabb358d377078a051d6ae2ad3aa539519313"
+      sha256: b715b8d3858b6fa9f68f87d20d98830283628014750c2b09b6f516c1da4af2a7
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.7"
+    version: "4.1.0"
   vector_math:
     dependency: transitive
     description:

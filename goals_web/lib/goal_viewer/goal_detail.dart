@@ -326,23 +326,21 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
             ],
           ),
         breadcrumbs(),
-        if (widget.goal.subGoals.isNotEmpty) ...[
-          SizedBox(height: uiUnit(2)),
-          Text('Subgoals', style: textTheme.headlineSmall),
-          SizedBox(height: uiUnit(1)),
-          GoalListWidget(
-            goalMap: subgoalMap,
-            goalIds: widget.goal.subGoals
-                .where((g) => subgoalMap.containsKey(g.id))
-                .map((g) => g.id)
-                .toList(),
-            onSelected: widget.onSelected,
-            onExpanded: widget.onExpanded,
-            onFocused: widget.onFocused,
-            hoverActionsBuilder: widget.hoverActionsBuilder,
-            onAddGoal: widget.onAddGoal,
-          )
-        ],
+        SizedBox(height: uiUnit(2)),
+        Text('Subgoals', style: textTheme.headlineSmall),
+        SizedBox(height: uiUnit(1)),
+        GoalListWidget(
+          goalMap: subgoalMap,
+          goalIds: widget.goal.subGoals
+              .where((g) => subgoalMap.containsKey(g.id))
+              .map((g) => g.id)
+              .toList(),
+          onSelected: widget.onSelected,
+          onExpanded: widget.onExpanded,
+          onFocused: widget.onFocused,
+          hoverActionsBuilder: widget.hoverActionsBuilder,
+          onAddGoal: widget.onAddGoal,
+        ),
         SizedBox(height: uiUnit(2)),
         Text('Notes', style: textTheme.headlineSmall),
         SizedBox(height: uiUnit(1)),
