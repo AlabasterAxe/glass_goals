@@ -1,5 +1,6 @@
 import 'package:goals_core/model.dart';
 import 'package:goals_core/sync.dart';
+import 'package:goals_core/util.dart';
 import 'package:hive/hive.dart';
 import 'package:hlc/hlc.dart';
 import 'package:test/test.dart';
@@ -301,5 +302,82 @@ void main() {
     expect(requiringAttention, contains('child'));
     expect(requiringAttention, contains('sub-child-1'));
     expect(requiringAttention, contains('sub-child-2'));
+  });
+
+  test('getGoalsForDateRange', () async {
+    final client = SyncClient();
+
+    Hive.init(".");
+    await client.init();
+
+    final Map<String, Goal> goals = {};
+    var hlc = HLC.now("test");
+
+    tick() {
+      hlc = hlc.increment();
+      return hlc.pack();
+    }
+
+    final now = DateTime(2020, 1, 1, 12);
+
+    client.applyOps(goals, [
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'root', logEntry: StatusLogEntry(id: '1', creationTime: now)),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'child',
+            logEntry: SetParentLogEntry(
+                id: '2', parentId: 'root', creationTime: now)),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'child',
+            logEntry: StatusLogEntry(
+                id: '3', status: GoalStatus.active, creationTime: now)),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-1',
+            logEntry: SetParentLogEntry(
+                id: '4', parentId: 'child', creationTime: now)),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-1',
+            logEntry: StatusLogEntry(
+                id: '5', status: GoalStatus.active, creationTime: now)),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-2',
+            logEntry: SetParentLogEntry(
+                id: '6', parentId: 'child', creationTime: now)),
+      ),
+      Op(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-2',
+            logEntry: StatusLogEntry(
+              id: '7',
+              status: GoalStatus.active,
+              creationTime: now,
+              startTime: now.startOfYear,
+              endTime: now.endOfYear,
+            )),
+      ),
+    ]);
+
+    final yearlyGoals = getGoalsForDateRange(WorldContext(time: now), goals,
+        now.startOfYear, now.endOfYear, now.startOfQuarter, now.endOfQuarter);
+
+    expect(yearlyGoals, contains('sub-child-2'));
   });
 }
