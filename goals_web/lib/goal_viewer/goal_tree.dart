@@ -25,6 +25,7 @@ import 'package:uuid/uuid.dart';
 import '../app_context.dart';
 import '../styles.dart' show darkElementColor, uiUnit;
 import 'goal_item.dart' show GoalItemDragHandle, GoalItemWidget;
+import 'goal_list.dart';
 
 class GoalTreeWidget extends StatefulHookConsumerWidget {
   final Map<String, Goal> goalMap;
@@ -56,7 +57,6 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
 class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
   bool hovered = false;
   bool hoverTop = false;
-  bool hoverBottom = false;
   bool dragging = false;
 
   moveGoals(String newParentId, Set<String> goalIds) {
@@ -85,15 +85,6 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          // draw a border on the top if hoverTop, on the bottom if hoverBottom
-          // decoration: BoxDecoration(
-          //     border: Border(
-          //         top: hoverTop
-          //             ? BorderSide(color: darkElementColor, width: 2)
-          //             : BorderSide.none,
-          //         bottom: hoverBottom
-          //             ? BorderSide(color: darkElementColor, width: 2)
-          //             : BorderSide.none)),
           height: uiUnit(10),
           child: Stack(clipBehavior: Clip.none, children: [
             Positioned.fill(
@@ -149,12 +140,14 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                 top: 0,
                 left: 0,
                 right: 0,
-                height: uiUnit(),
+                height: uiUnit(2),
                 child: DragTarget<String>(
                   hitTestBehavior: HitTestBehavior.opaque,
                   onAccept: (droppedGoalId) {
-                    hoverTop = false;
-                    hoverBottom = false;
+                    setState(() {
+                      hoverTop = false;
+                    });
+
                     print('drop on top border!');
                   },
                   onMove: (_) {
@@ -169,40 +162,6 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                   },
                   builder: (context, _, __) => Container(),
                 )),
-            Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: uiUnit(),
-                child: DragTarget<String>(
-                  hitTestBehavior: HitTestBehavior.opaque,
-                  onAccept: (droppedGoalId) {
-                    hoverTop = false;
-                    hoverBottom = false;
-                    print('drop on bottom border!');
-                  },
-                  onMove: (_) {
-                    setState(() {
-                      hoverBottom = true;
-                    });
-                  },
-                  onLeave: (_) {
-                    setState(() {
-                      hoverBottom = false;
-                    });
-                  },
-                  builder: (context, candidateData, rejectedData) =>
-                      Container(),
-                )),
-            if (hoverBottom)
-              Positioned(
-                  bottom: -1,
-                  height: 2,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    color: darkElementColor,
-                  )),
             if (hoverTop)
               Positioned(
                   top: -1,
@@ -218,32 +177,19 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
             ? Row(children: [
                 SizedBox(width: uiUnit(5)),
                 Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (final subGoal in rootGoal.subGoals)
-                          widget.goalMap.containsKey(subGoal.id)
-                              ? GoalTreeWidget(
-                                  goalMap: widget.goalMap,
-                                  rootGoalId: subGoal.id,
-                                  onSelected: widget.onSelected,
-                                  onFocused: widget.onFocused,
-                                  onExpanded: widget.onExpanded,
-                                  depthLimit: widget.depthLimit == null
-                                      ? null
-                                      : widget.depthLimit! - 1,
-                                  hoverActionsBuilder:
-                                      widget.hoverActionsBuilder,
-                                  onAddGoal: widget.onAddGoal,
-                                )
-                              : null,
-                        widget.onAddGoal != null
-                            ? AddSubgoalItemWidget(
-                                parentId: rootGoal.id,
-                                onAddGoal: widget.onAddGoal!,
-                              )
-                            : Container(),
-                      ].where((element) => element != null).toList().cast()),
+                  child: GoalListWidget(
+                    goalMap: widget.goalMap,
+                    goalIds: rootGoal.subGoals.where(widget.goalMap.containsKey).map((e) => e.id).toList(),
+                    onSelected: widget.onSelected,
+                    onExpanded: widget.onExpanded,
+                    onFocused: widget.onFocused,
+                    depthLimit: widget.depthLimit == null
+                        ? null
+                        : widget.depthLimit! - 1,
+                    hoverActionsBuilder: widget.hoverActionsBuilder,
+                    onAddGoal: widget.onAddGoal,
+                  )
+                  ),
                 )
               ])
             : Container()
