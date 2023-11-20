@@ -100,6 +100,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
       required Set<String> selectedGoals}) {
     return Draggable<String>(
       data: widget.goal.id,
+      hitTestBehavior: HitTestBehavior.opaque,
       onDragEnd: (_) => widget.onDragEnd?.call(),
       onDragStarted: widget.onDragStarted,
       feedback: Container(

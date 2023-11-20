@@ -1,4 +1,5 @@
-import 'package:flutter/rendering.dart' show CrossAxisAlignment;
+import 'package:flutter/rendering.dart'
+    show CrossAxisAlignment, HitTestBehavior;
 import 'package:flutter/widgets.dart'
     show
         BuildContext,
@@ -7,8 +8,10 @@ import 'package:flutter/widgets.dart'
         DragTarget,
         Expanded,
         MediaQuery,
+        Positioned,
         Row,
         SizedBox,
+        Stack,
         Widget;
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
@@ -51,6 +54,8 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
 
 class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
   bool hovered = false;
+  bool hoverTop = false;
+  bool hoverBottom = false;
   bool dragging = false;
 
   moveGoals(String newParentId, Set<String> goalIds) {
@@ -78,48 +83,104 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DragTarget<String>(
-          onAccept: (droppedGoalId) {
-            final selectedAndDraggedGoals = {...selectedGoals, droppedGoalId};
-            moveGoals(
-                rootGoal.id,
-                selectedGoals.contains(droppedGoalId)
-                    ? selectedAndDraggedGoals
-                    : {droppedGoalId});
-            ref.read(selectedGoalsProvider.notifier).clear();
-          },
-          onMove: (_) {
-            setState(() {
-              hovered = true;
-            });
-          },
-          onLeave: (_) {
-            setState(() {
-              hovered = false;
-            });
-          },
-          builder: (context, _, __) => GoalItemWidget(
-            goal: rootGoal,
-            onDragEnd: () {
-              setState(() {
-                hovered = false;
-                dragging = false;
-              });
-            },
-            onDragStarted: () {
-              setState(() {
-                dragging = true;
-              });
-            },
-            onFocused: widget.onFocused,
-            focused: isFocused,
-            hovered: hovered && !dragging,
-            hoverActionsBuilder: widget.hoverActionsBuilder,
-            hasRenderableChildren: hasRenderableChildren,
-            onExpanded: widget.onExpanded,
-            dragHandle:
-                isNarrow ? GoalItemDragHandle.bullet : GoalItemDragHandle.item,
-          ),
+        SizedBox(
+          height: uiUnit(10),
+          child: Stack(children: [
+            Positioned.fill(
+              child: DragTarget<String>(
+                onAccept: (droppedGoalId) {
+                  final selectedAndDraggedGoals = {
+                    ...selectedGoals,
+                    droppedGoalId
+                  };
+                  moveGoals(
+                      rootGoal.id,
+                      selectedGoals.contains(droppedGoalId)
+                          ? selectedAndDraggedGoals
+                          : {droppedGoalId});
+                  ref.read(selectedGoalsProvider.notifier).clear();
+                },
+                onMove: (_) {
+                  setState(() {
+                    hovered = true;
+                  });
+                },
+                onLeave: (_) {
+                  setState(() {
+                    hovered = false;
+                  });
+                },
+                builder: (context, _, __) => GoalItemWidget(
+                  goal: rootGoal,
+                  onDragEnd: () {
+                    setState(() {
+                      hovered = false;
+                      dragging = false;
+                    });
+                  },
+                  onDragStarted: () {
+                    setState(() {
+                      dragging = true;
+                    });
+                  },
+                  onFocused: widget.onFocused,
+                  focused: isFocused,
+                  hovered: hovered && !dragging,
+                  hoverActionsBuilder: widget.hoverActionsBuilder,
+                  hasRenderableChildren: hasRenderableChildren,
+                  onExpanded: widget.onExpanded,
+                  dragHandle: isNarrow
+                      ? GoalItemDragHandle.bullet
+                      : GoalItemDragHandle.item,
+                ),
+              ),
+            ),
+            Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: uiUnit(),
+                child: DragTarget<String>(
+                  hitTestBehavior: HitTestBehavior.opaque,
+                  onAccept: (droppedGoalId) {
+                    print('drop on top border!');
+                  },
+                  onMove: (_) {
+                    setState(() {
+                      hoverTop = true;
+                    });
+                  },
+                  onLeave: (_) {
+                    setState(() {
+                      hoverTop = false;
+                    });
+                  },
+                  builder: (context, _, __) => Container(),
+                )),
+            Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: uiUnit(),
+                child: DragTarget<String>(
+                  hitTestBehavior: HitTestBehavior.opaque,
+                  onAccept: (droppedGoalId) {
+                    print('drop on bottom border!');
+                  },
+                  onMove: (_) {
+                    setState(() {
+                      hoverBottom = true;
+                    });
+                  },
+                  onLeave: (_) {
+                    setState(() {
+                      hoverBottom = false;
+                    });
+                  },
+                  builder: (context, candidateData, rejectedData) =>
+                      Container(),
+                ))
+          ]),
         ),
         isExpanded && (widget.depthLimit == null || widget.depthLimit! > 0)
             ? Row(children: [

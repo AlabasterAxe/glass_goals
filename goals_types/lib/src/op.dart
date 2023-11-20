@@ -60,6 +60,8 @@ abstract class GoalLogEntry extends Equatable {
         return ArchiveStatusLogEntry.fromJsonMap(json, version);
       case 'setParent':
         return SetParentLogEntry.fromJsonMap(json, version);
+      case 'priority':
+        return PriorityLogEntry.fromJsonMap(json, version);
       default:
         throw Exception('Invalid data: $json has unknown type: $type');
     }
@@ -100,10 +102,10 @@ abstract class GoalLogEntry extends Equatable {
   }
 }
 
-class PrioritizationLogEntry extends GoalLogEntry {
+class PriorityLogEntry extends GoalLogEntry {
   static const FIRST_VERSION = 4;
-  final double priority;
-  const PrioritizationLogEntry({
+  final double? priority;
+  const PriorityLogEntry({
     required super.creationTime,
     required super.id,
     required this.priority,
@@ -112,7 +114,7 @@ class PrioritizationLogEntry extends GoalLogEntry {
   @override
   List<Object?> get props => [id, creationTime, priority];
 
-  static PrioritizationLogEntry fromJsonMap(dynamic json, int? version) {
+  static PriorityLogEntry fromJsonMap(dynamic json, int? version) {
     if (version != null && version > TYPES_VERSION) {
       throw Exception('Unsupported version: $version');
     }
@@ -121,18 +123,16 @@ class PrioritizationLogEntry extends GoalLogEntry {
       throw Exception(
           'Invalid data: $version is before first version: $FIRST_VERSION');
     }
-    return PrioritizationLogEntry(
+    return PriorityLogEntry(
       id: json['id'],
       priority: json['priority'],
-      creationTime: json['creationTime'] != null
-          ? DateTime.parse(json['creationTime']).toLocal()
-          : DateTime(2023, 1, 1),
+      creationTime: json['creationTime']!,
     );
   }
 
-  static Map<String, dynamic> toJsonMap(PrioritizationLogEntry entry) {
+  static Map<String, dynamic> toJsonMap(PriorityLogEntry entry) {
     return {
-      'type': 'prioritization',
+      'type': 'priority',
       'id': entry.id,
       'priority': entry.priority,
       'creationTime': entry.creationTime.toUtc().toIso8601String(),

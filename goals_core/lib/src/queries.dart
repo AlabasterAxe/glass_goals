@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:goals_types/goals_types.dart';
-import 'package:collection/collection.dart' show IterableZip;
+import 'package:collection/collection.dart' show IterableZip, IterableExtension;
 
 import '../model.dart' show Goal, WorldContext;
 import 'util/date_utils.dart';
@@ -331,6 +331,18 @@ StatusLogEntry getGoalStatus(WorldContext context, Goal goal) {
   }
   return StatusLogEntry(
       id: 'default-status', creationTime: DateTime(1970, 1, 1), status: null);
+}
+
+PriorityLogEntry getGoalPriority(WorldContext context, Goal goal) {
+  return goal.log
+          .whereType<PriorityLogEntry>()
+          .sorted((a, b) => b.creationTime.compareTo(a.creationTime))
+          .firstOrNull ??
+      PriorityLogEntry(
+        id: 'default-priority',
+        creationTime: DateTime(1970, 1, 1),
+        priority: null,
+      );
 }
 
 StatusLogEntry? goalHasStatus(
