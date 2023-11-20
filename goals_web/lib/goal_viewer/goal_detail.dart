@@ -15,6 +15,7 @@ import 'package:goals_web/goal_viewer/status_chip.dart';
 import 'package:goals_web/styles.dart' show mainTextStyle, uiUnit;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
+import 'package:url_launcher/url_launcher.dart' show canLaunchUrl, launchUrl;
 
 class Breadcrumb extends ConsumerWidget {
   final Goal goal;
@@ -157,6 +158,16 @@ class _NoteCardState extends State<NoteCard> {
                           _editing = true;
                           _focusNode.requestFocus();
                         });
+                      }
+                    },
+                    onTapLink: (text, href, title) async {
+                      if (href == null) {
+                        return;
+                      }
+
+                      final url = Uri.parse(href);
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url);
                       }
                     },
                     styleSheet: MarkdownStyleSheet(
