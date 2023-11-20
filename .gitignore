@@ -1,4 +1,3 @@
-
 node_modules/
 
 .flutter-plugins*
@@ -7,3 +6,5 @@ node_modules/
 
 *.sync.hive
 *.sync.lock
+
+flutter_sdk

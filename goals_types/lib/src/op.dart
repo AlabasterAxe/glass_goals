@@ -100,6 +100,46 @@ abstract class GoalLogEntry extends Equatable {
   }
 }
 
+class PrioritizationLogEntry extends GoalLogEntry {
+  static const FIRST_VERSION = 4;
+  final double priority;
+  const PrioritizationLogEntry({
+    required super.creationTime,
+    required super.id,
+    required this.priority,
+  });
+
+  @override
+  List<Object?> get props => [id, creationTime, priority];
+
+  static PrioritizationLogEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    return PrioritizationLogEntry(
+      id: json['id'],
+      priority: json['priority'],
+      creationTime: json['creationTime'] != null
+          ? DateTime.parse(json['creationTime']).toLocal()
+          : DateTime(2023, 1, 1),
+    );
+  }
+
+  static Map<String, dynamic> toJsonMap(PrioritizationLogEntry entry) {
+    return {
+      'type': 'prioritization',
+      'id': entry.id,
+      'priority': entry.priority,
+      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+    };
+  }
+}
+
 class NoteLogEntry extends GoalLogEntry {
   static const FIRST_VERSION = 3;
   final String text;
