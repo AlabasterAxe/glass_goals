@@ -1,5 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart'
-    show CrossAxisAlignment, HitTestBehavior;
+    show Border, BorderSide, BoxDecoration, CrossAxisAlignment, HitTestBehavior;
 import 'package:flutter/widgets.dart'
     show
         BuildContext,
@@ -22,7 +23,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../app_context.dart';
-import '../styles.dart' show uiUnit;
+import '../styles.dart' show darkElementColor, uiUnit;
 import 'goal_item.dart' show GoalItemDragHandle, GoalItemWidget;
 
 class GoalTreeWidget extends StatefulHookConsumerWidget {
@@ -83,9 +84,18 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
+        Container(
+          // draw a border on the top if hoverTop, on the bottom if hoverBottom
+          // decoration: BoxDecoration(
+          //     border: Border(
+          //         top: hoverTop
+          //             ? BorderSide(color: darkElementColor, width: 2)
+          //             : BorderSide.none,
+          //         bottom: hoverBottom
+          //             ? BorderSide(color: darkElementColor, width: 2)
+          //             : BorderSide.none)),
           height: uiUnit(10),
-          child: Stack(children: [
+          child: Stack(clipBehavior: Clip.none, children: [
             Positioned.fill(
               child: DragTarget<String>(
                 onAccept: (droppedGoalId) {
@@ -143,6 +153,8 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                 child: DragTarget<String>(
                   hitTestBehavior: HitTestBehavior.opaque,
                   onAccept: (droppedGoalId) {
+                    hoverTop = false;
+                    hoverBottom = false;
                     print('drop on top border!');
                   },
                   onMove: (_) {
@@ -165,6 +177,8 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                 child: DragTarget<String>(
                   hitTestBehavior: HitTestBehavior.opaque,
                   onAccept: (droppedGoalId) {
+                    hoverTop = false;
+                    hoverBottom = false;
                     print('drop on bottom border!');
                   },
                   onMove: (_) {
@@ -179,7 +193,25 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                   },
                   builder: (context, candidateData, rejectedData) =>
                       Container(),
-                ))
+                )),
+            if (hoverBottom)
+              Positioned(
+                  bottom: -1,
+                  height: 2,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    color: darkElementColor,
+                  )),
+            if (hoverTop)
+              Positioned(
+                  top: -1,
+                  height: 2,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    color: darkElementColor,
+                  )),
           ]),
         ),
         isExpanded && (widget.depthLimit == null || widget.depthLimit! > 0)
