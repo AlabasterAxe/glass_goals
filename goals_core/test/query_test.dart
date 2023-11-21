@@ -380,4 +380,155 @@ void main() {
 
     expect(yearlyGoals, contains('sub-child-2'));
   });
+
+  test('traverseDown', () async {
+    Goal parent = Goal(id: 'parent', text: 'parent');
+    Goal child = Goal(id: 'child', text: 'child');
+
+    parent.addOrReplaceSubGoal(child);
+    child.superGoals.add(parent);
+
+    Goal grandChild = Goal(id: 'grandChild', text: 'grandChild');
+
+    child.addOrReplaceSubGoal(grandChild);
+    grandChild.superGoals.add(child);
+
+    final goalMap = {
+      parent.id: parent,
+      child.id: child,
+      grandChild.id: grandChild
+    };
+
+    final goalIds = [];
+    final paths = [];
+    traverseDown(goalMap, parent.id, (goalId, path) {
+      goalIds.add(goalId);
+      paths.add(path);
+    });
+
+    expect(goalIds, equals(['parent', 'child', 'grandChild']));
+    expect(
+        paths,
+        equals([
+          [],
+          ['parent'],
+          ['parent', 'child']
+        ]));
+  });
+
+  test('traverseDown, stopTraversal', () async {
+    Goal parent = Goal(id: 'parent', text: 'parent');
+    Goal child = Goal(id: 'child', text: 'child');
+
+    parent.addOrReplaceSubGoal(child);
+    child.superGoals.add(parent);
+
+    Goal grandChild = Goal(id: 'grandChild', text: 'grandChild');
+
+    child.addOrReplaceSubGoal(grandChild);
+    grandChild.superGoals.add(child);
+
+    final goalMap = {
+      parent.id: parent,
+      child.id: child,
+      grandChild.id: grandChild
+    };
+
+    final goalIds = [];
+    final paths = [];
+    traverseDown(goalMap, parent.id, (goalId, path) {
+      goalIds.add(goalId);
+      paths.add(path);
+      return TraversalDecision.stopTraversal;
+    });
+
+    expect(goalIds, equals(['parent']));
+    expect(
+        paths,
+        equals([
+          [],
+        ]));
+  });
+
+  test('traverseDown, dontRecurse', () async {
+    Goal parent = Goal(id: 'parent', text: 'parent');
+    Goal child = Goal(id: 'child', text: 'child');
+    Goal sibling = Goal(id: 'sibling', text: 'sibling');
+
+    parent.addOrReplaceSubGoal(child);
+    child.superGoals.add(parent);
+
+    parent.addOrReplaceSubGoal(sibling);
+    sibling.superGoals.add(parent);
+
+    Goal grandChild = Goal(id: 'grandChild', text: 'grandChild');
+
+    child.addOrReplaceSubGoal(grandChild);
+    grandChild.superGoals.add(child);
+
+    final goalMap = {
+      parent.id: parent,
+      child.id: child,
+      grandChild.id: grandChild,
+      sibling.id: sibling,
+    };
+
+    final goalIds = [];
+    final paths = [];
+    traverseDown(goalMap, parent.id, (goalId, path) {
+      goalIds.add(goalId);
+      paths.add(path);
+      if (goalId == 'child') {
+        return TraversalDecision.dontRecurse;
+      }
+      return TraversalDecision.continueTraversal;
+    });
+
+    expect(goalIds, equals(['parent', 'child', 'sibling']));
+    expect(
+        paths,
+        equals([
+          [],
+          ['parent'],
+          ['parent'],
+        ]));
+  });
+
+  test('traverseDown, missing from map', () async {
+    Goal parent = Goal(id: 'parent', text: 'parent');
+    Goal child = Goal(id: 'child', text: 'child');
+    Goal sibling = Goal(id: 'sibling', text: 'sibling');
+
+    parent.addOrReplaceSubGoal(child);
+    child.superGoals.add(parent);
+
+    parent.addOrReplaceSubGoal(sibling);
+    sibling.superGoals.add(parent);
+
+    Goal grandChild = Goal(id: 'grandChild', text: 'grandChild');
+
+    child.addOrReplaceSubGoal(grandChild);
+    grandChild.superGoals.add(child);
+
+    final goalMap = {
+      parent.id: parent,
+      grandChild.id: grandChild,
+      sibling.id: sibling,
+    };
+
+    final goalIds = [];
+    final paths = [];
+    traverseDown(goalMap, parent.id, (goalId, path) {
+      goalIds.add(goalId);
+      paths.add(path);
+    });
+
+    expect(goalIds, equals(['parent', 'sibling']));
+    expect(
+        paths,
+        equals([
+          [],
+          ['parent'],
+        ]));
+  });
 }

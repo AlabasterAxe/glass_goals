@@ -11,7 +11,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../app_context.dart';
 import '../styles.dart';
 import 'providers.dart'
-    show expandedGoalsProvider, hoverEventStream, selectedGoalsProvider;
+    show
+        expandedGoalsProvider,
+        focusedGoalProvider,
+        hoverEventStream,
+        selectedGoalsProvider;
 
 enum GoalItemDragHandle {
   none,
@@ -25,8 +29,6 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
   final Function(String id)? onFocused;
 
   final bool hovered;
-  final bool focused;
-  final Goal? parent;
   final HoverActionsBuilder hoverActionsBuilder;
   final bool hasRenderableChildren;
   final bool showExpansionArrow;
@@ -40,8 +42,6 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
     required this.onExpanded,
     required this.onFocused,
     this.hovered = false,
-    this.focused = false,
-    this.parent,
     required this.hoverActionsBuilder,
     required this.hasRenderableChildren,
     this.showExpansionArrow = true,
@@ -124,6 +124,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     final isExpanded =
         ref.watch(expandedGoalsProvider).contains(widget.goal.id);
     final selectedGoals = ref.watch(selectedGoalsProvider);
+    final isFocused = ref.watch(focusedGoalProvider) == widget.goal.id;
     final isSelected = selectedGoals.contains(widget.goal.id);
     final isNarrow = MediaQuery.of(context).size.width < 600;
     final bullet = SizedBox(
@@ -206,9 +207,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                         _focusNode.requestFocus();
                                       })
                                     },
-                            child: Text(
-                                '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
-                                style: (widget.focused
+                            child: Text(widget.goal.text,
+                                style: (isFocused
                                         ? focusedFontStyle.merge(mainTextStyle)
                                         : mainTextStyle)
                                     .copyWith(

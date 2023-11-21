@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart'
-    show Border, BorderSide, BoxDecoration, CrossAxisAlignment, HitTestBehavior;
+    show Clip, CrossAxisAlignment, HitTestBehavior;
 import 'package:flutter/widgets.dart'
     show
         BuildContext,
@@ -16,7 +15,6 @@ import 'package:flutter/widgets.dart'
         Widget;
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
-import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -32,7 +30,7 @@ class GoalTreeWidget extends StatefulHookConsumerWidget {
   final String rootGoalId;
   final Function(String goalId) onSelected;
   final Function(String goalId)? onFocused;
-  final Function(String goalId, {bool expanded}) onExpanded;
+  final Function(String goalId, {bool? expanded}) onExpanded;
   final Function(String?, String)? onAddGoal;
   final int? depthLimit;
   final bool showParentName;
@@ -77,7 +75,6 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
     final Goal rootGoal = widget.goalMap[widget.rootGoalId]!;
     final selectedGoals = ref.watch(selectedGoalsProvider);
     final isExpanded = ref.watch(expandedGoalsProvider).contains(rootGoal.id);
-    final isFocused = ref.watch(focusedGoalProvider) == rootGoal.id;
     final hasRenderableChildren = widget.goalMap[widget.rootGoalId]!.subGoals
         .any((element) => widget.goalMap.containsKey(element.id));
     final isNarrow = MediaQuery.of(context).size.width < 600;
@@ -125,7 +122,6 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                     });
                   },
                   onFocused: widget.onFocused,
-                  focused: isFocused,
                   hovered: hovered && !dragging,
                   hoverActionsBuilder: widget.hoverActionsBuilder,
                   hasRenderableChildren: hasRenderableChildren,
@@ -177,20 +173,20 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
             ? Row(children: [
                 SizedBox(width: uiUnit(5)),
                 Expanded(
-                  child: GoalListWidget(
-                    goalMap: widget.goalMap,
-                    goalIds: rootGoal.subGoals.where(widget.goalMap.containsKey).map((e) => e.id).toList(),
-                    onSelected: widget.onSelected,
-                    onExpanded: widget.onExpanded,
-                    onFocused: widget.onFocused,
-                    depthLimit: widget.depthLimit == null
-                        ? null
-                        : widget.depthLimit! - 1,
-                    hoverActionsBuilder: widget.hoverActionsBuilder,
-                    onAddGoal: widget.onAddGoal,
-                  )
-                  ),
-                )
+                    child: GoalListWidget(
+                  goalMap: widget.goalMap,
+                  goalIds: rootGoal.subGoals
+                      .where((g) => widget.goalMap.containsKey(g.id))
+                      .map((e) => e.id)
+                      .toList(),
+                  onSelected: widget.onSelected,
+                  onExpanded: widget.onExpanded,
+                  onFocused: widget.onFocused,
+                  depthLimit:
+                      widget.depthLimit == null ? null : widget.depthLimit! - 1,
+                  hoverActionsBuilder: widget.hoverActionsBuilder,
+                  onAddGoal: widget.onAddGoal,
+                )),
               ])
             : Container()
       ],

@@ -88,26 +88,50 @@ Comparator<Goal> activeGoalExpiringSoonestComparator(WorldContext context) {
   };
 }
 
-_visitAncestors(Map<String, Goal> goalMap, String? head,
-    bool Function(String, List<String> path) visit,
-    {Set<String>? seenIds, List<String> tail = const []}) {
-  if (head == null) {
-    return;
-  }
-  seenIds = seenIds ?? {head};
+enum TraversalDecision {
+  /// indicates that we should continue traversing normally
+  continueTraversal,
 
-  final headGoal = goalMap[head];
+  /// indicates that we should stop traversing completely
+  stopTraversal,
+
+  /// indicates that we should not visit this node's children or parents (depending on traversal direction)
+  dontRecurse,
+}
+
+/// This function returns whether or not the traversal should stop. If true, the traversal will stop.
+bool _traverseDown(Map<String, Goal> goalMap, String? rootGoalId,
+    TraversalDecision? Function(String, List<String> path) visit,
+    {List<String> tail = const []}) {
+  if (rootGoalId == null) {
+    return false;
+  }
+
+  final headGoal = goalMap[rootGoalId];
+  // if the goal doesn't exist in the map we'll just skip it.
   if (headGoal == null) {
-    throw Exception('Parent goal not found: $head');
+    return false;
   }
-  final newTail = [...tail, head];
-  for (final superGoal in headGoal.superGoals) {
-    if (visit(superGoal.id, newTail)) {
-      return;
+
+  final decision = visit(headGoal.id, tail);
+  if (decision == TraversalDecision.dontRecurse) {
+    return false;
+  } else if (decision == TraversalDecision.stopTraversal) {
+    return true;
+  }
+  final newTail = [...tail, rootGoalId];
+  for (final subGoal in headGoal.subGoals) {
+    if (_traverseDown(goalMap, subGoal.id, visit, tail: newTail)) {
+      return true;
     }
-    _visitAncestors(goalMap, superGoal.id, visit,
-        seenIds: seenIds, tail: newTail);
   }
+
+  return false;
+}
+
+traverseDown(Map<String, Goal> goalMap, String? rootGoalId,
+    TraversalDecision? Function(String, List<String> path) visit) {
+  _traverseDown(goalMap, rootGoalId, visit, tail: []);
 }
 
 _findAncestors(Map<String, Goal> goalMap, Set<String> frontierIds,
@@ -132,20 +156,6 @@ _findAncestors(Map<String, Goal> goalMap, Set<String> frontierIds,
   }
 
   return _findAncestors(goalMap, newFrontierIds, seenIds, depth + 1);
-}
-
-Iterable<String> getGoalsToAncestor(Map<String, Goal> goalMap, String goalId,
-    {String? ancestorId}) {
-  List<String>? result;
-  _visitAncestors(goalMap, goalId, (String id, List<String> path) {
-    if (id == ancestorId || ancestorId == null) {
-      result = path;
-      return true;
-    }
-    return false;
-  });
-
-  return result ?? [];
 }
 
 List<Goal> findCommonPrefix(

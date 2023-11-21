@@ -184,7 +184,7 @@ class GoalDetail extends ConsumerStatefulWidget {
   final Goal goal;
   final Map<String, Goal> goalMap;
   final Function(String goalId) onSelected;
-  final Function(String goalId, {bool expanded}) onExpanded;
+  final Function(String goalId, {bool? expanded}) onExpanded;
   final Function(String goalId) onFocused;
   final Function(String? parentId, String text) onAddGoal;
   final HoverActionsBuilder hoverActionsBuilder;

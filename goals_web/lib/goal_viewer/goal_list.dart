@@ -10,7 +10,7 @@ class GoalListWidget extends StatelessWidget {
   final Map<String, Goal> goalMap;
   final List<String> goalIds;
   final Function(String goalId) onSelected;
-  final Function(String goalId, {bool expanded}) onExpanded;
+  final Function(String goalId, {bool? expanded}) onExpanded;
   final Function(String goalId)? onFocused;
   final int? depthLimit;
   final Function(String?, String)? onAddGoal;
