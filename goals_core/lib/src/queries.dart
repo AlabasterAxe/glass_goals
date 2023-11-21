@@ -101,8 +101,9 @@ enum TraversalDecision {
 
 /// This function returns whether or not the traversal should stop. If true, the traversal will stop.
 bool _traverseDown(Map<String, Goal> goalMap, String? rootGoalId,
-    TraversalDecision? Function(String, List<String> path) visit,
-    {List<String> tail = const []}) {
+    {required TraversalDecision? Function(String, List<String> path) onVisit,
+    Function(String goalId, List<String> path)? onDepart,
+    required List<String> tail}) {
   if (rootGoalId == null) {
     return false;
   }
@@ -113,7 +114,7 @@ bool _traverseDown(Map<String, Goal> goalMap, String? rootGoalId,
     return false;
   }
 
-  final decision = visit(headGoal.id, tail);
+  final decision = onVisit(headGoal.id, tail);
   if (decision == TraversalDecision.dontRecurse) {
     return false;
   } else if (decision == TraversalDecision.stopTraversal) {
@@ -121,17 +122,31 @@ bool _traverseDown(Map<String, Goal> goalMap, String? rootGoalId,
   }
   final newTail = [...tail, rootGoalId];
   for (final subGoal in headGoal.subGoals) {
-    if (_traverseDown(goalMap, subGoal.id, visit, tail: newTail)) {
+    if (_traverseDown(goalMap, subGoal.id,
+        onVisit: onVisit, onDepart: onDepart, tail: newTail)) {
       return true;
     }
   }
+  onDepart?.call(headGoal.id, tail);
 
   return false;
 }
 
-traverseDown(Map<String, Goal> goalMap, String? rootGoalId,
-    TraversalDecision? Function(String, List<String> path) visit) {
-  _traverseDown(goalMap, rootGoalId, visit, tail: []);
+traverseDown(
+  Map<String, Goal> goalMap,
+  String? rootGoalId, {
+  /// callback for when a goal is visited. By default, the traversal will
+  /// continue but traversing the children can be stopped by returning
+  /// [TraversalDecision.dontRecurse] and the entire traversal can be stopped by
+  /// returning [TraversalDecision.stopTraversal]
+  required TraversalDecision? Function(String goalId, List<String> path)
+      onVisit,
+
+  /// callback for after a goals children have been visited
+  Function(String goalId, List<String> path)? onDepart,
+}) {
+  _traverseDown(goalMap, rootGoalId,
+      onVisit: onVisit, onDepart: onDepart, tail: []);
 }
 
 _findAncestors(Map<String, Goal> goalMap, Set<String> frontierIds,

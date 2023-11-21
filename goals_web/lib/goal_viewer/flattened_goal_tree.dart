@@ -17,6 +17,7 @@ typedef FlattenedGoalItem = ({
   int depth,
   String? goalId,
   bool hasRenderableChildren,
+  String? parentId,
 });
 
 class FlattenedGoalTree extends ConsumerWidget {
@@ -45,18 +46,10 @@ class FlattenedGoalTree extends ConsumerWidget {
   List<FlattenedGoalItem> _getFlattenedGoalItems(Set<String> expandedGoalIds) {
     final List<FlattenedGoalItem> flattenedGoals = [];
     for (final goalId in this.rootGoalIds) {
-      int? prevDepth;
-      traverseDown(this.goalMap, goalId, (goalId, path) {
-        if (prevDepth != null && prevDepth! > path.length) {
-          flattenedGoals.add((
-            depth: path.length,
-            goalId: null,
-            hasRenderableChildren: false,
-          ));
-        }
-        prevDepth = path.length;
+      traverseDown(this.goalMap, goalId, onVisit: (goalId, path) {
         flattenedGoals.add((
           depth: path.length,
+          parentId: path.isNotEmpty ? path.last : null,
           goalId: goalId,
           hasRenderableChildren: this
               .goalMap[goalId]!
@@ -67,6 +60,15 @@ class FlattenedGoalTree extends ConsumerWidget {
 
         if (!expandedGoalIds.contains(goalId)) {
           return TraversalDecision.dontRecurse;
+        }
+      }, onDepart: (String goalId, List<String> path) {
+        if (expandedGoalIds.contains(goalId)) {
+          flattenedGoals.add((
+            depth: path.length + 1,
+            goalId: null,
+            hasRenderableChildren: false,
+            parentId: goalId,
+          ));
         }
       });
     }
@@ -79,23 +81,26 @@ class FlattenedGoalTree extends ConsumerWidget {
     final flattenedGoalItems = _getFlattenedGoalItems(expandedGoalIds);
     return Column(children: [
       for (final flattenedGoal in flattenedGoalItems)
-        flattenedGoal.goalId != null
-            ? Padding(
-                padding: EdgeInsets.only(left: uiUnit(3) * flattenedGoal.depth),
-                child: GoalItemWidget(
-                  goal: this.goalMap[flattenedGoal.goalId!]!,
-                  onExpanded: this.onExpanded,
-                  onFocused: this.onFocused,
-                  hovered: false,
-                  hoverActionsBuilder: this.hoverActionsBuilder,
-                  hasRenderableChildren: flattenedGoal.hasRenderableChildren,
-                  showExpansionArrow: true,
-                  dragHandle: GoalItemDragHandle.none,
-                  onDragEnd: null,
-                  onDragStarted: null,
-                ),
-              )
-            : AddSubgoalItemWidget(onAddGoal: this.onAddGoal!),
+        if (flattenedGoal.goalId != null || this.onAddGoal != null)
+          Padding(
+            padding: EdgeInsets.only(left: uiUnit(4) * flattenedGoal.depth),
+            child: flattenedGoal.goalId != null
+                ? GoalItemWidget(
+                    goal: this.goalMap[flattenedGoal.goalId!]!,
+                    onExpanded: this.onExpanded,
+                    onFocused: this.onFocused,
+                    hovered: false,
+                    hoverActionsBuilder: this.hoverActionsBuilder,
+                    hasRenderableChildren: flattenedGoal.hasRenderableChildren,
+                    showExpansionArrow: true,
+                    dragHandle: GoalItemDragHandle.none,
+                    onDragEnd: null,
+                    onDragStarted: null,
+                  )
+                : AddSubgoalItemWidget(
+                    onAddGoal: this.onAddGoal!,
+                    parentId: flattenedGoal.parentId!),
+          ),
       this.onAddGoal != null
           ? AddSubgoalItemWidget(onAddGoal: this.onAddGoal!)
           : Container(),
