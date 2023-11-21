@@ -10,7 +10,8 @@ import 'package:goals_core/util.dart'
         isWithinDay,
         isWithinQuarter;
 import 'package:goals_web/app_context.dart';
-import 'package:goals_web/goal_viewer/providers.dart' show debugProvider, worldContextProvider;
+import 'package:goals_web/goal_viewer/providers.dart'
+    show debugProvider, worldContextProvider;
 import 'package:goals_web/styles.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart' show DateFormat;
@@ -145,37 +146,37 @@ class StatusChip extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          isDebugMode ? Tooltip(
-            message:
-                '${goalStatus.startTime != null ? DateFormat.yMd().format(goalStatus.startTime!) : 'The Big Bang'} - ${goalStatus.endTime != null ? DateFormat.yMd().format(goalStatus.endTime!) : 'The Heat Death of the Universe'}',
-            child: Text(
-              getGoalStatusString(worldContext, goalStatus),
-              style: smallTextStyle.copyWith(
-                  color: getGoalStatusTextColor(goalStatus)),
-            ),
-          ): Text(
-              getGoalStatusString(worldContext, goalStatus),
-              style: smallTextStyle.copyWith(
-                  color: getGoalStatusTextColor(goalStatus)),
-            ),
-          SizedBox(width: uiUnit() / 2),
-          goalStatus.status != null
-              ? SizedBox(
-                  width: 18.0,
-                  height: 18.0,
-                  child: IconButton(
-                    padding: EdgeInsets.zero,
-                    icon: const Icon(Icons.close, size: 16.0),
-                    onPressed: () {
-                      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                          id: this.goal.id,
-                          logEntry: ArchiveStatusLogEntry(
-                              creationTime: DateTime.now(),
-                              id: goalStatus.id)));
-                    },
+          isDebugMode
+              ? Tooltip(
+                  message:
+                      '${goalStatus.startTime != null ? DateFormat.yMd().format(goalStatus.startTime!) : 'The Big Bang'} - ${goalStatus.endTime != null ? DateFormat.yMd().format(goalStatus.endTime!) : 'The Heat Death of the Universe'}',
+                  child: Text(
+                    getGoalStatusString(worldContext, goalStatus),
+                    style: smallTextStyle.copyWith(
+                        color: getGoalStatusTextColor(goalStatus)),
                   ),
                 )
-              : Container()
+              : Text(
+                  getGoalStatusString(worldContext, goalStatus),
+                  style: smallTextStyle.copyWith(
+                      color: getGoalStatusTextColor(goalStatus)),
+                ),
+          SizedBox(width: uiUnit() / 2),
+          if (goalStatus.status != null)
+            SizedBox(
+              width: 18.0,
+              height: 18.0,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.close, size: 16.0),
+                onPressed: () {
+                  AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                      id: this.goal.id,
+                      logEntry: ArchiveStatusLogEntry(
+                          creationTime: DateTime.now(), id: goalStatus.id)));
+                },
+              ),
+            ),
         ],
       ),
     );
