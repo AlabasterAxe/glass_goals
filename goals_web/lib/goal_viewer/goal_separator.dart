@@ -5,7 +5,9 @@ import 'package:flutter/widgets.dart';
 import '../styles.dart';
 
 class GoalSeparator extends StatefulWidget {
-  const GoalSeparator({super.key});
+  final String? previousGoalId;
+  final String? nextGoalId;
+  const GoalSeparator({super.key, this.previousGoalId, this.nextGoalId});
 
   @override
   State<GoalSeparator> createState() => _GoalSeparatorState();

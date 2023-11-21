@@ -1,14 +1,17 @@
 import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
-    show BuildContext, Column, Container, MediaQuery, Widget;
+    show BuildContext, Column, Container, DragTarget, MediaQuery, Widget;
 import 'package:goals_core/model.dart'
     show Goal, TraversalDecision, traverseDown;
+import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart'
     show HoverActionsBuilder;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
+import 'package:uuid/uuid.dart';
 
+import '../app_context.dart';
 import '../styles.dart';
 import 'goal_item.dart';
 import 'goal_separator.dart';
@@ -76,19 +79,53 @@ class FlattenedGoalTree extends ConsumerWidget {
     return flattenedGoals;
   }
 
+  _moveGoals(BuildContext context, String newParentId, Set<String> goalIds) {
+    final List<GoalDelta> goalDeltas = [];
+    for (final goalId in goalIds) {
+      goalDeltas.add(GoalDelta(
+          id: goalId,
+          logEntry: SetParentLogEntry(
+              id: Uuid().v4(),
+              parentId: newParentId,
+              creationTime: DateTime.now())));
+    }
+    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final expandedGoalIds = ref.watch(expandedGoalsProvider);
     final flattenedGoalItems = _getFlattenedGoalItems(expandedGoalIds);
     final isNarrow = MediaQuery.of(context).size.width < 600;
-    return Column(children: [
-      for (final flattenedGoal in flattenedGoalItems)
-        if (flattenedGoal.goalId != null || this.onAddGoal != null) ...[
-          GoalSeparator(),
-          Padding(
-            padding: EdgeInsets.only(left: uiUnit(4) * flattenedGoal.depth),
-            child: flattenedGoal.goalId != null
-                ? GoalItemWidget(
+
+    final goalItems = <Widget>[];
+    for (int i = 0; i < flattenedGoalItems.length; i++) {
+      final previousGoal = i > 0 ? flattenedGoalItems[i - 1] : null;
+      final flattenedGoal = flattenedGoalItems[i];
+      if (flattenedGoal.goalId != null || this.onAddGoal != null) {
+        goalItems.add(GoalSeparator(
+          previousGoalId: previousGoal?.goalId,
+          nextGoalId: flattenedGoal.goalId,
+        ));
+        goalItems.add(Padding(
+          padding: EdgeInsets.only(left: uiUnit(4) * flattenedGoal.depth),
+          child: flattenedGoal.goalId != null
+              ? DragTarget<String>(
+                  onAccept: (droppedGoalId) {
+                    final selectedGoals = ref.read(selectedGoalsProvider);
+                    final selectedAndDraggedGoals = {
+                      ...ref.read(selectedGoalsProvider),
+                      droppedGoalId
+                    };
+                    this._moveGoals(
+                        context,
+                        flattenedGoal.goalId!,
+                        selectedGoals.contains(droppedGoalId)
+                            ? selectedAndDraggedGoals
+                            : {droppedGoalId});
+                    ref.read(selectedGoalsProvider.notifier).clear();
+                  },
+                  builder: (context, _, __) => GoalItemWidget(
                     goal: this.goalMap[flattenedGoal.goalId!]!,
                     onExpanded: this.onExpanded,
                     onFocused: this.onFocused,
@@ -101,15 +138,24 @@ class FlattenedGoalTree extends ConsumerWidget {
                         : GoalItemDragHandle.item,
                     onDragEnd: null,
                     onDragStarted: null,
-                  )
-                : AddSubgoalItemWidget(
-                    onAddGoal: this.onAddGoal!,
-                    parentId: flattenedGoal.parentId!),
-          ),
-        ],
-      this.onAddGoal != null
-          ? AddSubgoalItemWidget(onAddGoal: this.onAddGoal!)
-          : Container(),
-    ]);
+                  ),
+                )
+              : AddSubgoalItemWidget(
+                  onAddGoal: this.onAddGoal!,
+                  parentId: flattenedGoal.parentId!),
+        ));
+      }
+    }
+    if (flattenedGoalItems.isNotEmpty) {
+      goalItems.add(GoalSeparator(
+        previousGoalId: flattenedGoalItems.last.goalId,
+        nextGoalId: null,
+      ));
+    }
+
+    if (this.onAddGoal != null) {
+      goalItems.add(AddSubgoalItemWidget(onAddGoal: this.onAddGoal!));
+    }
+    return Column(children: goalItems);
   }
 }
