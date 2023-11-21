@@ -351,6 +351,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
           onFocused: widget.onFocused,
           hoverActionsBuilder: widget.hoverActionsBuilder,
           onAddGoal: widget.onAddGoal,
+          parentId: widget.goal.id,
         ),
         SizedBox(height: uiUnit(2)),
         Text('Notes', style: textTheme.headlineSmall),

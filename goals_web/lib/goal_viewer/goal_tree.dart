@@ -186,6 +186,7 @@ class _GoalTreeWidgetState extends ConsumerState<GoalTreeWidget> {
                       widget.depthLimit == null ? null : widget.depthLimit! - 1,
                   hoverActionsBuilder: widget.hoverActionsBuilder,
                   onAddGoal: widget.onAddGoal,
+                  parentId: rootGoal.id,
                 )),
               ])
             : Container()
