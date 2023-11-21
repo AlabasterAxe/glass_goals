@@ -1,6 +1,6 @@
 import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
-    show BuildContext, Column, Container, Widget;
+    show BuildContext, Column, Container, MediaQuery, Widget;
 import 'package:goals_core/model.dart'
     show Goal, TraversalDecision, traverseDown;
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
@@ -11,6 +11,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 
 import '../styles.dart';
 import 'goal_item.dart';
+import 'goal_separator.dart';
 import 'providers.dart';
 
 typedef FlattenedGoalItem = ({
@@ -79,9 +80,11 @@ class FlattenedGoalTree extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final expandedGoalIds = ref.watch(expandedGoalsProvider);
     final flattenedGoalItems = _getFlattenedGoalItems(expandedGoalIds);
+    final isNarrow = MediaQuery.of(context).size.width < 600;
     return Column(children: [
       for (final flattenedGoal in flattenedGoalItems)
-        if (flattenedGoal.goalId != null || this.onAddGoal != null)
+        if (flattenedGoal.goalId != null || this.onAddGoal != null) ...[
+          GoalSeparator(),
           Padding(
             padding: EdgeInsets.only(left: uiUnit(4) * flattenedGoal.depth),
             child: flattenedGoal.goalId != null
@@ -93,7 +96,9 @@ class FlattenedGoalTree extends ConsumerWidget {
                     hoverActionsBuilder: this.hoverActionsBuilder,
                     hasRenderableChildren: flattenedGoal.hasRenderableChildren,
                     showExpansionArrow: true,
-                    dragHandle: GoalItemDragHandle.none,
+                    dragHandle: isNarrow
+                        ? GoalItemDragHandle.bullet
+                        : GoalItemDragHandle.item,
                     onDragEnd: null,
                     onDragStarted: null,
                   )
@@ -101,6 +106,7 @@ class FlattenedGoalTree extends ConsumerWidget {
                     onAddGoal: this.onAddGoal!,
                     parentId: flattenedGoal.parentId!),
           ),
+        ],
       this.onAddGoal != null
           ? AddSubgoalItemWidget(onAddGoal: this.onAddGoal!)
           : Container(),

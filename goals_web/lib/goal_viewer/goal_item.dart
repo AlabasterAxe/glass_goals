@@ -129,7 +129,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     final isNarrow = MediaQuery.of(context).size.width < 600;
     final bullet = SizedBox(
       width: uiUnit(10),
-      height: uiUnit(10),
+      height: uiUnit(8),
       child: Center(
           child: Container(
         width: uiUnit(),
@@ -223,13 +223,20 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                   // chip-like container widget around text status widget:
                   StatusChip(goal: widget.goal),
                   if (this.widget.showExpansionArrow)
-                    IconButton(
-                        onPressed: () => widget.onExpanded(widget.goal.id),
-                        icon: Icon(isExpanded
-                            ? Icons.arrow_drop_down
-                            : widget.hasRenderableChildren
-                                ? Icons.arrow_right
-                                : Icons.add)),
+                    SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: IconButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () => widget.onExpanded(widget.goal.id),
+                          icon: Icon(
+                              size: 24,
+                              isExpanded
+                                  ? Icons.arrow_drop_down
+                                  : widget.hasRenderableChildren
+                                      ? Icons.arrow_right
+                                      : Icons.add)),
+                    ),
                 ]),
               ),
               if (!isNarrow && !_editing && (isSelected || _hovering))
