@@ -100,10 +100,14 @@ enum TraversalDecision {
 }
 
 /// This function returns whether or not the traversal should stop. If true, the traversal will stop.
-bool _traverseDown(Map<String, Goal> goalMap, String? rootGoalId,
-    {required TraversalDecision? Function(String, List<String> path) onVisit,
-    Function(String goalId, List<String> path)? onDepart,
-    required List<String> tail}) {
+bool _traverseDown(
+  Map<String, Goal> goalMap,
+  String? rootGoalId, {
+  required TraversalDecision? Function(String, List<String> path) onVisit,
+  Function(String goalId, List<String> path)? onDepart,
+  required List<String> tail,
+  int Function(Goal goalA, Goal goalB)? childTraversalComparator,
+}) {
   if (rootGoalId == null) {
     return false;
   }
@@ -121,9 +125,14 @@ bool _traverseDown(Map<String, Goal> goalMap, String? rootGoalId,
     return true;
   }
   final newTail = [...tail, rootGoalId];
-  for (final subGoal in headGoal.subGoals) {
+  for (final subGoal in childTraversalComparator != null
+      ? headGoal.subGoals.sorted(childTraversalComparator)
+      : headGoal.subGoals) {
     if (_traverseDown(goalMap, subGoal.id,
-        onVisit: onVisit, onDepart: onDepart, tail: newTail)) {
+        onVisit: onVisit,
+        onDepart: onDepart,
+        tail: newTail,
+        childTraversalComparator: childTraversalComparator)) {
       return true;
     }
   }
@@ -144,9 +153,13 @@ traverseDown(
 
   /// callback for after a goals children have been visited
   Function(String goalId, List<String> path)? onDepart,
+  int Function(Goal goalA, Goal goalB)? childTraversalComparator,
 }) {
   _traverseDown(goalMap, rootGoalId,
-      onVisit: onVisit, onDepart: onDepart, tail: []);
+      onVisit: onVisit,
+      onDepart: onDepart,
+      tail: [],
+      childTraversalComparator: childTraversalComparator);
 }
 
 _findAncestors(Map<String, Goal> goalMap, Set<String> frontierIds,
@@ -358,16 +371,29 @@ StatusLogEntry getGoalStatus(WorldContext context, Goal goal) {
       id: 'default-status', creationTime: DateTime(1970, 1, 1), status: null);
 }
 
-PriorityLogEntry getGoalPriority(WorldContext context, Goal goal) {
-  return goal.log
-          .whereType<PriorityLogEntry>()
-          .sorted((a, b) => b.creationTime.compareTo(a.creationTime))
-          .firstOrNull ??
-      PriorityLogEntry(
-        id: 'default-priority',
-        creationTime: DateTime(1970, 1, 1),
-        priority: null,
-      );
+double getGoalPriority(WorldContext context, Goal goal) {
+  final double? explicitPriority = goal.log
+      .whereType<PriorityLogEntry>()
+      .sorted((a, b) => b.creationTime.compareTo(a.creationTime))
+      .firstOrNull
+      ?.priority;
+
+  if (explicitPriority != null) {
+    return explicitPriority;
+  }
+
+  double? minIndex;
+
+  for (final parentGoal in goal.superGoals) {
+    for (final (index, parentChild) in parentGoal.subGoals.indexed) {
+      if (parentChild.id == goal.id) {
+        if (minIndex == null || index < minIndex) {
+          minIndex = index.toDouble();
+        }
+      }
+    }
+  }
+  return minIndex ?? 0.0;
 }
 
 StatusLogEntry? goalHasStatus(

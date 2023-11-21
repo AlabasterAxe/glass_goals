@@ -2,7 +2,7 @@ import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
     show BuildContext, Column, Container, DragTarget, MediaQuery, Widget;
 import 'package:goals_core/model.dart'
-    show Goal, TraversalDecision, traverseDown;
+    show Goal, TraversalDecision, WorldContext, getGoalPriority, traverseDown;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart'
@@ -47,34 +47,44 @@ class FlattenedGoalTree extends ConsumerWidget {
     required this.onAddGoal,
   });
 
-  List<FlattenedGoalItem> _getFlattenedGoalItems(Set<String> expandedGoalIds) {
+  List<FlattenedGoalItem> _getFlattenedGoalItems(
+      WorldContext context, Set<String> expandedGoalIds) {
     final List<FlattenedGoalItem> flattenedGoals = [];
     for (final goalId in this.rootGoalIds) {
-      traverseDown(this.goalMap, goalId, onVisit: (goalId, path) {
-        flattenedGoals.add((
-          depth: path.length,
-          parentId: path.isNotEmpty ? path.last : null,
-          goalId: goalId,
-          hasRenderableChildren: this
-              .goalMap[goalId]!
-              .subGoals
-              .where((g) => this.goalMap.containsKey(g.id))
-              .isNotEmpty,
-        ));
-
-        if (!expandedGoalIds.contains(goalId)) {
-          return TraversalDecision.dontRecurse;
-        }
-      }, onDepart: (String goalId, List<String> path) {
-        if (expandedGoalIds.contains(goalId)) {
+      traverseDown(
+        this.goalMap,
+        goalId,
+        onVisit: (goalId, path) {
           flattenedGoals.add((
-            depth: path.length + 1,
-            goalId: null,
-            hasRenderableChildren: false,
-            parentId: goalId,
+            depth: path.length,
+            parentId: path.isNotEmpty ? path.last : null,
+            goalId: goalId,
+            hasRenderableChildren: this
+                .goalMap[goalId]!
+                .subGoals
+                .where((g) => this.goalMap.containsKey(g.id))
+                .isNotEmpty,
           ));
-        }
-      });
+
+          if (!expandedGoalIds.contains(goalId)) {
+            return TraversalDecision.dontRecurse;
+          }
+        },
+        onDepart: (String goalId, List<String> path) {
+          if (expandedGoalIds.contains(goalId)) {
+            flattenedGoals.add((
+              depth: path.length + 1,
+              goalId: null,
+              hasRenderableChildren: false,
+              parentId: goalId,
+            ));
+          }
+        },
+        childTraversalComparator: (goalA, goalB) {
+          return getGoalPriority(context, goalA)
+              .compareTo(getGoalPriority(context, goalB));
+        },
+      );
     }
     return flattenedGoals;
   }
@@ -95,7 +105,9 @@ class FlattenedGoalTree extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final expandedGoalIds = ref.watch(expandedGoalsProvider);
-    final flattenedGoalItems = _getFlattenedGoalItems(expandedGoalIds);
+    final worldContext = ref.watch(worldContextProvider);
+    final flattenedGoalItems =
+        _getFlattenedGoalItems(worldContext, expandedGoalIds);
     final isNarrow = MediaQuery.of(context).size.width < 600;
 
     final goalItems = <Widget>[];
@@ -104,6 +116,7 @@ class FlattenedGoalTree extends ConsumerWidget {
       final flattenedGoal = flattenedGoalItems[i];
       if (flattenedGoal.goalId != null || this.onAddGoal != null) {
         goalItems.add(GoalSeparator(
+          goalMap: this.goalMap,
           previousGoalId: previousGoal?.goalId,
           nextGoalId: flattenedGoal.goalId,
         ));
@@ -148,6 +161,7 @@ class FlattenedGoalTree extends ConsumerWidget {
     }
     if (flattenedGoalItems.isNotEmpty) {
       goalItems.add(GoalSeparator(
+        goalMap: this.goalMap,
         previousGoalId: flattenedGoalItems.last.goalId,
         nextGoalId: null,
       ));
