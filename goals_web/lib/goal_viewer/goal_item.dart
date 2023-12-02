@@ -11,7 +11,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../app_context.dart';
 import '../styles.dart';
 import 'providers.dart'
-    show expandedGoalsProvider, hoverEventStream, selectedGoalsProvider;
+    show
+        expandedGoalsProvider,
+        focusedGoalProvider,
+        hoverEventStream,
+        selectedGoalsProvider;
 
 enum GoalItemDragHandle {
   none,
@@ -24,30 +28,22 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
   final Function(String id, {bool expanded}) onExpanded;
   final Function(String id)? onFocused;
 
-  final bool hovered;
-  final bool focused;
-  final Goal? parent;
   final HoverActionsBuilder hoverActionsBuilder;
   final bool hasRenderableChildren;
   final bool showExpansionArrow;
   final GoalItemDragHandle dragHandle;
-  final Function()? onDragEnd;
-  final Function()? onDragStarted;
+  final Function(String goalId)? onDropGoal;
 
   const GoalItemWidget({
     super.key,
     required this.goal,
     required this.onExpanded,
     required this.onFocused,
-    this.hovered = false,
-    this.focused = false,
-    this.parent,
     required this.hoverActionsBuilder,
     required this.hasRenderableChildren,
     this.showExpansionArrow = true,
     this.dragHandle = GoalItemDragHandle.none,
-    this.onDragEnd,
-    this.onDragStarted,
+    this.onDropGoal,
   });
 
   @override
@@ -66,14 +62,13 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
   void initState() {
     super.initState();
 
-    subscriptions.add(hoverEventStream.listen((id) => {
-          if (id != widget.goal.id)
-            {
-              setState(() {
-                _hovering = false;
-              })
-            }
-        }));
+    subscriptions.add(hoverEventStream.listen((id) {
+      if (id != widget.goal.id) {
+        setState(() {
+          _hovering = false;
+        });
+      }
+    }));
   }
 
   @override
@@ -100,8 +95,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
       required Set<String> selectedGoals}) {
     return Draggable<String>(
       data: widget.goal.id,
-      onDragEnd: (_) => widget.onDragEnd?.call(),
-      onDragStarted: widget.onDragStarted,
+      hitTestBehavior: HitTestBehavior.opaque,
       feedback: Container(
         decoration:
             const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
@@ -123,11 +117,12 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     final isExpanded =
         ref.watch(expandedGoalsProvider).contains(widget.goal.id);
     final selectedGoals = ref.watch(selectedGoalsProvider);
+    final isFocused = ref.watch(focusedGoalProvider) == widget.goal.id;
     final isSelected = selectedGoals.contains(widget.goal.id);
     final isNarrow = MediaQuery.of(context).size.width < 600;
     final bullet = SizedBox(
       width: uiUnit(10),
-      height: uiUnit(10),
+      height: uiUnit(8),
       child: Center(
           child: Container(
         width: uiUnit(),
@@ -155,9 +150,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
               },
         child: Container(
           decoration: BoxDecoration(
-            color: widget.hovered || _hovering
-                ? emphasizedLightBackground
-                : Colors.transparent,
+            color: _hovering ? emphasizedLightBackground : Colors.transparent,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.max,
@@ -205,9 +198,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                         _focusNode.requestFocus();
                                       })
                                     },
-                            child: Text(
-                                '${widget.parent == null ? '' : '${widget.parent!.text} ❯ '}${widget.goal.text}',
-                                style: (widget.focused
+                            child: Text(widget.goal.text,
+                                style: (isFocused
                                         ? focusedFontStyle.merge(mainTextStyle)
                                         : mainTextStyle)
                                     .copyWith(
@@ -222,13 +214,20 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                   // chip-like container widget around text status widget:
                   StatusChip(goal: widget.goal),
                   if (this.widget.showExpansionArrow)
-                    IconButton(
-                        onPressed: () => widget.onExpanded(widget.goal.id),
-                        icon: Icon(isExpanded
-                            ? Icons.arrow_drop_down
-                            : widget.hasRenderableChildren
-                                ? Icons.arrow_right
-                                : Icons.add)),
+                    SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: IconButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () => widget.onExpanded(widget.goal.id),
+                          icon: Icon(
+                              size: 24,
+                              isExpanded
+                                  ? Icons.arrow_drop_down
+                                  : widget.hasRenderableChildren
+                                      ? Icons.arrow_right
+                                      : Icons.add)),
+                    ),
                 ]),
               ),
               if (!isNarrow && !_editing && (isSelected || _hovering))
@@ -238,12 +237,23 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         ),
       ),
     );
-    return widget.dragHandle == GoalItemDragHandle.item
-        ? _dragWrapWidget(
-            isSelected: isSelected,
-            selectedGoals: selectedGoals,
-            child: content,
-          )
-        : content;
+    return DragTarget<String>(
+      onAccept: this.widget.onDropGoal,
+      onMove: (details) {
+        setState(() {
+          if (!_hovering) {
+            _hovering = true;
+            hoverEventStream.add(this.widget.goal.id);
+          }
+        });
+      },
+      builder: (context, _, __) => widget.dragHandle == GoalItemDragHandle.item
+          ? _dragWrapWidget(
+              isSelected: isSelected,
+              selectedGoals: selectedGoals,
+              child: content,
+            )
+          : content,
+    );
   }
 }

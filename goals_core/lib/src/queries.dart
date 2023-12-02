@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:goals_types/goals_types.dart';
-import 'package:collection/collection.dart' show IterableZip;
+import 'package:collection/collection.dart' show IterableZip, IterableExtension;
 
 import '../model.dart' show Goal, WorldContext;
 import 'util/date_utils.dart';
@@ -88,26 +88,78 @@ Comparator<Goal> activeGoalExpiringSoonestComparator(WorldContext context) {
   };
 }
 
-_visitAncestors(Map<String, Goal> goalMap, String? head,
-    bool Function(String, List<String> path) visit,
-    {Set<String>? seenIds, List<String> tail = const []}) {
-  if (head == null) {
-    return;
-  }
-  seenIds = seenIds ?? {head};
+enum TraversalDecision {
+  /// indicates that we should continue traversing normally
+  continueTraversal,
 
-  final headGoal = goalMap[head];
+  /// indicates that we should stop traversing completely
+  stopTraversal,
+
+  /// indicates that we should not visit this node's children or parents (depending on traversal direction)
+  dontRecurse,
+}
+
+/// This function returns whether or not the traversal should stop. If true, the traversal will stop.
+bool _traverseDown(
+  Map<String, Goal> goalMap,
+  String? rootGoalId, {
+  required TraversalDecision? Function(String, List<String> path) onVisit,
+  Function(String goalId, List<String> path)? onDepart,
+  required List<String> tail,
+  int Function(Goal goalA, Goal goalB)? childTraversalComparator,
+}) {
+  if (rootGoalId == null) {
+    return false;
+  }
+
+  final headGoal = goalMap[rootGoalId];
+  // if the goal doesn't exist in the map we'll just skip it.
   if (headGoal == null) {
-    throw Exception('Parent goal not found: $head');
+    return false;
   }
-  final newTail = [...tail, head];
-  for (final superGoal in headGoal.superGoals) {
-    if (visit(superGoal.id, newTail)) {
-      return;
+
+  final decision = onVisit(headGoal.id, tail);
+  if (decision == TraversalDecision.dontRecurse) {
+    return false;
+  } else if (decision == TraversalDecision.stopTraversal) {
+    return true;
+  }
+  final newTail = [...tail, rootGoalId];
+  for (final subGoal in childTraversalComparator != null
+      ? headGoal.subGoals.sorted(childTraversalComparator)
+      : headGoal.subGoals) {
+    if (_traverseDown(goalMap, subGoal.id,
+        onVisit: onVisit,
+        onDepart: onDepart,
+        tail: newTail,
+        childTraversalComparator: childTraversalComparator)) {
+      return true;
     }
-    _visitAncestors(goalMap, superGoal.id, visit,
-        seenIds: seenIds, tail: newTail);
   }
+  onDepart?.call(headGoal.id, tail);
+
+  return false;
+}
+
+traverseDown(
+  Map<String, Goal> goalMap,
+  String? rootGoalId, {
+  /// callback for when a goal is visited. By default, the traversal will
+  /// continue but traversing the children can be stopped by returning
+  /// [TraversalDecision.dontRecurse] and the entire traversal can be stopped by
+  /// returning [TraversalDecision.stopTraversal]
+  required TraversalDecision? Function(String goalId, List<String> path)
+      onVisit,
+
+  /// callback for after a goals children have been visited
+  Function(String goalId, List<String> path)? onDepart,
+  int Function(Goal goalA, Goal goalB)? childTraversalComparator,
+}) {
+  _traverseDown(goalMap, rootGoalId,
+      onVisit: onVisit,
+      onDepart: onDepart,
+      tail: [],
+      childTraversalComparator: childTraversalComparator);
 }
 
 _findAncestors(Map<String, Goal> goalMap, Set<String> frontierIds,
@@ -132,20 +184,6 @@ _findAncestors(Map<String, Goal> goalMap, Set<String> frontierIds,
   }
 
   return _findAncestors(goalMap, newFrontierIds, seenIds, depth + 1);
-}
-
-Iterable<String> getGoalsToAncestor(Map<String, Goal> goalMap, String goalId,
-    {String? ancestorId}) {
-  List<String>? result;
-  _visitAncestors(goalMap, goalId, (String id, List<String> path) {
-    if (id == ancestorId || ancestorId == null) {
-      result = path;
-      return true;
-    }
-    return false;
-  });
-
-  return result ?? [];
 }
 
 List<Goal> findCommonPrefix(
@@ -331,6 +369,25 @@ StatusLogEntry getGoalStatus(WorldContext context, Goal goal) {
   }
   return StatusLogEntry(
       id: 'default-status', creationTime: DateTime(1970, 1, 1), status: null);
+}
+
+getPriorityComparator(WorldContext context) {
+  return (Goal goalA, Goal goalB) => getGoalPriority(context, goalA)
+      .compareTo(getGoalPriority(context, goalB));
+}
+
+double getGoalPriority(WorldContext context, Goal goal) {
+  final PriorityLogEntry? explicitPriority = goal.log
+      .whereType<PriorityLogEntry>()
+      .sorted((a, b) => b.creationTime.compareTo(a.creationTime))
+      .firstOrNull;
+
+  if (explicitPriority?.priority != null) {
+    return explicitPriority!.priority!;
+  }
+
+  return explicitPriority?.creationTime.millisecondsSinceEpoch.toDouble() ??
+      goal.creationTime.millisecondsSinceEpoch.toDouble();
 }
 
 StatusLogEntry? goalHasStatus(

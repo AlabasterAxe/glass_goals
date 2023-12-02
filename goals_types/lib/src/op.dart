@@ -60,6 +60,8 @@ abstract class GoalLogEntry extends Equatable {
         return ArchiveStatusLogEntry.fromJsonMap(json, version);
       case 'setParent':
         return SetParentLogEntry.fromJsonMap(json, version);
+      case 'priority':
+        return PriorityLogEntry.fromJsonMap(json, version);
       default:
         throw Exception('Invalid data: $json has unknown type: $type');
     }
@@ -81,6 +83,9 @@ abstract class GoalLogEntry extends Equatable {
     if (entry is SetParentLogEntry) {
       return SetParentLogEntry.toJsonMap(entry);
     }
+    if (entry is PriorityLogEntry) {
+      return PriorityLogEntry.toJsonMap(entry);
+    }
     throw Exception('Unknown type: ${entry.runtimeType}');
   }
 
@@ -97,6 +102,44 @@ abstract class GoalLogEntry extends Equatable {
     } else {
       throw Exception('Unknown type: ${legacyEntry.runtimeType}');
     }
+  }
+}
+
+class PriorityLogEntry extends GoalLogEntry {
+  static const FIRST_VERSION = 4;
+  final double? priority;
+  const PriorityLogEntry({
+    required super.creationTime,
+    required super.id,
+    required this.priority,
+  });
+
+  @override
+  List<Object?> get props => [id, creationTime, priority];
+
+  static PriorityLogEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    return PriorityLogEntry(
+      id: json['id'],
+      priority: json['priority'],
+      creationTime: DateTime.parse(json['creationTime']!).toLocal(),
+    );
+  }
+
+  static Map<String, dynamic> toJsonMap(PriorityLogEntry entry) {
+    return {
+      'type': 'priority',
+      'id': entry.id,
+      'priority': entry.priority,
+      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+    };
   }
 }
 

@@ -97,13 +97,13 @@ class SyncClient {
 
   void _evaluateSuperGoals(
       Map<String, Goal> goalMap, Goal goal, GoalLogEntry? entry) {
-    if (entry is SetParentLogEntry && entry.parentId != null) {
-      final newSuperGoal = goalMap[entry.parentId];
-      if (newSuperGoal == null) {
-        throw Exception('Parent goal not found: ${entry.parentId}');
-      }
-      if (_checkCycles(
-          goalMap, goal.id, {newSuperGoal.id}, {newSuperGoal.id})) {
+    if (entry is SetParentLogEntry) {
+      final newSuperGoal =
+          entry.parentId == null ? null : goalMap[entry.parentId];
+
+      if (newSuperGoal != null &&
+          _checkCycles(
+              goalMap, goal.id, {newSuperGoal.id}, {newSuperGoal.id})) {
         // silently ignore deltas that would create cycles ¯\_(ツ)_/¯
         return;
       }
@@ -113,18 +113,23 @@ class SyncClient {
       }
 
       goal.superGoals.clear();
-      goal.superGoals.add(newSuperGoal);
-      newSuperGoal.addOrReplaceSubGoal(goal);
+      if (newSuperGoal != null) {
+        goal.superGoals.add(newSuperGoal);
+        newSuperGoal.addOrReplaceSubGoal(goal);
+      }
     }
   }
 
   applyOp(Map<String, Goal> goalMap, Op op) {
-    hlc = hlc.receive(HLC.unpack(op.hlcTimestamp));
+    final opHlc = HLC.unpack(op.hlcTimestamp);
+    hlc = hlc.receive(opHlc);
     Goal? goal = goalMap[op.delta.id];
 
     if (goal == null) {
-      goalMap[op.delta.id] =
-          goal = Goal(id: op.delta.id, text: op.delta.text ?? 'Untitled');
+      goalMap[op.delta.id] = goal = Goal(
+          id: op.delta.id,
+          text: op.delta.text ?? 'Untitled',
+          creationTime: DateTime.fromMillisecondsSinceEpoch(opHlc.timestamp));
     }
 
     if (op.delta.text != null && goal.text != op.delta.text) {

@@ -1,57 +1,91 @@
 import 'package:flutter/material.dart';
+import 'package:goals_web/goal_viewer/providers.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart'
+    show ConsumerState, ConsumerStatefulWidget;
 
 import '../styles.dart';
 
-class AddSubgoalItemWidget extends StatefulWidget {
-  final String? parentId;
+class AddSubgoalItemWidget extends ConsumerStatefulWidget {
+  final List<String> path;
   final Function(String? parentId, String text) onAddGoal;
   const AddSubgoalItemWidget({
     super.key,
-    this.parentId,
+    required this.path,
     required this.onAddGoal,
   });
 
   @override
-  State<AddSubgoalItemWidget> createState() => _AddSubgoalItemWidgetState();
+  ConsumerState<AddSubgoalItemWidget> createState() =>
+      _AddSubgoalItemWidgetState();
 }
 
-class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
-  TextEditingController? _textController;
+class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
+  late TextEditingController _textController =
+      TextEditingController(text: _defaultText);
   bool _editing = false;
   final _focusNode = FocusNode();
 
   String get _defaultText =>
-      widget.parentId == null ? "[New Goal]" : "[New Subgoal]";
+      widget.path.length < 2 ? "[New Goal]" : "[New Subgoal]";
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
+    Future.delayed(Duration.zero, () {
+      if (pathsMatch(ref.read(textFocusProvider), this.widget.path)) {
+        setState(() {
+          _editing = true;
+          _focusNode.requestFocus();
+          _textController.selection = TextSelection(
+              baseOffset: 0, extentOffset: _textController.text.length);
+        });
+      }
+    });
+  }
 
-    if (_textController == null) {
-      _textController = TextEditingController(text: _defaultText);
-    } else {
-      _textController!.text = _defaultText;
-    }
+  void dispose() {
+    _textController.dispose();
+    _focusNode.dispose();
+    super.dispose();
   }
 
   _addGoal() {
-    final newText = _textController!.text;
-    _textController!.text = _defaultText;
-    _textController!.selection = TextSelection(
-        baseOffset: 0, extentOffset: _textController!.text.length);
+    final newText = _textController.text;
+    _textController.text = _defaultText;
+    _textController.selection =
+        TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
 
-    widget.onAddGoal(widget.parentId, newText);
+    widget.onAddGoal(
+        widget.path.length >= 2 ? widget.path[widget.path.length - 2] : null,
+        newText);
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(textFocusProvider, (oldValue, newValue) {
+      if (pathsMatch(this.widget.path, newValue)) {
+        if (!pathsMatch(oldValue, newValue)) {
+          setState(() {
+            _editing = true;
+            _focusNode.requestFocus();
+            _textController.selection = TextSelection(
+                baseOffset: 0, extentOffset: _textController.text.length);
+          });
+        }
+      } else {
+        setState(() {
+          _editing = false;
+          _focusNode.unfocus();
+        });
+      }
+    });
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: Row(
         children: [
           SizedBox(
             width: uiUnit(10),
-            height: uiUnit(10),
+            height: uiUnit(8),
             child: const Center(child: Icon(Icons.add, size: 18)),
           ),
           _editing
@@ -63,27 +97,20 @@ class _AddSubgoalItemWidgetState extends State<AddSubgoalItemWidget> {
                     style: mainTextStyle,
                     onEditingComplete: _addGoal,
                     onTapOutside: (_) {
-                      if (_textController!.text != _defaultText) {
+                      if (_textController.text != _defaultText &&
+                          _textController.text.isNotEmpty) {
                         _addGoal();
                       }
-                      setState(() {
-                        _editing = false;
-                      });
+                      ref.read(textFocusProvider.notifier).set(null);
                     },
                     focusNode: _focusNode,
                   ),
                 )
               : GestureDetector(
-                  onTap: () => {
-                    setState(() {
-                      _editing = true;
-                      _focusNode.requestFocus();
-                      _textController!.selection = TextSelection(
-                          baseOffset: 0,
-                          extentOffset: _textController!.text.length);
-                    })
+                  onTap: () {
+                    ref.read(textFocusProvider.notifier).set(widget.path);
                   },
-                  child: Text(_textController!.text,
+                  child: Text(_textController.text,
                       style: mainTextStyle.copyWith(color: Colors.black54)),
                 ),
         ],

@@ -27,6 +27,7 @@ import 'package:goals_core/sync.dart'
     show GoalDelta, GoalStatus, SetParentLogEntry, StatusLogEntry;
 import 'package:goals_core/util.dart' show DateTimeExtension;
 import 'package:goals_web/app_context.dart';
+import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -35,7 +36,6 @@ import 'package:multi_split_view/multi_split_view.dart';
 import 'package:uuid/uuid.dart' show Uuid;
 
 import '../styles.dart' show lightBackground, multiSplitViewThemeData, uiUnit;
-import 'goal_list.dart' show GoalListWidget;
 import 'hover_actions.dart';
 import 'text_editing_controls.dart';
 
@@ -549,9 +549,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                   a.text.toLowerCase().compareTo(b.text.toLowerCase())))
             .map((g) => g.id)
             .toList();
-    return GoalListWidget(
+    return FlattenedGoalTree(
       goalMap: goalMap,
-      goalIds: goalIds,
+      rootGoalIds: goalIds,
       onSelected: onSelected,
       onExpanded: onExpanded,
       onFocused: onFocused,
@@ -616,9 +616,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       return null;
     }
 
-    return GoalListWidget(
+    return FlattenedGoalTree(
       goalMap: goalMap,
-      goalIds: goalIds,
+      rootGoalIds: goalIds,
       onSelected: onSelected,
       onExpanded: onExpanded,
       onFocused: onFocused,
@@ -659,9 +659,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     if (goalMap.isEmpty || goalIds.isEmpty) {
       return null;
     }
-    return GoalListWidget(
+    return FlattenedGoalTree(
       goalMap: goalMap,
-      goalIds: goalIds,
+      rootGoalIds: goalIds,
       onSelected: onSelected,
       onExpanded: onExpanded,
       onFocused: onFocused,
@@ -727,9 +727,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                                       .compareTo(b.text.toLowerCase())))
                                 .map((g) => g.id)
                                 .toList();
-                        return GoalListWidget(
+                        return FlattenedGoalTree(
                           goalMap: goalMap,
-                          goalIds: goalIds,
+                          rootGoalIds: goalIds,
                           onSelected: onSelected,
                           onExpanded: onExpanded,
                           onFocused: onFocused,
@@ -797,9 +797,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                                       .compareTo(b.text.toLowerCase())))
                                 .map((g) => g.id)
                                 .toList();
-                        return GoalListWidget(
+                        return FlattenedGoalTree(
                           goalMap: goalMap,
-                          goalIds: goalIds,
+                          rootGoalIds: goalIds,
                           onSelected: onSelected,
                           onExpanded: onExpanded,
                           onFocused: onFocused,
@@ -911,8 +911,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         onExpanded: this.onExpanded,
         onFocused: this.onFocused,
         onSelected: this.onSelected,
-        onAddGoal: (String? parentId, String text) =>
-            this._onAddGoal(parentId ?? focusedGoalId, text),
+        onAddGoal: this._onAddGoal,
         hoverActionsBuilder: (goalId) => HoverActionsWidget(
             goalId: goalId,
             onUnarchive: this.onUnarchive,

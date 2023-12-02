@@ -8,7 +8,6 @@ import 'package:goals_core/sync.dart'
 import 'package:goals_core/util.dart' show formatDate;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
-import 'package:goals_web/goal_viewer/goal_list.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
@@ -16,6 +15,8 @@ import 'package:goals_web/styles.dart' show mainTextStyle, uiUnit;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
 import 'package:url_launcher/url_launcher.dart' show canLaunchUrl, launchUrl;
+
+import 'flattened_goal_tree.dart' show FlattenedGoalTree;
 
 class Breadcrumb extends ConsumerWidget {
   final Goal goal;
@@ -184,7 +185,7 @@ class GoalDetail extends ConsumerStatefulWidget {
   final Goal goal;
   final Map<String, Goal> goalMap;
   final Function(String goalId) onSelected;
-  final Function(String goalId, {bool expanded}) onExpanded;
+  final Function(String goalId, {bool? expanded}) onExpanded;
   final Function(String goalId) onFocused;
   final Function(String? parentId, String text) onAddGoal;
   final HoverActionsBuilder hoverActionsBuilder;
@@ -340,9 +341,9 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         SizedBox(height: uiUnit(2)),
         Text('Subgoals', style: textTheme.headlineSmall),
         SizedBox(height: uiUnit(1)),
-        GoalListWidget(
+        FlattenedGoalTree(
           goalMap: subgoalMap,
-          goalIds: widget.goal.subGoals
+          rootGoalIds: widget.goal.subGoals
               .where((g) => subgoalMap.containsKey(g.id))
               .map((g) => g.id)
               .toList(),
@@ -351,6 +352,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
           onFocused: widget.onFocused,
           hoverActionsBuilder: widget.hoverActionsBuilder,
           onAddGoal: widget.onAddGoal,
+          path: [widget.goal.id],
         ),
         SizedBox(height: uiUnit(2)),
         Text('Notes', style: textTheme.headlineSmall),

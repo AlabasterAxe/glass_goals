@@ -25,6 +25,21 @@ final debugProvider = StateNotifierProvider<_BooleanStateNotifier, bool>(
 
 final hoverEventStream = BehaviorSubject<String?>.seeded(null);
 
+final textFocusProvider =
+    StateNotifierProvider<_GoalPathNotifier, List<String>?>(
+        (ref) => _GoalPathNotifier(null));
+
+pathsMatch(List<String>? a, List<String>? b) {
+  if (a == null && b == null) return true;
+  if (a?.length != b?.length) {
+    return false;
+  }
+  for (int i = 0; i < a!.length; i++) {
+    if (a[i] != b![i]) return false;
+  }
+  return true;
+}
+
 enum EditingEvent {
   accept,
   discard,
@@ -34,6 +49,11 @@ class _BooleanStateNotifier extends StateNotifier<bool> {
   _BooleanStateNotifier(super.state);
   void toggle() => state = !state;
   void set(bool value) => state = value;
+}
+
+class _GoalPathNotifier extends StateNotifier<List<String>?> {
+  _GoalPathNotifier(super.state);
+  void set(List<String>? value) => state = value;
 }
 
 class _WorldContext extends StateNotifier<WorldContext> {

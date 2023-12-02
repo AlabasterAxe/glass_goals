@@ -8,8 +8,15 @@ class Goal {
   final List<Goal> subGoals = [];
   final List<Goal> superGoals = [];
   final List<GoalLogEntry> log = [];
+  final DateTime creationTime;
 
-  Goal({required this.text, required this.id, subGoals, superGoals}) {
+  Goal({
+    required this.text,
+    required this.id,
+    subGoals,
+    superGoals,
+    required this.creationTime,
+  }) {
     if (subGoals != null) {
       this.subGoals.addAll(subGoals);
     }

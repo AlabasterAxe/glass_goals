@@ -11,9 +11,11 @@ import 'package:flutter/material.dart'
         Tooltip,
         showDatePicker,
         showTimePicker;
-import 'package:flutter/rendering.dart' show MainAxisAlignment, MainAxisSize;
+import 'package:flutter/rendering.dart'
+    show EdgeInsets, MainAxisAlignment, MainAxisSize;
+import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
-    show BuildContext, Icon, Row, Text, Widget;
+    show BuildContext, Icon, IconData, Row, Text, Widget;
 import 'package:goals_core/model.dart' show Goal, getGoalStatus;
 import 'package:goals_core/sync.dart' show GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
@@ -59,6 +61,18 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
   final _snoozeMenuController = MenuController();
   final _activateMenuController = MenuController();
   final _doneMenuController = MenuController();
+
+  Widget _button({required IconData icon, required VoidCallback onPressed}) {
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        icon: Icon(icon, color: darkElementColor, size: 24),
+        onPressed: onPressed,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -134,12 +148,11 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 onPressed: () => widget.onActive(widget.goalId),
               ),
             ],
-            child: IconButton(
-              icon: const Icon(Icons.schedule, color: darkElementColor),
-              onPressed: () {
-                _activateMenuController.open();
-              },
-            ),
+            child: _button(
+                icon: Icons.schedule,
+                onPressed: () {
+                  _activateMenuController.open();
+                }),
           ),
         ),
         Tooltip(
@@ -196,8 +209,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                     }
                   }),
             ],
-            child: IconButton(
-              icon: const Icon(Icons.hotel, color: darkElementColor),
+            child: _button(
+              icon: Icons.hotel,
               onPressed: () {
                 _snoozeMenuController.open();
               },
@@ -255,9 +268,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 onPressed: () => widget.onDone(widget.goalId, null),
               ),
             ],
-            child: IconButton(
-              icon: const Icon(Icons.done_outline_rounded,
-                  color: darkElementColor),
+            child: _button(
+              icon: Icons.done_outline_rounded,
               onPressed: () {
                 _doneMenuController.open();
               },
@@ -269,8 +281,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 waitDuration: _TOOLTIP_DELAY,
                 showDuration: Duration.zero,
                 message: 'Unarchive',
-                child: IconButton(
-                  icon: const Icon(Icons.unarchive, color: darkElementColor),
+                child: _button(
+                  icon: Icons.unarchive,
                   onPressed: () => widget.onUnarchive(widget.goalId),
                 ),
               )
@@ -278,8 +290,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 waitDuration: _TOOLTIP_DELAY,
                 showDuration: Duration.zero,
                 message: 'Archive',
-                child: IconButton(
-                  icon: const Icon(Icons.archive, color: darkElementColor),
+                child: _button(
+                  icon: Icons.archive,
                   onPressed: () => widget.onArchive(widget.goalId),
                 ),
               ),

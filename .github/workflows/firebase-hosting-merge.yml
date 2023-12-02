@@ -22,4 +22,3 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_GLASSGOALS }}'
           channelId: live
           projectId: glassgoals
-          entryPoint: goals_web
