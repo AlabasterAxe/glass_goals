@@ -371,6 +371,11 @@ StatusLogEntry getGoalStatus(WorldContext context, Goal goal) {
       id: 'default-status', creationTime: DateTime(1970, 1, 1), status: null);
 }
 
+getPriorityComparator(WorldContext context) {
+  return (Goal goalA, Goal goalB) => getGoalPriority(context, goalA)
+      .compareTo(getGoalPriority(context, goalB));
+}
+
 double getGoalPriority(WorldContext context, Goal goal) {
   final double? explicitPriority = goal.log
       .whereType<PriorityLogEntry>()
@@ -382,18 +387,7 @@ double getGoalPriority(WorldContext context, Goal goal) {
     return explicitPriority;
   }
 
-  double? minIndex;
-
-  for (final parentGoal in goal.superGoals) {
-    for (final (index, parentChild) in parentGoal.subGoals.indexed) {
-      if (parentChild.id == goal.id) {
-        if (minIndex == null || index < minIndex) {
-          minIndex = index.toDouble();
-        }
-      }
-    }
-  }
-  return minIndex ?? 0.0;
+  return goal.creationTime.millisecondsSinceEpoch.toDouble();
 }
 
 StatusLogEntry? goalHasStatus(

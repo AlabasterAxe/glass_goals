@@ -2,7 +2,12 @@ import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
     show BuildContext, Column, DragTarget, MediaQuery, Widget;
 import 'package:goals_core/model.dart'
-    show Goal, TraversalDecision, WorldContext, getGoalPriority, traverseDown;
+    show
+        Goal,
+        TraversalDecision,
+        WorldContext,
+        getPriorityComparator,
+        traverseDown;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart'
@@ -16,13 +21,14 @@ import '../styles.dart';
 import 'goal_item.dart';
 import 'goal_separator.dart';
 import 'providers.dart';
+import 'package:collection/collection.dart' show IterableExtension;
 
 typedef FlattenedGoalItem = ({
-  int depth,
-  String? goalId,
+  List<String> goalPath,
   bool hasRenderableChildren,
-  String? parentId,
 });
+
+const String NEW_GOAL_PLACEHOLDER = "[NEW_GOAL]";
 
 class FlattenedGoalTree extends ConsumerWidget {
   final Map<String, Goal> goalMap;
@@ -49,16 +55,20 @@ class FlattenedGoalTree extends ConsumerWidget {
 
   List<FlattenedGoalItem> _getFlattenedGoalItems(
       WorldContext context, Set<String> expandedGoalIds) {
+    final priorityComparator = getPriorityComparator(context);
     final List<FlattenedGoalItem> flattenedGoals = [];
-    for (final goalId in this.rootGoalIds) {
+    for (final Goal goal in this
+        .rootGoalIds
+        .map((id) => this.goalMap[id])
+        .where((goal) => goal != null)
+        .cast<Goal>()
+        .sorted(priorityComparator)) {
       traverseDown(
         this.goalMap,
-        goalId,
+        goal.id,
         onVisit: (goalId, path) {
           flattenedGoals.add((
-            depth: path.length,
-            parentId: path.isNotEmpty ? path.last : null,
-            goalId: goalId,
+            goalPath: [...path, goalId],
             hasRenderableChildren: this
                 .goalMap[goalId]!
                 .subGoals
@@ -71,19 +81,14 @@ class FlattenedGoalTree extends ConsumerWidget {
           }
         },
         onDepart: (String goalId, List<String> path) {
-          if (expandedGoalIds.contains(goalId)) {
+          if (expandedGoalIds.contains(goalId) && this.onAddGoal != null) {
             flattenedGoals.add((
-              depth: path.length + 1,
-              goalId: null,
+              goalPath: [...path, goalId, "[NEW_GOAL]"],
               hasRenderableChildren: false,
-              parentId: goalId,
             ));
           }
         },
-        childTraversalComparator: (goalA, goalB) {
-          return getGoalPriority(context, goalA)
-              .compareTo(getGoalPriority(context, goalB));
-        },
+        childTraversalComparator: priorityComparator,
       );
     }
     return flattenedGoals;
@@ -114,56 +119,59 @@ class FlattenedGoalTree extends ConsumerWidget {
     for (int i = 0; i < flattenedGoalItems.length; i++) {
       final previousGoal = i > 0 ? flattenedGoalItems[i - 1] : null;
       final flattenedGoal = flattenedGoalItems[i];
-      if (flattenedGoal.goalId != null || this.onAddGoal != null) {
-        goalItems.add(GoalSeparator(
-          goalMap: this.goalMap,
-          previousGoalId: previousGoal?.goalId,
-          nextGoalId: flattenedGoal.goalId,
-        ));
-        goalItems.add(Padding(
-          padding: EdgeInsets.only(left: uiUnit(4) * flattenedGoal.depth),
-          child: flattenedGoal.goalId != null
-              ? DragTarget<String>(
-                  onAccept: (droppedGoalId) {
-                    final selectedGoals = ref.read(selectedGoalsProvider);
-                    final selectedAndDraggedGoals = {
-                      ...ref.read(selectedGoalsProvider),
-                      droppedGoalId
-                    };
-                    this._moveGoals(
-                        context,
-                        flattenedGoal.goalId!,
-                        selectedGoals.contains(droppedGoalId)
-                            ? selectedAndDraggedGoals
-                            : {droppedGoalId});
-                    ref.read(selectedGoalsProvider.notifier).clear();
-                  },
-                  builder: (context, _, __) => GoalItemWidget(
-                    goal: this.goalMap[flattenedGoal.goalId!]!,
-                    onExpanded: this.onExpanded,
-                    onFocused: this.onFocused,
-                    hovered: false,
-                    hoverActionsBuilder: this.hoverActionsBuilder,
-                    hasRenderableChildren: flattenedGoal.hasRenderableChildren,
-                    showExpansionArrow: true,
-                    dragHandle: isNarrow
-                        ? GoalItemDragHandle.bullet
-                        : GoalItemDragHandle.item,
-                    onDragEnd: null,
-                    onDragStarted: null,
-                  ),
-                )
-              : AddSubgoalItemWidget(
-                  onAddGoal: this.onAddGoal!,
-                  parentId: flattenedGoal.parentId!),
-        ));
-      }
+      final goalId = flattenedGoal.goalPath.last;
+      final parentId = flattenedGoal.goalPath.length > 1
+          ? flattenedGoal.goalPath[flattenedGoal.goalPath.length - 2]
+          : null;
+      goalItems.add(GoalSeparator(
+        goalMap: this.goalMap,
+        previousGoalPath: previousGoal?.goalPath ?? [],
+        nextGoalPath: flattenedGoal.goalPath,
+      ));
+      goalItems.add(Padding(
+        padding: EdgeInsets.only(
+            left: uiUnit(4) * flattenedGoal.goalPath.length - 1),
+        child: goalId != NEW_GOAL_PLACEHOLDER
+            ? DragTarget<String>(
+                onAccept: (droppedGoalId) {
+                  final selectedGoals = ref.read(selectedGoalsProvider);
+                  final selectedAndDraggedGoals = {
+                    ...ref.read(selectedGoalsProvider),
+                    droppedGoalId
+                  };
+                  this._moveGoals(
+                      context,
+                      goalId,
+                      selectedGoals.contains(droppedGoalId)
+                          ? selectedAndDraggedGoals
+                          : {droppedGoalId});
+                  ref.read(selectedGoalsProvider.notifier).clear();
+                },
+                builder: (context, _, __) => GoalItemWidget(
+                  goal: this.goalMap[goalId]!,
+                  onExpanded: this.onExpanded,
+                  onFocused: this.onFocused,
+                  hovered: false,
+                  hoverActionsBuilder: this.hoverActionsBuilder,
+                  hasRenderableChildren: flattenedGoal.hasRenderableChildren,
+                  showExpansionArrow: true,
+                  dragHandle: isNarrow
+                      ? GoalItemDragHandle.bullet
+                      : GoalItemDragHandle.item,
+                  onDragEnd: null,
+                  onDragStarted: null,
+                ),
+              )
+            : AddSubgoalItemWidget(
+                onAddGoal: this.onAddGoal!,
+                parentId: parentId,
+              ),
+      ));
     }
     if (flattenedGoalItems.isNotEmpty) {
       goalItems.add(GoalSeparator(
         goalMap: this.goalMap,
-        previousGoalId: flattenedGoalItems.last.goalId,
-        nextGoalId: null,
+        previousGoalPath: flattenedGoalItems.last.goalPath,
       ));
     }
 
