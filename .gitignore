@@ -8,3 +8,5 @@ node_modules/
 *.sync.lock
 
 flutter_sdk
+
+*.log
