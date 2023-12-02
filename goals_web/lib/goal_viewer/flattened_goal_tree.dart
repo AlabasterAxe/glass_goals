@@ -51,7 +51,7 @@ class FlattenedGoalTree extends ConsumerWidget {
     this.depthLimit,
     this.showParentName = false,
     required this.hoverActionsBuilder,
-    required this.onAddGoal,
+    this.onAddGoal,
     this.path = const [],
   });
 
