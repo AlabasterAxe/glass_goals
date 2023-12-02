@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import '../app_context.dart';
 import '../styles.dart';
+import 'providers.dart';
 
 class GoalSeparator extends StatefulWidget {
   final Map<String, Goal> goalMap;
@@ -23,20 +24,6 @@ class GoalSeparator extends StatefulWidget {
   State<GoalSeparator> createState() => _GoalSeparatorState();
 }
 
-// A
-// - sep
-// B
-// - sep
-// C
-// - sep
-//   D
-//   - sep
-//   E
-//   - sep
-//   add goal
-// - sep
-// F
-
 class _GoalSeparatorState extends State<GoalSeparator> {
   bool _hovered = false;
 
@@ -47,12 +34,6 @@ class _GoalSeparatorState extends State<GoalSeparator> {
     final nextGoalId = widget.nextGoalPath.lastOrNull;
 
     final worldContext = WorldContext.now();
-
-    // cases
-    //  - dropped between siblings => set parent to path[length - 2], priority to average of siblings
-    //  - dropped between parent and child => set parent to last element of previous path, priority to midpoint between 0 and first child priority
-    //  - dropped after last child and before add goal entry => set parent to path[length - 2], priority to last child priority * 2
-    //  - dropped after add goal entry => set parent to next path[length - 2], priority to average between parent goal of previous path and priority of last child of next path
 
     String? newParentId;
     double? newPriority;
@@ -137,6 +118,7 @@ class _GoalSeparatorState extends State<GoalSeparator> {
       onMove: (details) {
         setState(() {
           _hovered = true;
+          hoverEventStream.add(null);
         });
       },
       onLeave: (data) {

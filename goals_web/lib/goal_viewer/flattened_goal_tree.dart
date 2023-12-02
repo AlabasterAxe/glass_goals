@@ -137,8 +137,8 @@ class FlattenedGoalTree extends ConsumerWidget {
         padding: EdgeInsets.only(
             left: uiUnit(4) * (flattenedGoal.goalPath.length - 1)),
         child: goalId != NEW_GOAL_PLACEHOLDER
-            ? DragTarget<String>(
-                onAccept: (droppedGoalId) {
+            ? GoalItemWidget(
+                onDropGoal: (droppedGoalId) {
                   final selectedGoals = ref.read(selectedGoalsProvider);
                   final selectedAndDraggedGoals = {
                     ...ref.read(selectedGoalsProvider),
@@ -152,20 +152,15 @@ class FlattenedGoalTree extends ConsumerWidget {
                           : {droppedGoalId});
                   ref.read(selectedGoalsProvider.notifier).clear();
                 },
-                builder: (context, _, __) => GoalItemWidget(
-                  goal: this.goalMap[goalId]!,
-                  onExpanded: this.onExpanded,
-                  onFocused: this.onFocused,
-                  hovered: false,
-                  hoverActionsBuilder: this.hoverActionsBuilder,
-                  hasRenderableChildren: flattenedGoal.hasRenderableChildren,
-                  showExpansionArrow: true,
-                  dragHandle: isNarrow
-                      ? GoalItemDragHandle.bullet
-                      : GoalItemDragHandle.item,
-                  onDragEnd: null,
-                  onDragStarted: null,
-                ),
+                goal: this.goalMap[goalId]!,
+                onExpanded: this.onExpanded,
+                onFocused: this.onFocused,
+                hoverActionsBuilder: this.hoverActionsBuilder,
+                hasRenderableChildren: flattenedGoal.hasRenderableChildren,
+                showExpansionArrow: true,
+                dragHandle: isNarrow
+                    ? GoalItemDragHandle.bullet
+                    : GoalItemDragHandle.item,
               )
             : AddSubgoalItemWidget(
                 onAddGoal: this.onAddGoal!,

@@ -28,26 +28,22 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
   final Function(String id, {bool expanded}) onExpanded;
   final Function(String id)? onFocused;
 
-  final bool hovered;
   final HoverActionsBuilder hoverActionsBuilder;
   final bool hasRenderableChildren;
   final bool showExpansionArrow;
   final GoalItemDragHandle dragHandle;
-  final Function()? onDragEnd;
-  final Function()? onDragStarted;
+  final Function(String goalId)? onDropGoal;
 
   const GoalItemWidget({
     super.key,
     required this.goal,
     required this.onExpanded,
     required this.onFocused,
-    this.hovered = false,
     required this.hoverActionsBuilder,
     required this.hasRenderableChildren,
     this.showExpansionArrow = true,
     this.dragHandle = GoalItemDragHandle.none,
-    this.onDragEnd,
-    this.onDragStarted,
+    this.onDropGoal,
   });
 
   @override
@@ -100,8 +96,6 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     return Draggable<String>(
       data: widget.goal.id,
       hitTestBehavior: HitTestBehavior.opaque,
-      onDragEnd: (_) => widget.onDragEnd?.call(),
-      onDragStarted: widget.onDragStarted,
       feedback: Container(
         decoration:
             const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
@@ -156,9 +150,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
               },
         child: Container(
           decoration: BoxDecoration(
-            color: widget.hovered || _hovering
-                ? emphasizedLightBackground
-                : Colors.transparent,
+            color: _hovering ? emphasizedLightBackground : Colors.transparent,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.max,
@@ -245,12 +237,23 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         ),
       ),
     );
-    return widget.dragHandle == GoalItemDragHandle.item
-        ? _dragWrapWidget(
-            isSelected: isSelected,
-            selectedGoals: selectedGoals,
-            child: content,
-          )
-        : content;
+    return DragTarget<String>(
+      onAccept: this.widget.onDropGoal,
+      onMove: (details) {
+        setState(() {
+          if (!_hovering) {
+            _hovering = true;
+            hoverEventStream.add(this.widget.goal.id);
+          }
+        });
+      },
+      builder: (context, _, __) => widget.dragHandle == GoalItemDragHandle.item
+          ? _dragWrapWidget(
+              isSelected: isSelected,
+              selectedGoals: selectedGoals,
+              child: content,
+            )
+          : content,
+    );
   }
 }
