@@ -66,14 +66,13 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
   void initState() {
     super.initState();
 
-    subscriptions.add(hoverEventStream.listen((id) => {
-          if (id != widget.goal.id)
-            {
-              setState(() {
-                _hovering = false;
-              })
-            }
-        }));
+    subscriptions.add(hoverEventStream.listen((id) {
+      if (id != widget.goal.id) {
+        setState(() {
+          _hovering = false;
+        });
+      }
+    }));
   }
 
   @override
