@@ -1,6 +1,6 @@
 import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
-    show BuildContext, Column, Container, DragTarget, MediaQuery, Widget;
+    show BuildContext, Column, DragTarget, MediaQuery, Widget;
 import 'package:goals_core/model.dart'
     show Goal, TraversalDecision, WorldContext, getGoalPriority, traverseDown;
 import 'package:goals_core/sync.dart';

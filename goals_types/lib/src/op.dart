@@ -83,6 +83,9 @@ abstract class GoalLogEntry extends Equatable {
     if (entry is SetParentLogEntry) {
       return SetParentLogEntry.toJsonMap(entry);
     }
+    if (entry is PriorityLogEntry) {
+      return PriorityLogEntry.toJsonMap(entry);
+    }
     throw Exception('Unknown type: ${entry.runtimeType}');
   }
 
@@ -126,7 +129,7 @@ class PriorityLogEntry extends GoalLogEntry {
     return PriorityLogEntry(
       id: json['id'],
       priority: json['priority'],
-      creationTime: json['creationTime']!,
+      creationTime: DateTime.parse(json['creationTime']!).toLocal(),
     );
   }
 

@@ -45,7 +45,8 @@ class _GoalSeparatorState extends State<GoalSeparator> {
   @override
   Widget build(BuildContext context) {
     return DragTarget(
-      onAccept: (_) {
+      onAccept: (String goalId) {
+        _setGoalPriority(context, {goalId});
         setState(() {
           _hovered = false;
         });
