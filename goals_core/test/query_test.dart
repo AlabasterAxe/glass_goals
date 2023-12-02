@@ -401,7 +401,7 @@ void main() {
 
     final goalIds = [];
     final paths = [];
-    traverseDown(goalMap, parent.id, (goalId, path) {
+    traverseDown(goalMap, parent.id, onVisit: (goalId, path) {
       goalIds.add(goalId);
       paths.add(path);
     });
@@ -436,7 +436,7 @@ void main() {
 
     final goalIds = [];
     final paths = [];
-    traverseDown(goalMap, parent.id, (goalId, path) {
+    traverseDown(goalMap, parent.id, onVisit: (goalId, path) {
       goalIds.add(goalId);
       paths.add(path);
       return TraversalDecision.stopTraversal;
@@ -475,7 +475,7 @@ void main() {
 
     final goalIds = [];
     final paths = [];
-    traverseDown(goalMap, parent.id, (goalId, path) {
+    traverseDown(goalMap, parent.id, onVisit: (goalId, path) {
       goalIds.add(goalId);
       paths.add(path);
       if (goalId == 'child') {
@@ -518,7 +518,7 @@ void main() {
 
     final goalIds = [];
     final paths = [];
-    traverseDown(goalMap, parent.id, (goalId, path) {
+    traverseDown(goalMap, parent.id, onVisit: (goalId, path) {
       goalIds.add(goalId);
       paths.add(path);
     });
