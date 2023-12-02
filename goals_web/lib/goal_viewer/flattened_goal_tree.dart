@@ -1,6 +1,6 @@
 import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
-    show BuildContext, Column, DragTarget, MediaQuery, ValueKey, Widget;
+    show BuildContext, Column, DragTarget, MediaQuery, Widget;
 import 'package:goals_core/model.dart'
     show
         Goal,
@@ -40,6 +40,7 @@ class FlattenedGoalTree extends ConsumerWidget {
   final int? depthLimit;
   final bool showParentName;
   final HoverActionsBuilder hoverActionsBuilder;
+  final List<String> path;
   const FlattenedGoalTree({
     super.key,
     required this.goalMap,
@@ -51,6 +52,7 @@ class FlattenedGoalTree extends ConsumerWidget {
     this.showParentName = false,
     required this.hoverActionsBuilder,
     required this.onAddGoal,
+    this.path = const [],
   });
 
   List<FlattenedGoalItem> _getFlattenedGoalItems(
@@ -68,7 +70,7 @@ class FlattenedGoalTree extends ConsumerWidget {
         goal.id,
         onVisit: (goalId, path) {
           flattenedGoals.add((
-            goalPath: [...path, goalId],
+            goalPath: [...this.path, ...path, goalId],
             hasRenderableChildren: this
                 .goalMap[goalId]!
                 .subGoals
@@ -83,13 +85,19 @@ class FlattenedGoalTree extends ConsumerWidget {
         onDepart: (String goalId, List<String> path) {
           if (expandedGoalIds.contains(goalId) && this.onAddGoal != null) {
             flattenedGoals.add((
-              goalPath: [...path, goalId, "[NEW_GOAL]"],
+              goalPath: [...this.path, ...path, goalId, NEW_GOAL_PLACEHOLDER],
               hasRenderableChildren: false,
             ));
           }
         },
         childTraversalComparator: priorityComparator,
       );
+    }
+    if (this.onAddGoal != null) {
+      flattenedGoals.add((
+        goalPath: [...this.path, NEW_GOAL_PLACEHOLDER],
+        hasRenderableChildren: false,
+      ));
     }
     return flattenedGoals;
   }
@@ -164,16 +172,6 @@ class FlattenedGoalTree extends ConsumerWidget {
                 path: flattenedGoal.goalPath,
               ),
       ));
-    }
-    if (flattenedGoalItems.isNotEmpty) {
-      goalItems.add(GoalSeparator(
-        goalMap: this.goalMap,
-        previousGoalPath: flattenedGoalItems.last.goalPath,
-      ));
-    }
-
-    if (this.onAddGoal != null) {
-      goalItems.add(AddSubgoalItemWidget(path: [], onAddGoal: this.onAddGoal!));
     }
     return Column(children: goalItems);
   }

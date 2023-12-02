@@ -73,7 +73,7 @@ class _GoalSeparatorState extends State<GoalSeparator> {
       if (nextPriority != null && prevPriority != null) {
         newPriority = (prevPriority + nextPriority) / 2;
       } else if (prevPriority != null) {
-        prevPriority * 2;
+        newPriority = null;
       }
     } else if (widget.previousGoalPath.length ==
         widget.nextGoalPath.length - 1) {
@@ -89,17 +89,22 @@ class _GoalSeparatorState extends State<GoalSeparator> {
           ? widget.nextGoalPath[widget.nextGoalPath.length - 2]
           : null;
 
-      final addGoalParentId =
-          widget.previousGoalPath[widget.previousGoalPath.length - 2];
-      final prevGoal = widget.goalMap[addGoalParentId]!;
-      final prevPriority = getGoalPriority(worldContext, prevGoal);
-      final nextPriority = nextGoalId == NEW_GOAL_PLACEHOLDER
-          ? null
-          : getGoalPriority(worldContext, widget.goalMap[nextGoalId]!);
+      final addGoalParentId = widget.previousGoalPath.length >= 2
+          ? widget.previousGoalPath[widget.previousGoalPath.length - 2]
+          : null;
+      final prevGoal = widget.goalMap[addGoalParentId];
+      final prevPriority =
+          prevGoal == null ? null : getGoalPriority(worldContext, prevGoal);
+      final nextPriority =
+          nextGoalId == null || nextGoalId == NEW_GOAL_PLACEHOLDER
+              ? null
+              : getGoalPriority(worldContext, widget.goalMap[nextGoalId]!);
 
-      newPriority = nextPriority == null
-          ? prevPriority * 2
-          : (prevPriority + nextPriority) / 2;
+      if (nextPriority != null && prevPriority != null) {
+        newPriority = (prevPriority + nextPriority) / 2;
+      } else if (prevPriority != null) {
+        newPriority = null;
+      }
     }
 
     for (final goalId in goalIds) {
