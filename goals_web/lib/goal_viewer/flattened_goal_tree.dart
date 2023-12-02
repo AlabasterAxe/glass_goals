@@ -1,6 +1,6 @@
 import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
-    show BuildContext, Column, DragTarget, MediaQuery, Widget;
+    show BuildContext, Column, DragTarget, MediaQuery, ValueKey, Widget;
 import 'package:goals_core/model.dart'
     show
         Goal,
@@ -120,9 +120,6 @@ class FlattenedGoalTree extends ConsumerWidget {
       final previousGoal = i > 0 ? flattenedGoalItems[i - 1] : null;
       final flattenedGoal = flattenedGoalItems[i];
       final goalId = flattenedGoal.goalPath.last;
-      final parentId = flattenedGoal.goalPath.length > 1
-          ? flattenedGoal.goalPath[flattenedGoal.goalPath.length - 2]
-          : null;
       goalItems.add(GoalSeparator(
         goalMap: this.goalMap,
         previousGoalPath: previousGoal?.goalPath ?? [],
@@ -130,7 +127,7 @@ class FlattenedGoalTree extends ConsumerWidget {
       ));
       goalItems.add(Padding(
         padding: EdgeInsets.only(
-            left: uiUnit(4) * flattenedGoal.goalPath.length - 1),
+            left: uiUnit(4) * (flattenedGoal.goalPath.length - 1)),
         child: goalId != NEW_GOAL_PLACEHOLDER
             ? DragTarget<String>(
                 onAccept: (droppedGoalId) {
@@ -164,7 +161,7 @@ class FlattenedGoalTree extends ConsumerWidget {
               )
             : AddSubgoalItemWidget(
                 onAddGoal: this.onAddGoal!,
-                parentId: parentId,
+                path: flattenedGoal.goalPath,
               ),
       ));
     }
@@ -176,7 +173,7 @@ class FlattenedGoalTree extends ConsumerWidget {
     }
 
     if (this.onAddGoal != null) {
-      goalItems.add(AddSubgoalItemWidget(onAddGoal: this.onAddGoal!));
+      goalItems.add(AddSubgoalItemWidget(path: [], onAddGoal: this.onAddGoal!));
     }
     return Column(children: goalItems);
   }

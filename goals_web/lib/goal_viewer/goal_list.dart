@@ -46,7 +46,8 @@ class GoalListWidget extends StatelessWidget {
             ),
           this.onAddGoal != null
               ? AddSubgoalItemWidget(
-                  onAddGoal: this.onAddGoal!, parentId: this.parentId)
+                  onAddGoal: this.onAddGoal!,
+                  path: this.parentId != null ? [this.parentId!] : [])
               : Container(),
         ],
       );
