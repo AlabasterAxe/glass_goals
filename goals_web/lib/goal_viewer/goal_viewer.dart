@@ -35,7 +35,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 import 'package:uuid/uuid.dart' show Uuid;
 
-import '../styles.dart' show lightBackground, multiSplitViewThemeData, uiUnit;
+import '../styles.dart'
+    show
+        darkElementColor,
+        lightBackground,
+        multiSplitViewThemeData,
+        smallTextStyle,
+        uiUnit;
 import 'hover_actions.dart';
 import 'text_editing_controls.dart';
 
@@ -378,12 +384,23 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
   }
 
-  _viewSwitcher(bool drawer) {
+  _viewSwitcher(bool drawer, WorldContext worldContext) {
     final sidebarFilters = [
       GoalFilter.schedule,
       GoalFilter.to_review,
       GoalFilter.all,
     ];
+    final yesterday = worldContext.time.subtract(const Duration(days: 1));
+    final toReview = {
+      ...getGoalsRequiringAttention(worldContext, widget.goalMap),
+      ...getGoalsForDateRange(
+        WorldContext(time: yesterday.endOfDay),
+        widget.goalMap,
+        yesterday.startOfDay,
+        yesterday.endOfDay,
+      )
+    };
+    final theme = Theme.of(context);
     return SizedBox(
       key: const ValueKey('viewSwitcher'),
       width: 200,
@@ -395,6 +412,24 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             ListTile(
               title: Text(filter.displayName),
               selected: _filter == filter,
+              trailing: (filter == GoalFilter.to_review && toReview.isNotEmpty)
+                  ? // material theme container with rounded corners and toReview size
+                  Container(
+                      width: uiUnit(8),
+                      height: uiUnit(6),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.secondary,
+                        borderRadius: BorderRadius.circular(uiUnit(2)),
+                      ),
+                      child: Center(
+                        child: Text(
+                          toReview.length.toString(),
+                          style:
+                              smallTextStyle.copyWith(color: darkElementColor),
+                        ),
+                      ),
+                    )
+                  : null,
               onTap: () {
                 // Update the state of the app
                 onSwitchFilter(filter);
@@ -420,7 +455,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
     final isNarrow = MediaQuery.of(context).size.width < 600;
     if (!isNarrow) {
-      children.add(_viewSwitcher(false));
+      children.add(_viewSwitcher(false, worldContext));
     }
 
     var appBarTitle = 'Glass Goals';
@@ -479,7 +514,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         ),
         drawer: isNarrow && focusedGoalId == null
             ? Drawer(
-                child: _viewSwitcher(true),
+                child: _viewSwitcher(true, worldContext),
               )
             : null,
         body: Stack(
