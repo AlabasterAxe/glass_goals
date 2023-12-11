@@ -275,6 +275,39 @@ Map<String, Goal> getGoalsRequiringAttention(
   return result;
 }
 
+Map<String, Goal> getPreviouslyActiveGoals(
+    WorldContext context, Map<String, Goal> goalMap) {
+  final previouslyActiveGoals =
+      getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
+    if (getGoalStatus(context, goal).status != null) {
+      return false;
+    }
+
+    Set<String> archivedStatuses = {};
+    for (final entry in goal.log.reversed) {
+      if (entry is ArchiveStatusLogEntry) {
+        archivedStatuses.add(entry.id);
+      }
+      if (entry is StatusLogEntry &&
+          entry.status == GoalStatus.active &&
+          !archivedStatuses.contains(entry.id)) {
+        return true;
+      }
+    }
+    return false;
+  });
+
+  for (final goal in goalMap.values) {
+    if (getGoalStatus(context, goal).status == GoalStatus.pending) {
+      for (final snoozedSubgoal
+          in getTransitiveSubGoals(goalMap, goal.id).keys) {
+        previouslyActiveGoals.remove(snoozedSubgoal);
+      }
+    }
+  }
+  return previouslyActiveGoals;
+}
+
 Map<String, Goal> getGoalsForDateRange(
     WorldContext context, Map<String, Goal> goalMap,
     [DateTime? start,

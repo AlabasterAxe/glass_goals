@@ -22,7 +22,8 @@ import 'package:goals_core/model.dart'
         getGoalStatus,
         getGoalsForDateRange,
         getGoalsMatchingPredicate,
-        getGoalsRequiringAttention;
+        getGoalsRequiringAttention,
+        getPreviouslyActiveGoals;
 import 'package:goals_core/sync.dart'
     show GoalDelta, GoalStatus, SetParentLogEntry, StatusLogEntry;
 import 'package:goals_core/util.dart' show DateTimeExtension;
@@ -390,14 +391,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       GoalFilter.to_review,
       GoalFilter.all,
     ];
-    final yesterday = worldContext.time.subtract(const Duration(days: 1));
     final toReview = {
       ...getGoalsRequiringAttention(worldContext, widget.goalMap),
-      ...getGoalsForDateRange(
-        WorldContext(time: yesterday.endOfDay),
+      ...getPreviouslyActiveGoals(
+        worldContext,
         widget.goalMap,
-        yesterday.startOfDay,
-        yesterday.endOfDay,
       )
     };
     final theme = Theme.of(context);
@@ -670,6 +668,49 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     );
   }
 
+  Widget? _previouslyActiveGoals(WorldContext context) {
+    final goalMap = getPreviouslyActiveGoals(context, widget.goalMap);
+
+    final goalIds = _mode == GoalViewMode.tree
+        ? goalMap.values
+            .where((goal) {
+              for (final superGoal in goal.superGoals) {
+                if (goalMap.containsKey(superGoal.id)) {
+                  return false;
+                }
+              }
+              return true;
+            })
+            .map((e) => e.id)
+            .toList()
+        : (goalMap.values.toList(growable: false)
+              ..sort((a, b) =>
+                  a.text.toLowerCase().compareTo(b.text.toLowerCase())))
+            .map((g) => g.id)
+            .toList();
+
+    if (goalMap.isEmpty || goalIds.isEmpty) {
+      return null;
+    }
+    return FlattenedGoalTree(
+      goalMap: goalMap,
+      rootGoalIds: goalIds,
+      onSelected: onSelected,
+      onExpanded: onExpanded,
+      onFocused: onFocused,
+      hoverActionsBuilder: (goalId) => HoverActionsWidget(
+        goalId: goalId,
+        onUnarchive: onUnarchive,
+        onArchive: onArchive,
+        onDone: onDone,
+        onSnooze: onSnooze,
+        onActive: onActive,
+        goalMap: widget.goalMap,
+      ),
+      depthLimit: _mode == GoalViewMode.list ? 1 : null,
+    );
+  }
+
   Widget? _orphanedGoals(WorldContext context) {
     final goalMap = getGoalsRequiringAttention(context, widget.goalMap);
 
@@ -783,8 +824,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       case GoalFilter.to_review:
                         final toReview = {
                           'Orphaned Goals': _orphanedGoals(worldContext),
-                          'Yesterday\'s Active Goals': _previousTimeSliceGoals(
-                              worldContext, TimeSlice.today),
+                          'Previously Active Goals':
+                              _previouslyActiveGoals(worldContext),
                         };
 
                         final nothingToReview =

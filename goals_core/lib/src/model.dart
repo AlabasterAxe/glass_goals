@@ -7,6 +7,9 @@ class Goal {
   String text;
   final List<Goal> subGoals = [];
   final List<Goal> superGoals = [];
+
+  /// A log of changes to this goal. This is guaranteed to be
+  /// sorted from oldest to newest.
   final List<GoalLogEntry> log = [];
   final DateTime creationTime;
 
