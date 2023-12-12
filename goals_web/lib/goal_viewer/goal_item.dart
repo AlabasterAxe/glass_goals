@@ -244,7 +244,13 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                           ),
                       ]),
                     ),
-                    if (!isNarrow && !_editing && (isSelected || _hovering))
+                    if (!isNarrow &&
+                        !_editing &&
+                        (isSelected ||
+                            _hovering ||
+                            snapshot.hasData &&
+                                pathsMatch(
+                                    snapshot.requireData, this.widget.path)))
                       widget.hoverActionsBuilder(widget.goal.id)
                   ],
                 ),
