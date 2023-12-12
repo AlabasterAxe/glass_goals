@@ -42,6 +42,7 @@ class FlattenedGoalTree extends ConsumerWidget {
   final bool showParentName;
   final HoverActionsBuilder hoverActionsBuilder;
   final List<String> path;
+  final String section;
   const FlattenedGoalTree({
     super.key,
     required this.goalMap,
@@ -55,6 +56,7 @@ class FlattenedGoalTree extends ConsumerWidget {
     this.onAddGoal,
     this.path = const [],
     this.onDropGoal,
+    required this.section,
   });
 
   List<FlattenedGoalItem> _getFlattenedGoalItems(
@@ -72,7 +74,7 @@ class FlattenedGoalTree extends ConsumerWidget {
         goal.id,
         onVisit: (goalId, path) {
           flattenedGoals.add((
-            goalPath: [...this.path, ...path, goalId],
+            goalPath: [this.section, ...this.path, ...path, goalId],
             hasRenderableChildren: this
                 .goalMap[goalId]!
                 .subGoals
@@ -87,7 +89,13 @@ class FlattenedGoalTree extends ConsumerWidget {
         onDepart: (String goalId, List<String> path) {
           if (expandedGoalIds.contains(goalId) && this.onAddGoal != null) {
             flattenedGoals.add((
-              goalPath: [...this.path, ...path, goalId, NEW_GOAL_PLACEHOLDER],
+              goalPath: [
+                this.section,
+                ...this.path,
+                ...path,
+                goalId,
+                NEW_GOAL_PLACEHOLDER
+              ],
               hasRenderableChildren: false,
             ));
           }
@@ -97,7 +105,7 @@ class FlattenedGoalTree extends ConsumerWidget {
     }
     if (this.onAddGoal != null) {
       flattenedGoals.add((
-        goalPath: [...this.path, NEW_GOAL_PLACEHOLDER],
+        goalPath: [this.section, ...this.path, NEW_GOAL_PLACEHOLDER],
         hasRenderableChildren: false,
       ));
     }
@@ -119,20 +127,20 @@ class FlattenedGoalTree extends ConsumerWidget {
       final goalId = flattenedGoal.goalPath.last;
       goalItems.add(GoalSeparator(
         isFirst: i == 0,
-        prevGoalPath: prevGoal?.goalPath ?? this.path,
+        prevGoalPath: prevGoal?.goalPath ?? [section, ...this.path],
         nextGoalPath: flattenedGoal.goalPath,
         goalMap: this.goalMap,
         onDropGoal: this.onDropGoal != null
             ? (droppedGoalId) {
                 this.onDropGoal!(droppedGoalId,
-                    prevDropPath: prevGoal?.goalPath ?? this.path,
+                    prevDropPath: prevGoal?.goalPath ?? [section, ...this.path],
                     nextDropPath: flattenedGoal.goalPath);
               }
             : null,
       ));
       goalItems.add(Padding(
         padding: EdgeInsets.only(
-            left: uiUnit(4) * (flattenedGoal.goalPath.length - 1)),
+            left: uiUnit(4) * (flattenedGoal.goalPath.length - 2)),
         child: goalId != NEW_GOAL_PLACEHOLDER
             ? GoalItemWidget(
                 onDropGoal: (droppedGoalId) {

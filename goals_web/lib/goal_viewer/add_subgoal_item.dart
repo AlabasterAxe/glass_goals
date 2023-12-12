@@ -26,7 +26,7 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
   final _focusNode = FocusNode();
 
   String get _defaultText =>
-      widget.path.length < 2 ? "[New Goal]" : "[New Subgoal]";
+      widget.path.length < 3 ? "[New Goal]" : "[New Subgoal]";
 
   @override
   void initState() {
@@ -56,7 +56,7 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
         TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
 
     widget.onAddGoal(
-        widget.path.length >= 2 ? widget.path[widget.path.length - 2] : null,
+        widget.path.length >= 3 ? widget.path[widget.path.length - 2] : null,
         newText);
   }
 

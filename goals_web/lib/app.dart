@@ -82,42 +82,45 @@ class _WebGoalsState extends ConsumerState<WebGoals>
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        localizationsDelegates: GlobalMaterialLocalizations.delegates,
-        supportedLocales: const [
-          Locale('en', 'US'),
-          Locale('en', 'GB'),
-        ],
-        initialRoute: '/home',
-        theme: theme,
-        onGenerateRoute: (settings) {
-          if (settings.name != null && settings.name!.startsWith('/sign-in')) {
-            return MaterialPageRoute(
-                builder: (context) => SignInScreen(
-                      actions: [
-                        AuthStateChangeAction<SignedIn>((context, state) {
-                          Navigator.pushReplacementNamed(context, '/home');
-                        })
-                      ],
-                    ));
-          } else if (settings.name != null &&
-              settings.name!.startsWith('/home')) {
-            return MaterialPageRoute(
-                builder: (context) => FutureBuilder<void>(
-                    future: appInit(context),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState != ConnectionState.done) {
-                        return const Center(
-                            child: SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator()));
-                      }
-                      return AppContext(
-                          syncClient: syncClient, child: const GoalsHome());
-                    }));
-          }
-        });
+    return AppContext(
+      syncClient: syncClient,
+      child: MaterialApp(
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          supportedLocales: const [
+            Locale('en', 'US'),
+            Locale('en', 'GB'),
+          ],
+          initialRoute: '/home',
+          theme: theme,
+          onGenerateRoute: (settings) {
+            if (settings.name != null &&
+                settings.name!.startsWith('/sign-in')) {
+              return MaterialPageRoute(
+                  builder: (context) => SignInScreen(
+                        actions: [
+                          AuthStateChangeAction<SignedIn>((context, state) {
+                            Navigator.pushReplacementNamed(context, '/home');
+                          })
+                        ],
+                      ));
+            } else if (settings.name != null &&
+                settings.name!.startsWith('/home')) {
+              return MaterialPageRoute(
+                  builder: (context) => FutureBuilder<void>(
+                      future: appInit(context),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState != ConnectionState.done) {
+                          return const Center(
+                              child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator()));
+                        }
+                        return GoalsHome();
+                      }));
+            }
+          }),
+    );
   }
 }
 

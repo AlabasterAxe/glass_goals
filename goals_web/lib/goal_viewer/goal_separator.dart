@@ -50,7 +50,7 @@ class _GoalSeparatorState extends State<GoalSeparator> {
       },
       builder: (_, __, ___) => Padding(
         padding:
-            EdgeInsets.only(left: uiUnit(4) * (widget.nextGoalPath.length - 1)),
+            EdgeInsets.only(left: uiUnit(4) * (widget.nextGoalPath.length - 2)),
         child: Stack(
           children: [
             SizedBox(
