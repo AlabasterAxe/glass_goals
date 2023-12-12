@@ -46,73 +46,77 @@ class _GoalSeparatorState extends State<GoalSeparator> {
           _dragHovered = false;
         });
       },
-      builder: (_, __, ___) => Stack(
-        children: [
-          SizedBox(
-            height: uiUnit(2),
-            child: Center(
-              child: Container(
-                color:
-                    this._dragHovered ? darkElementColor : Colors.transparent,
-                height: 2,
+      builder: (_, __, ___) => Padding(
+        padding:
+            EdgeInsets.only(left: uiUnit(4) * (widget.nextGoalPath.length - 1)),
+        child: Stack(
+          children: [
+            SizedBox(
+              height: uiUnit(2),
+              child: Center(
+                child: Container(
+                  color:
+                      this._dragHovered ? darkElementColor : Colors.transparent,
+                  height: 2,
+                ),
               ),
             ),
-          ),
-          Positioned(
-            child: MouseRegion(
-              onHover: (event) {
-                if (this.widget.prevGoalPath.isNotEmpty &&
-                    this.widget.prevGoalPath.last != NEW_GOAL_PLACEHOLDER) {
-                  hoverEventStream.add(this.widget.prevGoalPath);
-                }
-              },
-              child: StreamBuilder<List<String>?>(
-                  stream: hoverEventStream.stream,
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return Container();
-                    }
-                    return Container(
-                      color: pathsMatch(
-                              snapshot.requireData, this.widget.prevGoalPath)
-                          ? emphasizedLightBackground
-                          : Colors.transparent,
-                    );
-                  }),
+            Positioned(
+              child: MouseRegion(
+                onHover: (event) {
+                  if (this.widget.prevGoalPath.isNotEmpty &&
+                      this.widget.prevGoalPath.last != NEW_GOAL_PLACEHOLDER) {
+                    hoverEventStream.add(this.widget.prevGoalPath);
+                  }
+                },
+                child: StreamBuilder<List<String>?>(
+                    stream: hoverEventStream.stream,
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return Container();
+                      }
+                      return Container(
+                        color: pathsMatch(
+                                snapshot.requireData, this.widget.prevGoalPath)
+                            ? emphasizedLightBackground
+                            : Colors.transparent,
+                      );
+                    }),
+              ),
+              top: 0,
+              left: 0,
+              right: 0,
+              height: uiUnit(),
             ),
-            top: 0,
-            left: 0,
-            right: 0,
-            height: uiUnit(),
-          ),
-          Positioned(
-            child: MouseRegion(
-              onHover: (event) {
-                if (this.widget.nextGoalPath.isNotEmpty &&
-                    this.widget.nextGoalPath.last != NEW_GOAL_PLACEHOLDER) {
-                  hoverEventStream.add(this.widget.nextGoalPath);
-                }
-              },
-              child: StreamBuilder<List<String>?>(
-                  stream: hoverEventStream.stream,
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return Container();
-                    }
-                    return Container(
-                      color: pathsMatch(
-                              snapshot.requireData, this.widget.nextGoalPath)
-                          ? emphasizedLightBackground
-                          : Colors.transparent,
-                    );
-                  }),
+            Positioned(
+              child: MouseRegion(
+                onHover: (event) {
+                  if (this.widget.nextGoalPath.isNotEmpty &&
+                      this.widget.nextGoalPath.last != NEW_GOAL_PLACEHOLDER) {
+                    hoverEventStream.add(this.widget.nextGoalPath);
+                  }
+                },
+                child: StreamBuilder<List<String>?>(
+                    stream: hoverEventStream.stream,
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return Container();
+                      }
+                      return Container(
+                        color: pathsMatch(
+                                snapshot.requireData, this.widget.nextGoalPath)
+                            ? emphasizedLightBackground
+                            : Colors.transparent,
+                      );
+                    }),
+              ),
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: uiUnit(),
             ),
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: uiUnit(),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
