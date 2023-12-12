@@ -797,16 +797,21 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               ? selectedGoals
               : {droppedGoalId};
           bool setNullParent = goalsToUpdate.every(goalMap.containsKey);
+          bool addStatus =
+              goalsToUpdate.every((goalId) => !goalMap.containsKey(goalId));
           for (final goalId in goalsToUpdate) {
-            AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
-                id: goalId,
-                logEntry: StatusLogEntry(
-                  id: const Uuid().v4(),
-                  creationTime: DateTime.now(),
-                  status: GoalStatus.active,
-                  startTime: slice.startTime(context.time),
-                  endTime: slice.endTime(context.time),
-                )));
+            if (addStatus) {
+              AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
+                  id: goalId,
+                  logEntry: StatusLogEntry(
+                    id: const Uuid().v4(),
+                    creationTime: DateTime.now(),
+                    status: GoalStatus.active,
+                    startTime: slice.startTime(context.time),
+                    endTime: slice.endTime(context.time),
+                  )));
+            }
+
             if (setNullParent &&
                 (prevDropPath?.length == 0 || prevDropPath?.length == 1) &&
                 (nextDropPath?.length == 0 || nextDropPath?.length == 1)) {
