@@ -118,13 +118,14 @@ class FlattenedGoalTree extends ConsumerWidget {
       final flattenedGoal = flattenedGoalItems[i];
       final goalId = flattenedGoal.goalPath.last;
       goalItems.add(GoalSeparator(
+        isFirst: i == 0,
         prevGoalPath: prevGoal?.goalPath ?? this.path,
         nextGoalPath: flattenedGoal.goalPath,
         goalMap: this.goalMap,
         onDropGoal: this.onDropGoal != null
             ? (droppedGoalId) {
                 this.onDropGoal!(droppedGoalId,
-                    prevDropPath: prevGoal?.goalPath ?? [],
+                    prevDropPath: prevGoal?.goalPath ?? this.path,
                     nextDropPath: flattenedGoal.goalPath);
               }
             : null,

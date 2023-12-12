@@ -750,7 +750,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               .map((g) => g.id)
               .toList();
       result.add(Padding(
-        padding: EdgeInsets.symmetric(vertical: uiUnit(2)),
+        padding: EdgeInsets.only(top: uiUnit(2)),
         child: TextButton(
           onPressed: () => {
             // kinda gross that we're sharing names between enums here but w/e

@@ -10,6 +10,7 @@ class GoalSeparator extends StatefulWidget {
   final Map<String, Goal> goalMap;
   final List<String> prevGoalPath;
   final List<String> nextGoalPath;
+  final bool isFirst;
   final Function(String goalId)? onDropGoal;
   const GoalSeparator({
     super.key,
@@ -17,6 +18,7 @@ class GoalSeparator extends StatefulWidget {
     required this.prevGoalPath,
     required this.nextGoalPath,
     this.onDropGoal,
+    required this.isFirst,
   });
 
   @override
@@ -61,33 +63,34 @@ class _GoalSeparatorState extends State<GoalSeparator> {
                 ),
               ),
             ),
-            Positioned(
-              child: MouseRegion(
-                onHover: (event) {
-                  if (this.widget.prevGoalPath.isNotEmpty &&
-                      this.widget.prevGoalPath.last != NEW_GOAL_PLACEHOLDER) {
-                    hoverEventStream.add(this.widget.prevGoalPath);
-                  }
-                },
-                child: StreamBuilder<List<String>?>(
-                    stream: hoverEventStream.stream,
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return Container();
-                      }
-                      return Container(
-                        color: pathsMatch(
-                                snapshot.requireData, this.widget.prevGoalPath)
-                            ? emphasizedLightBackground
-                            : Colors.transparent,
-                      );
-                    }),
+            if (!this.widget.isFirst)
+              Positioned(
+                child: MouseRegion(
+                  onHover: (event) {
+                    if (this.widget.prevGoalPath.isNotEmpty &&
+                        this.widget.prevGoalPath.last != NEW_GOAL_PLACEHOLDER) {
+                      hoverEventStream.add(this.widget.prevGoalPath);
+                    }
+                  },
+                  child: StreamBuilder<List<String>?>(
+                      stream: hoverEventStream.stream,
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return Container();
+                        }
+                        return Container(
+                          color: pathsMatch(snapshot.requireData,
+                                  this.widget.prevGoalPath)
+                              ? emphasizedLightBackground
+                              : Colors.transparent,
+                        );
+                      }),
+                ),
+                top: 0,
+                left: 0,
+                right: 0,
+                height: uiUnit(),
               ),
-              top: 0,
-              left: 0,
-              right: 0,
-              height: uiUnit(),
-            ),
             Positioned(
               child: MouseRegion(
                 onHover: (event) {
