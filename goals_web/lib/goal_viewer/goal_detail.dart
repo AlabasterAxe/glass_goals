@@ -4,7 +4,13 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:goals_core/model.dart'
     show Goal, getGoalStatus, getGoalsMatchingPredicate;
 import 'package:goals_core/sync.dart'
-    show ArchiveNoteLogEntry, GoalDelta, GoalLogEntry, GoalStatus, NoteLogEntry;
+    show
+        ArchiveNoteLogEntry,
+        GoalDelta,
+        GoalLogEntry,
+        GoalStatus,
+        NoteLogEntry,
+        SetParentLogEntry;
 import 'package:goals_core/util.dart' show formatDate;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
@@ -13,10 +19,12 @@ import 'package:goals_web/goal_viewer/goal_search_modal.dart'
 import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
-import 'package:goals_web/styles.dart' show mainTextStyle, uiUnit;
+import 'package:goals_web/styles.dart'
+    show darkElementColor, lightBackground, mainTextStyle, uiUnit;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
 import 'package:url_launcher/url_launcher.dart' show canLaunchUrl, launchUrl;
+import 'package:uuid/uuid.dart';
 
 import 'flattened_goal_tree.dart' show FlattenedGoalTree;
 
@@ -38,10 +46,10 @@ class Breadcrumb extends ConsumerWidget {
 }
 
 class AddParentBreadcrumb extends StatefulWidget {
-  final Goal goal;
+  final String goalId;
   const AddParentBreadcrumb({
     super.key,
-    required this.goal,
+    required this.goalId,
   });
 
   @override
@@ -57,20 +65,30 @@ class _AddParentBreadcrumbState extends State<AddParentBreadcrumb> {
         children: [
           GestureDetector(
               child: Text("+ Add Parent"),
-              onTap: () {
-                setState(() {
-                  showDialog(
-                      context: context,
-                      builder: (context) => Dialog(
-                            child: StreamBuilder<Map<String, Goal>>(
-                                stream: AppContext.of(context)
-                                    .syncClient
-                                    .stateSubject,
-                                builder: (context, snapshot) => GoalSearchModal(
-                                      goalMap: snapshot.data ?? Map(),
-                                    )),
-                          ));
-                });
+              onTap: () async {
+                final newParentId = await showDialog(
+                    barrierColor: Colors.black26,
+                    context: context,
+                    builder: (context) => Dialog(
+                          surfaceTintColor: Colors.transparent,
+                          backgroundColor: lightBackground,
+                          alignment: FractionalOffset.topCenter,
+                          child: StreamBuilder<Map<String, Goal>>(
+                              stream: AppContext.of(context)
+                                  .syncClient
+                                  .stateSubject,
+                              builder: (context, snapshot) => GoalSearchModal(
+                                    goalMap: snapshot.data ?? Map(),
+                                  )),
+                        ));
+                if (newParentId != null) {
+                  AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                      id: widget.goalId,
+                      logEntry: SetParentLogEntry(
+                          id: Uuid().v4(),
+                          creationTime: DateTime.now(),
+                          parentId: newParentId)));
+                }
               }),
         ],
       ),
@@ -302,7 +320,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     final List<Widget> widgets = [];
     Goal? curGoal = widget.goal.superGoals.firstOrNull;
     if (curGoal == null) {
-      widgets.add(AddParentBreadcrumb(goal: widget.goal));
+      widgets.add(AddParentBreadcrumb(goalId: widget.goal.id));
     } else {
       while (curGoal != null) {
         widgets.add(Breadcrumb(goal: curGoal));
