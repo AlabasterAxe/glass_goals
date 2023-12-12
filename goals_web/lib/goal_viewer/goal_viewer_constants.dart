@@ -1,0 +1,1 @@
+const String NEW_GOAL_PLACEHOLDER = "[NEW_GOAL]";

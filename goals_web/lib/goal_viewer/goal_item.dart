@@ -141,7 +141,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         setState(() {
           if (!_hovering) {
             _hovering = true;
-            hoverEventStream.add([...this.widget.path, this.widget.goal.id]);
+            hoverEventStream.add(this.widget.path);
           }
         });
       },
@@ -158,8 +158,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                 decoration: BoxDecoration(
                   color: (_hovering ||
                           snapshot.hasData &&
-                              pathsMatch(snapshot.requireData,
-                                  [...this.widget.path, this.widget.goal.id]))
+                              pathsMatch(
+                                  snapshot.requireData, this.widget.path))
                       ? emphasizedLightBackground
                       : Colors.transparent,
                 ),
@@ -258,7 +258,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         setState(() {
           if (!_hovering) {
             _hovering = true;
-            hoverEventStream.add([...this.widget.path, this.widget.goal.id]);
+            hoverEventStream.add(this.widget.path);
           }
         });
       },

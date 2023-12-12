@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:goals_core/model.dart';
 
 import '../styles.dart';
+import 'goal_viewer_constants.dart';
 import 'providers.dart';
 
 class GoalSeparator extends StatefulWidget {
@@ -60,7 +61,8 @@ class _GoalSeparatorState extends State<GoalSeparator> {
           Positioned(
             child: MouseRegion(
               onHover: (event) {
-                if (this.widget.prevGoalPath.isNotEmpty) {
+                if (this.widget.prevGoalPath.isNotEmpty &&
+                    this.widget.prevGoalPath.last != NEW_GOAL_PLACEHOLDER) {
                   hoverEventStream.add(this.widget.prevGoalPath);
                 }
               },
@@ -86,7 +88,8 @@ class _GoalSeparatorState extends State<GoalSeparator> {
           Positioned(
             child: MouseRegion(
               onHover: (event) {
-                if (this.widget.nextGoalPath.isNotEmpty) {
+                if (this.widget.nextGoalPath.isNotEmpty &&
+                    this.widget.nextGoalPath.last != NEW_GOAL_PLACEHOLDER) {
                   hoverEventStream.add(this.widget.nextGoalPath);
                 }
               },

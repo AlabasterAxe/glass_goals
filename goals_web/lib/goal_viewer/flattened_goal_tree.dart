@@ -16,6 +16,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 import '../styles.dart';
 import 'goal_item.dart';
 import 'goal_separator.dart';
+import 'goal_viewer_constants.dart';
 import 'providers.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 
@@ -23,8 +24,6 @@ typedef FlattenedGoalItem = ({
   List<String> goalPath,
   bool hasRenderableChildren,
 });
-
-const String NEW_GOAL_PLACEHOLDER = "[NEW_GOAL]";
 
 class FlattenedGoalTree extends ConsumerWidget {
   final Map<String, Goal> goalMap;
@@ -152,6 +151,7 @@ class FlattenedGoalTree extends ConsumerWidget {
                 dragHandle: isNarrow
                     ? GoalItemDragHandle.bullet
                     : GoalItemDragHandle.item,
+                path: flattenedGoal.goalPath,
               )
             : AddSubgoalItemWidget(
                 onAddGoal: this.onAddGoal!,

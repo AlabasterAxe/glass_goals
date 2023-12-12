@@ -50,6 +50,7 @@ import '../styles.dart'
         multiSplitViewThemeData,
         smallTextStyle,
         uiUnit;
+import 'goal_viewer_constants.dart';
 import 'hover_actions.dart';
 import 'text_editing_controls.dart';
 
@@ -574,6 +575,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final worldContext = ref.watch(worldContextProvider);
     final selectedGoals = ref.watch(selectedGoalsProvider);
     final isEditingText = ref.watch(isEditingTextProvider);
+    final debugMode = ref.watch(debugProvider);
     ref.listen(focusedGoalProvider, _handleFocusedGoalChange);
 
     final children = <Widget>[];
@@ -654,6 +656,27 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         children: children,
                       )),
             ),
+            if (!isNarrow && debugMode)
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Selected Goals: ${selectedGoals.join(', ')}',
+                        style: Theme.of(context).textTheme.bodyText1,
+                      ),
+                      StreamBuilder<List<String>?>(
+                          stream: hoverEventStream.stream,
+                          builder: (context, snapshot) {
+                            return Text('Hovered Path: ${snapshot.data}');
+                          })
+                    ],
+                  ),
+                ),
+              ),
             if (isNarrow && (selectedGoals.isNotEmpty || focusedGoalId != null))
               Positioned(
                   bottom: 0,
