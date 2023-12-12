@@ -8,6 +8,8 @@ import 'package:goals_core/sync.dart'
 import 'package:goals_core/util.dart' show formatDate;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
+import 'package:goals_web/goal_viewer/goal_search_modal.dart'
+    show GoalSearchModal;
 import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
@@ -32,6 +34,47 @@ class Breadcrumb extends ConsumerWidget {
         onTap: () {
           ref.read(focusedGoalProvider.notifier).set(goal.id);
         });
+  }
+}
+
+class AddParentBreadcrumb extends StatefulWidget {
+  final Goal goal;
+  const AddParentBreadcrumb({
+    super.key,
+    required this.goal,
+  });
+
+  @override
+  State<AddParentBreadcrumb> createState() => _AddParentBreadcrumbState();
+}
+
+class _AddParentBreadcrumbState extends State<AddParentBreadcrumb> {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 100,
+      child: Column(
+        children: [
+          GestureDetector(
+              child: Text("+ Add Parent"),
+              onTap: () {
+                setState(() {
+                  showDialog(
+                      context: context,
+                      builder: (context) => Dialog(
+                            child: StreamBuilder<Map<String, Goal>>(
+                                stream: AppContext.of(context)
+                                    .syncClient
+                                    .stateSubject,
+                                builder: (context, snapshot) => GoalSearchModal(
+                                      goalMap: snapshot.data ?? Map(),
+                                    )),
+                          ));
+                });
+              }),
+        ],
+      ),
+    );
   }
 }
 
@@ -258,14 +301,17 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
   Widget breadcrumbs() {
     final List<Widget> widgets = [];
     Goal? curGoal = widget.goal.superGoals.firstOrNull;
-    while (curGoal != null) {
-      widgets.add(Breadcrumb(goal: curGoal));
-      widgets.add(const Icon(Icons.chevron_right));
-      curGoal = curGoal.superGoals.firstOrNull;
-    }
-    if (widgets.isNotEmpty) {
+    if (curGoal == null) {
+      widgets.add(AddParentBreadcrumb(goal: widget.goal));
+    } else {
+      while (curGoal != null) {
+        widgets.add(Breadcrumb(goal: curGoal));
+        widgets.add(const Icon(Icons.chevron_right));
+        curGoal = curGoal.superGoals.firstOrNull;
+      }
       widgets.removeLast();
     }
+
     return Row(children: widgets.reversed.toList());
   }
 
