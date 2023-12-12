@@ -462,7 +462,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     double? newPriority;
     if (prevGoalPath.length == nextGoalPath.length) {
       // dropped between siblings
-      newParentId = prevGoalPath.length >= 2
+      newParentId = prevGoalPath.length >= 3
           ? prevGoalPath[prevGoalPath.length - 2]
           : null;
 
@@ -488,11 +488,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     } else if (prevGoalPath.length > nextGoalPath.length) {
       // dropped after last child and before add goal entry
 
-      newParentId = nextGoalPath.length >= 2
+      newParentId = nextGoalPath.length >= 3
           ? nextGoalPath[nextGoalPath.length - 2]
           : null;
 
-      final addGoalParentId = prevGoalPath.length >= 2
+      final addGoalParentId = prevGoalPath.length >= 3
           ? prevGoalPath[prevGoalPath.length - 2]
           : null;
       final prevGoal = widget.goalMap[addGoalParentId];
@@ -763,6 +763,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         ),
       ));
       result.add(FlattenedGoalTree(
+        section: slice.name,
         goalMap: goalMap,
         rootGoalIds: goalIds,
         onSelected: onSelected,
@@ -876,6 +877,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     return FlattenedGoalTree(
+      section: 'previous-${slice.name}',
       goalMap: goalMap,
       rootGoalIds: goalIds,
       onSelected: onSelected,
@@ -919,6 +921,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       return null;
     }
     return FlattenedGoalTree(
+      section: 'previously-active',
       goalMap: goalMap,
       rootGoalIds: goalIds,
       onSelected: onSelected,
@@ -962,6 +965,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       return null;
     }
     return FlattenedGoalTree(
+      section: 'orphaned',
       goalMap: goalMap,
       rootGoalIds: goalIds,
       onSelected: onSelected,
@@ -1030,6 +1034,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                                 .map((g) => g.id)
                                 .toList();
                         return FlattenedGoalTree(
+                          section: 'all-goals',
                           goalMap: goalMap,
                           rootGoalIds: goalIds,
                           onSelected: onSelected,
@@ -1101,6 +1106,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                                 .map((g) => g.id)
                                 .toList();
                         return FlattenedGoalTree(
+                          section: 'pending',
                           goalMap: goalMap,
                           rootGoalIds: goalIds,
                           onSelected: onSelected,

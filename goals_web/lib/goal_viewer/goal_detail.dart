@@ -20,7 +20,7 @@ import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
 import 'package:goals_web/styles.dart'
-    show darkElementColor, lightBackground, mainTextStyle, uiUnit;
+    show lightBackground, mainTextStyle, uiUnit;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
 import 'package:url_launcher/url_launcher.dart' show canLaunchUrl, launchUrl;
@@ -425,6 +425,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
           onAddGoal: widget.onAddGoal,
           path: [widget.goal.id],
           onDropGoal: this.widget.onDropGoal,
+          section: 'detail',
         ),
         SizedBox(height: uiUnit(2)),
         Text('Notes', style: textTheme.headlineSmall),
