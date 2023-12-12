@@ -15,6 +15,7 @@ import 'providers.dart'
         expandedGoalsProvider,
         focusedGoalProvider,
         hoverEventStream,
+        pathsMatch,
         selectedGoalsProvider;
 
 enum GoalItemDragHandle {
@@ -33,6 +34,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
   final bool showExpansionArrow;
   final GoalItemDragHandle dragHandle;
   final Function(String goalId)? onDropGoal;
+  final List<String> path;
 
   const GoalItemWidget({
     super.key,
@@ -44,6 +46,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
     this.showExpansionArrow = true,
     this.dragHandle = GoalItemDragHandle.none,
     this.onDropGoal,
+    this.path = const [],
   });
 
   @override
@@ -138,7 +141,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         setState(() {
           if (!_hovering) {
             _hovering = true;
-            hoverEventStream.add(this.widget.goal.id);
+            hoverEventStream.add([...this.widget.path, this.widget.goal.id]);
           }
         });
       },
@@ -148,93 +151,105 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
             : () {
                 widget.onFocused?.call(widget.goal.id);
               },
-        child: Container(
-          decoration: BoxDecoration(
-            color: _hovering ? emphasizedLightBackground : Colors.transparent,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  widget.dragHandle == GoalItemDragHandle.bullet
-                      ? _dragWrapWidget(
-                          child: bullet,
-                          isSelected: isSelected,
-                          selectedGoals: selectedGoals)
-                      : bullet,
-                  _editing
-                      ? IntrinsicWidth(
-                          child: TextField(
-                            autocorrect: false,
-                            controller: _textController,
-                            decoration: null,
-                            style: mainTextStyle,
-                            onEditingComplete: () {
-                              AppContext.of(context).syncClient.modifyGoal(
-                                  GoalDelta(
-                                      id: widget.goal.id,
-                                      text: _textController.text));
-                              setState(() {
-                                _editing = false;
-                              });
-                            },
-                            onTapOutside: (_) {
-                              setState(() {
-                                _editing = false;
-                              });
-                            },
-                            focusNode: _focusNode,
+        child: StreamBuilder<List<String>?>(
+            stream: hoverEventStream.stream,
+            builder: (context, snapshot) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: (_hovering ||
+                          snapshot.hasData &&
+                              pathsMatch(snapshot.requireData,
+                                  [...this.widget.path, this.widget.goal.id]))
+                      ? emphasizedLightBackground
+                      : Colors.transparent,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        widget.dragHandle == GoalItemDragHandle.bullet
+                            ? _dragWrapWidget(
+                                child: bullet,
+                                isSelected: isSelected,
+                                selectedGoals: selectedGoals)
+                            : bullet,
+                        _editing
+                            ? IntrinsicWidth(
+                                child: TextField(
+                                  autocorrect: false,
+                                  controller: _textController,
+                                  decoration: null,
+                                  style: mainTextStyle,
+                                  onEditingComplete: () {
+                                    AppContext.of(context)
+                                        .syncClient
+                                        .modifyGoal(GoalDelta(
+                                            id: widget.goal.id,
+                                            text: _textController.text));
+                                    setState(() {
+                                      _editing = false;
+                                    });
+                                  },
+                                  onTapOutside: (_) {
+                                    setState(() {
+                                      _editing = false;
+                                    });
+                                  },
+                                  focusNode: _focusNode,
+                                ),
+                              )
+                            : Flexible(
+                                child: GestureDetector(
+                                  onDoubleTap: _editing || !isSelected
+                                      ? null
+                                      : () => {
+                                            setState(() {
+                                              _editing = true;
+                                              _focusNode.requestFocus();
+                                            })
+                                          },
+                                  child: Text(widget.goal.text,
+                                      style: (isFocused
+                                              ? focusedFontStyle
+                                                  .merge(mainTextStyle)
+                                              : mainTextStyle)
+                                          .copyWith(
+                                        decoration: isSelected
+                                            ? TextDecoration.underline
+                                            : null,
+                                        overflow: TextOverflow.ellipsis,
+                                      )),
+                                ),
+                              ),
+                        SizedBox(width: uiUnit(2)),
+                        // chip-like container widget around text status widget:
+                        StatusChip(goal: widget.goal),
+                        if (this.widget.showExpansionArrow)
+                          SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: IconButton(
+                                padding: EdgeInsets.zero,
+                                onPressed: () =>
+                                    widget.onExpanded(widget.goal.id),
+                                icon: Icon(
+                                    size: 24,
+                                    isExpanded
+                                        ? Icons.arrow_drop_down
+                                        : widget.hasRenderableChildren
+                                            ? Icons.arrow_right
+                                            : Icons.add)),
                           ),
-                        )
-                      : Flexible(
-                          child: GestureDetector(
-                            onDoubleTap: _editing || !isSelected
-                                ? null
-                                : () => {
-                                      setState(() {
-                                        _editing = true;
-                                        _focusNode.requestFocus();
-                                      })
-                                    },
-                            child: Text(widget.goal.text,
-                                style: (isFocused
-                                        ? focusedFontStyle.merge(mainTextStyle)
-                                        : mainTextStyle)
-                                    .copyWith(
-                                  decoration: isSelected
-                                      ? TextDecoration.underline
-                                      : null,
-                                  overflow: TextOverflow.ellipsis,
-                                )),
-                          ),
-                        ),
-                  SizedBox(width: uiUnit(2)),
-                  // chip-like container widget around text status widget:
-                  StatusChip(goal: widget.goal),
-                  if (this.widget.showExpansionArrow)
-                    SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: IconButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () => widget.onExpanded(widget.goal.id),
-                          icon: Icon(
-                              size: 24,
-                              isExpanded
-                                  ? Icons.arrow_drop_down
-                                  : widget.hasRenderableChildren
-                                      ? Icons.arrow_right
-                                      : Icons.add)),
+                      ]),
                     ),
-                ]),
-              ),
-              if (!isNarrow && !_editing && (isSelected || _hovering))
-                widget.hoverActionsBuilder(widget.goal.id)
-            ],
-          ),
-        ),
+                    if (!isNarrow && !_editing && (isSelected || _hovering))
+                      widget.hoverActionsBuilder(widget.goal.id)
+                  ],
+                ),
+              );
+            }),
       ),
     );
     return DragTarget<String>(
@@ -243,7 +258,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         setState(() {
           if (!_hovering) {
             _hovering = true;
-            hoverEventStream.add(this.widget.goal.id);
+            hoverEventStream.add([...this.widget.path, this.widget.goal.id]);
           }
         });
       },

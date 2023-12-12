@@ -23,7 +23,7 @@ final editingEventStream = BehaviorSubject<EditingEvent>();
 final debugProvider = StateNotifierProvider<_BooleanStateNotifier, bool>(
     (ref) => _BooleanStateNotifier(false));
 
-final hoverEventStream = BehaviorSubject<String?>.seeded(null);
+final hoverEventStream = BehaviorSubject<List<String>?>.seeded(null);
 
 final textFocusProvider =
     StateNotifierProvider<_GoalPathNotifier, List<String>?>(

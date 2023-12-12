@@ -1,139 +1,115 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/widgets.dart';
 import 'package:goals_core/model.dart';
-import 'package:goals_core/sync.dart';
-import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
-import 'package:uuid/uuid.dart';
 
-import '../app_context.dart';
 import '../styles.dart';
 import 'providers.dart';
 
 class GoalSeparator extends StatefulWidget {
   final Map<String, Goal> goalMap;
-  final List<String> previousGoalPath;
+  final List<String> prevGoalPath;
   final List<String> nextGoalPath;
-  const GoalSeparator(
-      {super.key,
-      this.previousGoalPath = const [],
-      this.nextGoalPath = const [],
-      required this.goalMap});
+  final Function(String goalId)? onDropGoal;
+  const GoalSeparator({
+    super.key,
+    required this.goalMap,
+    required this.prevGoalPath,
+    required this.nextGoalPath,
+    this.onDropGoal,
+  });
 
   @override
   State<GoalSeparator> createState() => _GoalSeparatorState();
 }
 
 class _GoalSeparatorState extends State<GoalSeparator> {
-  bool _hovered = false;
-
-  _setGoalPriority(BuildContext context, Set<String> goalIds) {
-    final List<GoalDelta> goalDeltas = [];
-
-    final prevGoalId = widget.previousGoalPath.lastOrNull;
-    final nextGoalId = widget.nextGoalPath.lastOrNull;
-
-    final worldContext = WorldContext.now();
-
-    String? newParentId;
-    double? newPriority;
-    if (widget.previousGoalPath.length == widget.nextGoalPath.length) {
-      // dropped between siblings
-      newParentId = widget.previousGoalPath.length >= 2
-          ? widget.previousGoalPath[widget.previousGoalPath.length - 2]
-          : null;
-
-      final prevPriority = prevGoalId == null
-          ? null
-          : getGoalPriority(WorldContext.now(), widget.goalMap[prevGoalId]!);
-      final nextPriority = nextGoalId == null ||
-              nextGoalId == NEW_GOAL_PLACEHOLDER
-          ? null
-          : getGoalPriority(WorldContext.now(), widget.goalMap[nextGoalId]!);
-
-      if (nextPriority != null && prevPriority != null) {
-        newPriority = (prevPriority + nextPriority) / 2;
-      } else if (prevPriority != null) {
-        newPriority = null;
-      }
-    } else if (widget.previousGoalPath.length ==
-        widget.nextGoalPath.length - 1) {
-      // dropped between parent and child
-      newParentId = widget.previousGoalPath.lastOrNull;
-      newPriority = nextGoalId == NEW_GOAL_PLACEHOLDER
-          ? null
-          : getGoalPriority(worldContext, widget.goalMap[nextGoalId]!) / 2;
-    } else if (widget.previousGoalPath.length > widget.nextGoalPath.length) {
-      // dropped after last child and before add goal entry
-
-      newParentId = widget.nextGoalPath.length >= 2
-          ? widget.nextGoalPath[widget.nextGoalPath.length - 2]
-          : null;
-
-      final addGoalParentId = widget.previousGoalPath.length >= 2
-          ? widget.previousGoalPath[widget.previousGoalPath.length - 2]
-          : null;
-      final prevGoal = widget.goalMap[addGoalParentId];
-      final prevPriority =
-          prevGoal == null ? null : getGoalPriority(worldContext, prevGoal);
-      final nextPriority =
-          nextGoalId == null || nextGoalId == NEW_GOAL_PLACEHOLDER
-              ? null
-              : getGoalPriority(worldContext, widget.goalMap[nextGoalId]!);
-
-      if (nextPriority != null && prevPriority != null) {
-        newPriority = (prevPriority + nextPriority) / 2;
-      } else if (prevPriority != null) {
-        newPriority = null;
-      }
-    }
-
-    for (final goalId in goalIds) {
-      goalDeltas.add(GoalDelta(
-          id: goalId,
-          logEntry: SetParentLogEntry(
-              id: Uuid().v4(),
-              parentId: newParentId,
-              creationTime: DateTime.now())));
-      goalDeltas.add(GoalDelta(
-          id: goalId,
-          logEntry: PriorityLogEntry(
-              id: Uuid().v4(),
-              creationTime: DateTime.now(),
-              priority: newPriority)));
-    }
-
-    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-  }
+  bool _dragHovered = false;
 
   @override
   Widget build(BuildContext context) {
     return DragTarget(
       onAccept: (String goalId) {
-        _setGoalPriority(context, {goalId});
+        this.widget.onDropGoal?.call(goalId);
         setState(() {
-          _hovered = false;
+          _dragHovered = false;
         });
       },
       onMove: (details) {
         setState(() {
-          _hovered = true;
+          _dragHovered = true;
           hoverEventStream.add(null);
         });
       },
       onLeave: (data) {
         setState(() {
-          _hovered = false;
+          _dragHovered = false;
         });
       },
-      builder: (_, __, ___) => SizedBox(
-        height: uiUnit(2),
-        child: Center(
-          child: Container(
-            color: this._hovered ? darkElementColor : Colors.transparent,
-            height: 2,
+      builder: (_, __, ___) => Stack(
+        children: [
+          SizedBox(
+            height: uiUnit(2),
+            child: Center(
+              child: Container(
+                color:
+                    this._dragHovered ? darkElementColor : Colors.transparent,
+                height: 2,
+              ),
+            ),
           ),
-        ),
+          Positioned(
+            child: MouseRegion(
+              onHover: (event) {
+                if (this.widget.prevGoalPath.isNotEmpty) {
+                  hoverEventStream.add(this.widget.prevGoalPath);
+                }
+              },
+              child: StreamBuilder<List<String>?>(
+                  stream: hoverEventStream.stream,
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return Container();
+                    }
+                    return Container(
+                      color: pathsMatch(
+                              snapshot.requireData, this.widget.prevGoalPath)
+                          ? emphasizedLightBackground
+                          : Colors.transparent,
+                    );
+                  }),
+            ),
+            top: 0,
+            left: 0,
+            right: 0,
+            height: uiUnit(),
+          ),
+          Positioned(
+            child: MouseRegion(
+              onHover: (event) {
+                if (this.widget.nextGoalPath.isNotEmpty) {
+                  hoverEventStream.add(this.widget.nextGoalPath);
+                }
+              },
+              child: StreamBuilder<List<String>?>(
+                  stream: hoverEventStream.stream,
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return Container();
+                    }
+                    return Container(
+                      color: pathsMatch(
+                              snapshot.requireData, this.widget.nextGoalPath)
+                          ? emphasizedLightBackground
+                          : Colors.transparent,
+                    );
+                  }),
+            ),
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: uiUnit(),
+          ),
+        ],
       ),
     );
   }

@@ -19,13 +19,20 @@ import 'package:goals_core/model.dart'
     show
         Goal,
         WorldContext,
+        getGoalPriority,
         getGoalStatus,
         getGoalsForDateRange,
         getGoalsMatchingPredicate,
         getGoalsRequiringAttention,
-        getPreviouslyActiveGoals;
+        getPreviouslyActiveGoals,
+        getTransitiveSubGoals;
 import 'package:goals_core/sync.dart'
-    show GoalDelta, GoalStatus, SetParentLogEntry, StatusLogEntry;
+    show
+        GoalDelta,
+        GoalStatus,
+        PriorityLogEntry,
+        SetParentLogEntry,
+        StatusLogEntry;
 import 'package:goals_core/util.dart' show DateTimeExtension;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
@@ -403,13 +410,13 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       key: const ValueKey('viewSwitcher'),
       width: 200,
       child: ListView(
-        // Important: Remove any padding from the ListView.
         padding: EdgeInsets.zero,
         children: [
           for (final filter in sidebarFilters)
             ListTile(
               title: Text(filter.displayName),
               selected: _filter == filter,
+              contentPadding: EdgeInsets.symmetric(horizontal: uiUnit(2)),
               trailing: (filter == GoalFilter.to_review && toReview.isNotEmpty)
                   ? // material theme container with rounded corners and toReview size
                   Container(
@@ -439,6 +446,126 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         ],
       ),
     );
+  }
+
+  _handleDropOnSeparator(Set<String> goalIds, List<String> prevGoalPath,
+      List<String> nextGoalPath) {
+    final List<GoalDelta> goalDeltas = [];
+
+    final prevGoalId = prevGoalPath.lastOrNull;
+    final nextGoalId = nextGoalPath.lastOrNull;
+
+    final worldContext = WorldContext.now();
+
+    String? newParentId;
+    double? newPriority;
+    if (prevGoalPath.length == nextGoalPath.length) {
+      // dropped between siblings
+      newParentId = prevGoalPath.length >= 2
+          ? prevGoalPath[prevGoalPath.length - 2]
+          : null;
+
+      final prevPriority = prevGoalId == null
+          ? null
+          : getGoalPriority(WorldContext.now(), widget.goalMap[prevGoalId]!);
+      final nextPriority = nextGoalId == null ||
+              nextGoalId == NEW_GOAL_PLACEHOLDER
+          ? null
+          : getGoalPriority(WorldContext.now(), widget.goalMap[nextGoalId]!);
+
+      if (nextPriority != null && prevPriority != null) {
+        newPriority = (prevPriority + nextPriority) / 2;
+      } else if (prevPriority != null) {
+        newPriority = null;
+      }
+    } else if (prevGoalPath.length == nextGoalPath.length - 1) {
+      // dropped between parent and child
+      newParentId = prevGoalPath.lastOrNull;
+      newPriority = nextGoalId == NEW_GOAL_PLACEHOLDER
+          ? null
+          : getGoalPriority(worldContext, widget.goalMap[nextGoalId]!) / 2;
+    } else if (prevGoalPath.length > nextGoalPath.length) {
+      // dropped after last child and before add goal entry
+
+      newParentId = nextGoalPath.length >= 2
+          ? nextGoalPath[nextGoalPath.length - 2]
+          : null;
+
+      final addGoalParentId = prevGoalPath.length >= 2
+          ? prevGoalPath[prevGoalPath.length - 2]
+          : null;
+      final prevGoal = widget.goalMap[addGoalParentId];
+      final prevPriority =
+          prevGoal == null ? null : getGoalPriority(worldContext, prevGoal);
+      final nextPriority =
+          nextGoalId == null || nextGoalId == NEW_GOAL_PLACEHOLDER
+              ? null
+              : getGoalPriority(worldContext, widget.goalMap[nextGoalId]!);
+
+      if (nextPriority != null && prevPriority != null) {
+        newPriority = (prevPriority + nextPriority) / 2;
+      } else if (prevPriority != null) {
+        newPriority = null;
+      }
+    }
+
+    for (final goalId in goalIds) {
+      if (newParentId != null) {
+        goalDeltas.add(GoalDelta(
+            id: goalId,
+            logEntry: SetParentLogEntry(
+                id: Uuid().v4(),
+                parentId: newParentId,
+                creationTime: DateTime.now())));
+      }
+
+      goalDeltas.add(GoalDelta(
+          id: goalId,
+          logEntry: PriorityLogEntry(
+              id: Uuid().v4(),
+              creationTime: DateTime.now(),
+              priority: newPriority)));
+    }
+
+    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
+  }
+
+  _handleDropOnGoal(Set<String> goalIds, List<String> targetGoalPath) {
+    print(targetGoalPath);
+    final List<GoalDelta> goalDeltas = [];
+    for (final goalId in goalIds) {
+      goalDeltas.add(GoalDelta(
+          id: goalId,
+          logEntry: SetParentLogEntry(
+              id: Uuid().v4(),
+              parentId: targetGoalPath.lastOrNull,
+              creationTime: DateTime.now())));
+    }
+    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
+    ref.read(selectedGoalsProvider.notifier).clear();
+  }
+
+  _handleDrop(
+    String droppedGoalId, {
+    List<String>? dropPath,
+    List<String>? prevDropPath,
+    List<String>? nextDropPath,
+  }) {
+    final selectedGoals = ref.read(selectedGoalsProvider);
+    final goalsToUpdate =
+        selectedGoals.contains(droppedGoalId) ? selectedGoals : {droppedGoalId};
+
+    if (!((dropPath != null) ^
+        (prevDropPath != null && nextDropPath != null))) {
+      throw Exception(
+          'Exactly one of goalPath or prevGoalPath and nextGoalPath must be non-null');
+    }
+
+    if (prevDropPath != null && nextDropPath != null) {
+      this._handleDropOnSeparator(goalsToUpdate, prevDropPath, nextDropPath);
+    } else if (dropPath != null) {
+      this._handleDropOnGoal(goalsToUpdate, dropPath);
+    }
   }
 
   @override
@@ -553,54 +680,125 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     );
   }
 
-  Widget? _timeSlice(WorldContext context, TimeSlice slice) {
-    final goalMap = getGoalsForDateRange(
+  Widget? _timeSlice(WorldContext context, TimeSlice slice) =>
+      _timeSlices(context, [slice]).firstOrNull;
+
+  List<Widget> _timeSlices(WorldContext context, List<TimeSlice> slices) {
+    final Map<String, Goal> goalsAccountedFor = {};
+    final List<Widget> result = [];
+    for (final slice in slices) {
+      final goalMap = getGoalsForDateRange(
         context,
         widget.goalMap,
         slice.startTime(context.time),
         slice.endTime(context.time),
-        slice.zoomDown?.startTime(context.time),
-        slice.zoomDown?.endTime(context.time));
+      );
 
-    if (goalMap.isEmpty && slice.zoomDown != null) {
-      return null;
-    }
-    final goalIds = _mode == GoalViewMode.tree
-        ? goalMap.values
-            .where((goal) {
-              for (final superGoal in goal.superGoals) {
-                if (goalMap.containsKey(superGoal.id)) {
-                  return false;
+      if (goalMap.isEmpty && slice.zoomDown != null) {
+        continue;
+      }
+
+      for (final goalId in goalsAccountedFor.keys) {
+        if (goalMap.containsKey(goalId)) {
+          goalMap.remove(goalId);
+        }
+      }
+
+      for (final goal in goalMap.values) {
+        goalsAccountedFor[goal.id] = goal;
+        goalsAccountedFor.addAll(getTransitiveSubGoals(goalMap, goal.id));
+      }
+
+      final goalIds = _mode == GoalViewMode.tree
+          ? goalMap.values
+              .where((goal) {
+                for (final superGoal in goal.superGoals) {
+                  if (goalMap.containsKey(superGoal.id)) {
+                    return false;
+                  }
                 }
-              }
-              return true;
-            })
-            .map((e) => e.id)
-            .toList()
-        : (goalMap.values.toList(growable: false)
-              ..sort((a, b) =>
-                  a.text.toLowerCase().compareTo(b.text.toLowerCase())))
-            .map((g) => g.id)
-            .toList();
-    return FlattenedGoalTree(
-      goalMap: goalMap,
-      rootGoalIds: goalIds,
-      onSelected: onSelected,
-      onExpanded: onExpanded,
-      onFocused: onFocused,
-      hoverActionsBuilder: (goalId) => HoverActionsWidget(
-        goalId: goalId,
-        onUnarchive: onUnarchive,
-        onArchive: onArchive,
-        onDone: onDone,
-        onSnooze: onSnooze,
-        onActive: onActive,
-        goalMap: widget.goalMap,
-      ),
-      depthLimit: _mode == GoalViewMode.list ? 1 : null,
-      onAddGoal: (String? parentId, String text) =>
-          this._onAddGoal(parentId, text, slice),
-    );
+                return true;
+              })
+              .map((e) => e.id)
+              .toList()
+          : (goalMap.values.toList(growable: false)
+                ..sort((a, b) =>
+                    a.text.toLowerCase().compareTo(b.text.toLowerCase())))
+              .map((g) => g.id)
+              .toList();
+      result.add(Padding(
+        padding: EdgeInsets.symmetric(vertical: uiUnit(2)),
+        child: TextButton(
+          onPressed: () => {
+            // kinda gross that we're sharing names between enums here but w/e
+            onSwitchFilter(GoalFilter.values.byName(slice.name))
+          },
+          child: Text(
+            slice.displayName,
+            style: Theme.of(this.context).textTheme.headlineSmall,
+          ),
+        ),
+      ));
+      result.add(FlattenedGoalTree(
+        goalMap: goalMap,
+        rootGoalIds: goalIds,
+        onSelected: onSelected,
+        onExpanded: onExpanded,
+        onFocused: onFocused,
+        hoverActionsBuilder: (goalId) => HoverActionsWidget(
+          goalId: goalId,
+          onUnarchive: onUnarchive,
+          onArchive: onArchive,
+          onDone: onDone,
+          onSnooze: onSnooze,
+          onActive: onActive,
+          goalMap: widget.goalMap,
+        ),
+        depthLimit: _mode == GoalViewMode.list ? 1 : null,
+        onAddGoal: (String? parentId, String text) =>
+            this._onAddGoal(parentId, text, slice),
+        onDropGoal: (
+          droppedGoalId, {
+          List<String>? dropPath,
+          List<String>? prevDropPath,
+          List<String>? nextDropPath,
+        }) {
+          this._handleDrop(
+            droppedGoalId,
+            dropPath: dropPath,
+            prevDropPath: prevDropPath,
+            nextDropPath: nextDropPath,
+          );
+          final selectedGoals = ref.read(selectedGoalsProvider);
+          final goalsToUpdate = selectedGoals.contains(droppedGoalId)
+              ? selectedGoals
+              : {droppedGoalId};
+          bool setNullParent = goalsToUpdate.every(goalMap.containsKey);
+          for (final goalId in goalsToUpdate) {
+            AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
+                id: goalId,
+                logEntry: StatusLogEntry(
+                  id: const Uuid().v4(),
+                  creationTime: DateTime.now(),
+                  status: GoalStatus.active,
+                  startTime: slice.startTime(context.time),
+                  endTime: slice.endTime(context.time),
+                )));
+            if (setNullParent &&
+                (prevDropPath?.length == 0 || prevDropPath?.length == 1) &&
+                (nextDropPath?.length == 0 || nextDropPath?.length == 1)) {
+              AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
+                  id: goalId,
+                  logEntry: SetParentLogEntry(
+                      id: const Uuid().v4(),
+                      parentId: null,
+                      creationTime: DateTime.now())));
+            }
+          }
+        },
+      ));
+    }
+    return result;
   }
 
   Widget? _previousTimeSliceGoals(WorldContext context, TimeSlice slice) {
@@ -820,6 +1018,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           ),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
                           onAddGoal: this._onAddGoal,
+                          onDropGoal: this._handleDrop,
                         );
                       case GoalFilter.to_review:
                         final toReview = {
@@ -889,6 +1088,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                               goalMap: widget.goalMap),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
                           onAddGoal: this._onAddGoal,
+                          onDropGoal: this._handleDrop,
                         );
                       case GoalFilter.today:
                         final additionalSections = {
@@ -901,7 +1101,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _timeSlice(worldContext, TimeSlice.today) ??
-                                  Text('No Goals!'),
+                                  Container(),
                               for (final entry in additionalSections.entries)
                                 if (entry.value != null) ...[
                                   Padding(
@@ -929,41 +1129,16 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         return _timeSlice(worldContext, TimeSlice.long_term) ??
                             Text('No Goals!');
                       case GoalFilter.schedule:
-                        final children = <Widget>[];
-
-                        for (final timeSlice in [
-                          TimeSlice.today,
-                          TimeSlice.this_week,
-                          TimeSlice.this_month,
-                          TimeSlice.this_quarter,
-                          TimeSlice.this_year,
-                          TimeSlice.long_term
-                        ]) {
-                          final slice = _timeSlice(worldContext, timeSlice);
-                          if (slice != null) {
-                            children.addAll([
-                              Padding(
-                                padding:
-                                    EdgeInsets.symmetric(vertical: uiUnit(2)),
-                                child: TextButton(
-                                  onPressed: () => {
-                                    // kinda gross that we're sharing names between enums here but w/e
-                                    onSwitchFilter(GoalFilter.values
-                                        .byName(timeSlice.name))
-                                  },
-                                  child: Text(
-                                    timeSlice.displayName,
-                                    style: theme.headlineSmall,
-                                  ),
-                                ),
-                              ),
-                              slice,
-                            ]);
-                          }
-                        }
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: children,
+                          children: _timeSlices(worldContext, [
+                            TimeSlice.today,
+                            TimeSlice.this_week,
+                            TimeSlice.this_month,
+                            TimeSlice.this_quarter,
+                            TimeSlice.this_year,
+                            TimeSlice.long_term
+                          ]),
                         );
                     }
                   })),
@@ -988,6 +1163,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         onFocused: this.onFocused,
         onSelected: this.onSelected,
         onAddGoal: this._onAddGoal,
+        onDropGoal: this._handleDrop,
         hoverActionsBuilder: (goalId) => HoverActionsWidget(
             goalId: goalId,
             onUnarchive: this.onUnarchive,

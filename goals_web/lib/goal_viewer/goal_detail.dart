@@ -188,6 +188,12 @@ class GoalDetail extends ConsumerStatefulWidget {
   final Function(String goalId, {bool? expanded}) onExpanded;
   final Function(String goalId) onFocused;
   final Function(String? parentId, String text) onAddGoal;
+  final Function(
+    String goalId, {
+    List<String>? dropPath,
+    List<String>? prevDropPath,
+    List<String>? nextDropPath,
+  }) onDropGoal;
   final HoverActionsBuilder hoverActionsBuilder;
   const GoalDetail({
     super.key,
@@ -198,6 +204,7 @@ class GoalDetail extends ConsumerStatefulWidget {
     required this.onFocused,
     required this.hoverActionsBuilder,
     required this.onAddGoal,
+    required this.onDropGoal,
   });
 
   @override
@@ -353,6 +360,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
           hoverActionsBuilder: widget.hoverActionsBuilder,
           onAddGoal: widget.onAddGoal,
           path: [widget.goal.id],
+          onDropGoal: this.widget.onDropGoal,
         ),
         SizedBox(height: uiUnit(2)),
         Text('Notes', style: textTheme.headlineSmall),

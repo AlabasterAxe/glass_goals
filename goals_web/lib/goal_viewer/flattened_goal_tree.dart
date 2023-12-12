@@ -1,6 +1,6 @@
 import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
-    show BuildContext, Column, DragTarget, MediaQuery, Widget;
+    show BuildContext, Column, MediaQuery, Widget;
 import 'package:goals_core/model.dart'
     show
         Goal,
@@ -8,15 +8,11 @@ import 'package:goals_core/model.dart'
         WorldContext,
         getPriorityComparator,
         traverseDown;
-import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart'
     show HoverActionsBuilder;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
-import 'package:uuid/uuid.dart';
-
-import '../app_context.dart';
 import '../styles.dart';
 import 'goal_item.dart';
 import 'goal_separator.dart';
@@ -37,6 +33,12 @@ class FlattenedGoalTree extends ConsumerWidget {
   final Function(String goalId)? onFocused;
   final Function(String goalId, {bool? expanded}) onExpanded;
   final Function(String?, String)? onAddGoal;
+  final Function(
+    String goalId, {
+    List<String>? dropPath,
+    List<String>? prevDropPath,
+    List<String>? nextDropPath,
+  })? onDropGoal;
   final int? depthLimit;
   final bool showParentName;
   final HoverActionsBuilder hoverActionsBuilder;
@@ -53,6 +55,7 @@ class FlattenedGoalTree extends ConsumerWidget {
     required this.hoverActionsBuilder,
     this.onAddGoal,
     this.path = const [],
+    this.onDropGoal,
   });
 
   List<FlattenedGoalItem> _getFlattenedGoalItems(
@@ -102,19 +105,6 @@ class FlattenedGoalTree extends ConsumerWidget {
     return flattenedGoals;
   }
 
-  _moveGoals(BuildContext context, String newParentId, Set<String> goalIds) {
-    final List<GoalDelta> goalDeltas = [];
-    for (final goalId in goalIds) {
-      goalDeltas.add(GoalDelta(
-          id: goalId,
-          logEntry: SetParentLogEntry(
-              id: Uuid().v4(),
-              parentId: newParentId,
-              creationTime: DateTime.now())));
-    }
-    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final expandedGoalIds = ref.watch(expandedGoalsProvider);
@@ -125,13 +115,20 @@ class FlattenedGoalTree extends ConsumerWidget {
 
     final goalItems = <Widget>[];
     for (int i = 0; i < flattenedGoalItems.length; i++) {
-      final previousGoal = i > 0 ? flattenedGoalItems[i - 1] : null;
+      final prevGoal = i > 0 ? flattenedGoalItems[i - 1] : null;
       final flattenedGoal = flattenedGoalItems[i];
       final goalId = flattenedGoal.goalPath.last;
       goalItems.add(GoalSeparator(
-        goalMap: this.goalMap,
-        previousGoalPath: previousGoal?.goalPath ?? this.path,
+        prevGoalPath: prevGoal?.goalPath ?? this.path,
         nextGoalPath: flattenedGoal.goalPath,
+        goalMap: this.goalMap,
+        onDropGoal: this.onDropGoal != null
+            ? (droppedGoalId) {
+                this.onDropGoal!(droppedGoalId,
+                    prevDropPath: prevGoal?.goalPath ?? [],
+                    nextDropPath: flattenedGoal.goalPath);
+              }
+            : null,
       ));
       goalItems.add(Padding(
         padding: EdgeInsets.only(
@@ -139,18 +136,12 @@ class FlattenedGoalTree extends ConsumerWidget {
         child: goalId != NEW_GOAL_PLACEHOLDER
             ? GoalItemWidget(
                 onDropGoal: (droppedGoalId) {
-                  final selectedGoals = ref.read(selectedGoalsProvider);
-                  final selectedAndDraggedGoals = {
-                    ...ref.read(selectedGoalsProvider),
-                    droppedGoalId
-                  };
-                  this._moveGoals(
-                      context,
-                      goalId,
-                      selectedGoals.contains(droppedGoalId)
-                          ? selectedAndDraggedGoals
-                          : {droppedGoalId});
-                  ref.read(selectedGoalsProvider.notifier).clear();
+                  if (this.onDropGoal != null) {
+                    this.onDropGoal!(
+                      droppedGoalId,
+                      dropPath: flattenedGoal.goalPath,
+                    );
+                  }
                 },
                 goal: this.goalMap[goalId]!,
                 onExpanded: this.onExpanded,
