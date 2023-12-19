@@ -10,7 +10,6 @@ import 'package:flutter/material.dart'
         Icons,
         ListTile,
         Scaffold,
-        TextButton,
         Theme,
         showDialog;
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
@@ -137,6 +136,7 @@ enum GoalViewMode { tree, list }
 class _GoalViewerState extends ConsumerState<GoalViewer> {
   GoalFilter _filter = GoalFilter.schedule;
   GoalViewMode _mode = GoalViewMode.tree;
+  final FocusNode _focusNode = FocusNode();
 
   Future<void>? openBoxFuture;
   bool isInitted = false;
@@ -316,6 +316,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    _focusNode.requestFocus();
 
     if (!isInitted) {
       window.addEventListener('popstate', _handlePopState);
@@ -590,103 +592,106 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       },
       child: Actions(
         actions: {SearchIntent: RootSearchAction(cb: _openSearch)},
-        child: Scaffold(
-          appBar: AppBar(
-            automaticallyImplyLeading: false,
-            surfaceTintColor: Colors.transparent,
-            title: Row(
-              children: [
-                SizedBox(
-                  width: uiUnit(12),
-                  height: uiUnit(12),
-                  child: Padding(
-                    padding:
-                        EdgeInsets.fromLTRB(0, uiUnit(2), uiUnit(2), uiUnit(2)),
-                    child: SvgPicture.asset(
-                      'assets/logo.svg',
+        child: KeyboardListener(
+          focusNode: this._focusNode,
+          child: Scaffold(
+            appBar: AppBar(
+              automaticallyImplyLeading: false,
+              surfaceTintColor: Colors.transparent,
+              title: Row(
+                children: [
+                  SizedBox(
+                    width: uiUnit(12),
+                    height: uiUnit(12),
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                          0, uiUnit(2), uiUnit(2), uiUnit(2)),
+                      child: SvgPicture.asset(
+                        'assets/logo.svg',
+                      ),
                     ),
                   ),
+                  Text(appBarTitle),
+                ],
+              ),
+              centerTitle: false,
+              leading: isNarrow
+                  ? focusedGoalId != null
+                      ? IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: () {
+                            ref.read(focusedGoalProvider.notifier).set(null);
+                          })
+                      : Builder(builder: (context) {
+                          return IconButton(
+                              icon: const Icon(Icons.menu),
+                              onPressed: () {
+                                Scaffold.of(context).openDrawer();
+                              });
+                        })
+                  : null,
+            ),
+            drawer: isNarrow && focusedGoalId == null
+                ? Drawer(
+                    child: _viewSwitcher(true, worldContext),
+                  )
+                : null,
+            body: Stack(
+              children: [
+                Positioned.fill(
+                  child: children.length == 1
+                      ? children[0]
+                      : MultiSplitViewTheme(
+                          data: multiSplitViewThemeData,
+                          child: MultiSplitView(
+                            controller: _multiSplitViewController,
+                            children: children,
+                          )),
                 ),
-                Text(appBarTitle),
+                if (!isNarrow && debugMode)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      color: Colors.black.withOpacity(0.3),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Selected Goals: ${selectedGoals.join(', ')}',
+                            style: Theme.of(context).textTheme.bodyText1,
+                          ),
+                          StreamBuilder<List<String>?>(
+                              stream: hoverEventStream.stream,
+                              builder: (context, snapshot) {
+                                return Text('Hovered Path: ${snapshot.data}');
+                              })
+                        ],
+                      ),
+                    ),
+                  ),
+                if (isNarrow &&
+                    (selectedGoals.isNotEmpty || focusedGoalId != null))
+                  Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: uiUnit(16),
+                      child: Container(
+                        color: lightBackground,
+                        child: isEditingText
+                            ? const TextEditingControls()
+                            : HoverActionsWidget(
+                                onUnarchive: onUnarchive,
+                                onArchive: onArchive,
+                                onDone: onDone,
+                                onSnooze: onSnooze,
+                                onActive: onActive,
+                                goalMap: widget.goalMap,
+                                mainAxisSize: MainAxisSize.max,
+                              ),
+                      ))
               ],
             ),
-            centerTitle: false,
-            leading: isNarrow
-                ? focusedGoalId != null
-                    ? IconButton(
-                        icon: const Icon(Icons.arrow_back),
-                        onPressed: () {
-                          ref.read(focusedGoalProvider.notifier).set(null);
-                        })
-                    : Builder(builder: (context) {
-                        return IconButton(
-                            icon: const Icon(Icons.menu),
-                            onPressed: () {
-                              Scaffold.of(context).openDrawer();
-                            });
-                      })
-                : null,
-          ),
-          drawer: isNarrow && focusedGoalId == null
-              ? Drawer(
-                  child: _viewSwitcher(true, worldContext),
-                )
-              : null,
-          body: Stack(
-            children: [
-              Positioned.fill(
-                child: children.length == 1
-                    ? children[0]
-                    : MultiSplitViewTheme(
-                        data: multiSplitViewThemeData,
-                        child: MultiSplitView(
-                          controller: _multiSplitViewController,
-                          children: children,
-                        )),
-              ),
-              if (!isNarrow && debugMode)
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    color: Colors.black.withOpacity(0.3),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Selected Goals: ${selectedGoals.join(', ')}',
-                          style: Theme.of(context).textTheme.bodyText1,
-                        ),
-                        StreamBuilder<List<String>?>(
-                            stream: hoverEventStream.stream,
-                            builder: (context, snapshot) {
-                              return Text('Hovered Path: ${snapshot.data}');
-                            })
-                      ],
-                    ),
-                  ),
-                ),
-              if (isNarrow &&
-                  (selectedGoals.isNotEmpty || focusedGoalId != null))
-                Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: uiUnit(16),
-                    child: Container(
-                      color: lightBackground,
-                      child: isEditingText
-                          ? const TextEditingControls()
-                          : HoverActionsWidget(
-                              onUnarchive: onUnarchive,
-                              onArchive: onArchive,
-                              onDone: onDone,
-                              onSnooze: onSnooze,
-                              onActive: onActive,
-                              goalMap: widget.goalMap,
-                              mainAxisSize: MainAxisSize.max,
-                            ),
-                    ))
-            ],
           ),
         ),
       ),
