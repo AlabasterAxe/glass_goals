@@ -759,16 +759,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               .map((g) => g.id)
               .toList();
       result.add(Padding(
-        padding: EdgeInsets.only(top: uiUnit(2)),
-        child: TextButton(
-          onPressed: () => {
-            // kinda gross that we're sharing names between enums here but w/e
-            onSwitchFilter(GoalFilter.values.byName(slice.name))
-          },
-          child: Text(
-            slice.displayName,
-            style: Theme.of(this.context).textTheme.headlineSmall,
-          ),
+        padding: EdgeInsets.all(uiUnit(2)),
+        child: Text(
+          slice.displayName,
+          style: Theme.of(this.context).textTheme.headlineSmall,
         ),
       ));
       result.add(FlattenedGoalTree(
