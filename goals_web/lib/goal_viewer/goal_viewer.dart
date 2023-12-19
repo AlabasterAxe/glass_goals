@@ -191,7 +191,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     });
   }
 
-  onFocused(String? goalId, int? index) {
+  onFocused(String? goalId) {
     setState(() {
       if (goalId != null) {
         final selectedGoals = ref.read(selectedGoalsProvider.notifier);
