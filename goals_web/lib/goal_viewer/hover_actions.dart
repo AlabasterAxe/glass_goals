@@ -20,6 +20,7 @@ import 'package:goals_core/model.dart' show Goal, getGoalStatus;
 import 'package:goals_core/sync.dart' show GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
 import 'package:goals_web/styles.dart' show darkElementColor;
+import 'package:goals_web/widgets/target_icon.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
 import 'providers.dart';
@@ -62,13 +63,17 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
   final _activateMenuController = MenuController();
   final _doneMenuController = MenuController();
 
-  Widget _button({required IconData icon, required VoidCallback onPressed}) {
+  Widget _button(
+      {IconData? icon, required VoidCallback onPressed, Widget? iconWidget}) {
+    assert(icon != null || iconWidget != null);
     return SizedBox(
       width: 32,
       height: 32,
       child: IconButton(
         padding: EdgeInsets.zero,
-        icon: Icon(icon, color: darkElementColor, size: 24),
+        icon: icon != null
+            ? Icon(icon, color: darkElementColor, size: 24)
+            : iconWidget!,
         onPressed: onPressed,
       ),
     );
@@ -95,7 +100,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
         Tooltip(
           waitDuration: _TOOLTIP_DELAY,
           showDuration: Duration.zero,
-          message: 'Schedule',
+          message: 'Work on this...',
           child: MenuAnchor(
             controller: _activateMenuController,
             menuChildren: [
@@ -144,12 +149,12 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                     }
                   }),
               MenuItemButton(
-                child: const Text('Forever'),
+                child: const Text('Long Term'),
                 onPressed: () => widget.onActive(widget.goalId),
               ),
             ],
             child: _button(
-                icon: Icons.schedule,
+                iconWidget: TargetIcon(),
                 onPressed: () {
                   _activateMenuController.open();
                 }),
@@ -158,7 +163,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
         Tooltip(
           waitDuration: _TOOLTIP_DELAY,
           showDuration: Duration.zero,
-          message: 'Snooze',
+          message: 'Snooze...',
           child: MenuAnchor(
             controller: _snoozeMenuController,
             menuChildren: [
@@ -220,7 +225,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
         Tooltip(
           waitDuration: _TOOLTIP_DELAY,
           showDuration: Duration.zero,
-          message: 'Mark Done',
+          message: 'Mark Done...',
           child: MenuAnchor(
             controller: _doneMenuController,
             menuChildren: [
