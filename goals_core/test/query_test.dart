@@ -6,7 +6,8 @@ import 'package:hlc/hlc.dart';
 import 'package:test/test.dart';
 
 Map<String, Goal> testGoals() {
-  final testRootGoal = Goal(id: '0', text: 'root');
+  final testRootGoal =
+      Goal(id: '0', text: 'root', creationTime: DateTime(2020, 1, 1));
 
   final goals = <String, Goal>{};
   goals[testRootGoal.id] = testRootGoal;
@@ -382,13 +383,18 @@ void main() {
   });
 
   test('traverseDown', () async {
-    Goal parent = Goal(id: 'parent', text: 'parent');
-    Goal child = Goal(id: 'child', text: 'child');
+    Goal parent =
+        Goal(id: 'parent', text: 'parent', creationTime: DateTime(2020, 1, 1));
+    Goal child =
+        Goal(id: 'child', text: 'child', creationTime: DateTime(2020, 1, 1));
 
     parent.addOrReplaceSubGoal(child);
     child.superGoals.add(parent);
 
-    Goal grandChild = Goal(id: 'grandChild', text: 'grandChild');
+    Goal grandChild = Goal(
+        id: 'grandChild',
+        text: 'grandChild',
+        creationTime: DateTime(2020, 1, 1));
 
     child.addOrReplaceSubGoal(grandChild);
     grandChild.superGoals.add(child);
@@ -417,13 +423,18 @@ void main() {
   });
 
   test('traverseDown, stopTraversal', () async {
-    Goal parent = Goal(id: 'parent', text: 'parent');
-    Goal child = Goal(id: 'child', text: 'child');
+    Goal parent =
+        Goal(id: 'parent', text: 'parent', creationTime: DateTime(2020, 1, 1));
+    Goal child =
+        Goal(id: 'child', text: 'child', creationTime: DateTime(2020, 1, 1));
 
     parent.addOrReplaceSubGoal(child);
     child.superGoals.add(parent);
 
-    Goal grandChild = Goal(id: 'grandChild', text: 'grandChild');
+    Goal grandChild = Goal(
+        id: 'grandChild',
+        text: 'grandChild',
+        creationTime: DateTime(2020, 1, 1));
 
     child.addOrReplaceSubGoal(grandChild);
     grandChild.superGoals.add(child);
@@ -451,9 +462,12 @@ void main() {
   });
 
   test('traverseDown, dontRecurse', () async {
-    Goal parent = Goal(id: 'parent', text: 'parent');
-    Goal child = Goal(id: 'child', text: 'child');
-    Goal sibling = Goal(id: 'sibling', text: 'sibling');
+    Goal parent =
+        Goal(id: 'parent', text: 'parent', creationTime: DateTime(2020, 1, 1));
+    Goal child =
+        Goal(id: 'child', text: 'child', creationTime: DateTime(2020, 1, 1));
+    Goal sibling = Goal(
+        id: 'sibling', text: 'sibling', creationTime: DateTime(2020, 1, 1));
 
     parent.addOrReplaceSubGoal(child);
     child.superGoals.add(parent);
@@ -461,7 +475,10 @@ void main() {
     parent.addOrReplaceSubGoal(sibling);
     sibling.superGoals.add(parent);
 
-    Goal grandChild = Goal(id: 'grandChild', text: 'grandChild');
+    Goal grandChild = Goal(
+        id: 'grandChild',
+        text: 'grandChild',
+        creationTime: DateTime(2020, 1, 1));
 
     child.addOrReplaceSubGoal(grandChild);
     grandChild.superGoals.add(child);
@@ -495,9 +512,12 @@ void main() {
   });
 
   test('traverseDown, missing from map', () async {
-    Goal parent = Goal(id: 'parent', text: 'parent');
-    Goal child = Goal(id: 'child', text: 'child');
-    Goal sibling = Goal(id: 'sibling', text: 'sibling');
+    Goal parent =
+        Goal(id: 'parent', text: 'parent', creationTime: DateTime(2020, 1, 1));
+    Goal child =
+        Goal(id: 'child', text: 'child', creationTime: DateTime(2020, 1, 1));
+    Goal sibling = Goal(
+        id: 'sibling', text: 'sibling', creationTime: DateTime(2020, 1, 1));
 
     parent.addOrReplaceSubGoal(child);
     child.superGoals.add(parent);
@@ -505,7 +525,10 @@ void main() {
     parent.addOrReplaceSubGoal(sibling);
     sibling.superGoals.add(parent);
 
-    Goal grandChild = Goal(id: 'grandChild', text: 'grandChild');
+    Goal grandChild = Goal(
+        id: 'grandChild',
+        text: 'grandChild',
+        creationTime: DateTime(2020, 1, 1));
 
     child.addOrReplaceSubGoal(grandChild);
     grandChild.superGoals.add(child);

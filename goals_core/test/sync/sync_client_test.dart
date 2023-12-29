@@ -10,12 +10,17 @@ Map<String, Goal> testGoals() {
   final subGoal = Goal(
     id: '2',
     text: 'bar',
+    creationTime: DateTime(2020, 1, 1),
   );
 
   subGoal.log.add(
       SetParentLogEntry(id: '3', parentId: '0', creationTime: DateTime.now()));
 
-  final testRootGoal = Goal(id: '0', text: 'root', subGoals: [subGoal]);
+  final testRootGoal = Goal(
+      id: '0',
+      text: 'root',
+      subGoals: [subGoal],
+      creationTime: DateTime(2020, 1, 1));
 
   final goals = <String, Goal>{};
   for (final goal in [testRootGoal, subGoal]) {
