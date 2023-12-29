@@ -57,7 +57,7 @@ class DefaultFirebaseOptions {
     appId: '1:114797465949:web:5171d5c49e10c8e29d98b4',
     messagingSenderId: '114797465949',
     projectId: 'glassgoals',
-    authDomain: 'glassgoals.firebaseapp.com',
+    authDomain: 'glassgoals.com',
     storageBucket: 'glassgoals.appspot.com',
     measurementId: 'G-540HJV2G7X',
   );
