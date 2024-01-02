@@ -33,7 +33,6 @@ import 'package:goals_core/sync.dart'
         PriorityLogEntry,
         SetParentLogEntry,
         StatusLogEntry;
-import 'package:goals_core/util.dart' show DateTimeExtension;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
@@ -46,6 +45,7 @@ import 'package:uuid/uuid.dart' show Uuid;
 
 import '../actions.dart';
 import '../common/keyboard_utils.dart';
+import '../common/time_slice.dart';
 import '../styles.dart'
     show
         darkElementColor,
@@ -65,54 +65,6 @@ class GoalViewer extends StatefulHookConsumerWidget {
 
   @override
   ConsumerState<GoalViewer> createState() => _GoalViewerState();
-}
-
-enum TimeSlice {
-  today(null, "Today"),
-  this_week(TimeSlice.today, "This Week"),
-  this_month(TimeSlice.this_week, "This Month"),
-  this_quarter(TimeSlice.this_month, "This Quarter"),
-  this_year(TimeSlice.this_quarter, "This Year"),
-  long_term(TimeSlice.this_year, "Long Term");
-
-  const TimeSlice(this.zoomDown, this.displayName);
-
-  final TimeSlice? zoomDown;
-  final String displayName;
-
-  DateTime? startTime(DateTime now) {
-    switch (this) {
-      case TimeSlice.today:
-        return now.startOfDay;
-      case TimeSlice.this_week:
-        return now.startOfWeek;
-      case TimeSlice.this_month:
-        return now.startOfMonth;
-      case TimeSlice.this_quarter:
-        return now.startOfQuarter;
-      case TimeSlice.this_year:
-        return now.startOfYear;
-      case TimeSlice.long_term:
-        return null;
-    }
-  }
-
-  DateTime? endTime(DateTime now) {
-    switch (this) {
-      case TimeSlice.today:
-        return now.endOfDay;
-      case TimeSlice.this_week:
-        return now.endOfWeek;
-      case TimeSlice.this_month:
-        return now.endOfMonth;
-      case TimeSlice.this_quarter:
-        return now.endOfQuarter;
-      case TimeSlice.this_year:
-        return now.endOfYear;
-      case TimeSlice.long_term:
-        return null;
-    }
-  }
 }
 
 enum GoalFilter {
@@ -692,11 +644,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           child: isEditingText
                               ? const TextEditingControls()
                               : HoverActionsWidget(
-                                  onUnarchive: onUnarchive,
-                                  onArchive: onArchive,
-                                  onDone: onDone,
-                                  onSnooze: onSnooze,
-                                  onActive: onActive,
                                   goalMap: widget.goalMap,
                                   mainAxisSize: MainAxisSize.max,
                                 ),
@@ -793,11 +740,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             rootGoalIds: goalIds,
             hoverActionsBuilder: (goalId) => HoverActionsWidget(
               goalId: goalId,
-              onUnarchive: onUnarchive,
-              onArchive: onArchive,
-              onDone: onDone,
-              onSnooze: onSnooze,
-              onActive: onActive,
               goalMap: widget.goalMap,
             ),
             depthLimit: _mode == GoalViewMode.list ? 1 : null,
@@ -904,11 +846,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       rootGoalIds: goalIds,
       hoverActionsBuilder: (goalId) => HoverActionsWidget(
         goalId: goalId,
-        onUnarchive: onUnarchive,
-        onArchive: onArchive,
-        onDone: onDone,
-        onSnooze: onSnooze,
-        onActive: onActive,
         goalMap: widget.goalMap,
       ),
       depthLimit: _mode == GoalViewMode.list ? 1 : null,
@@ -945,11 +882,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       rootGoalIds: goalIds,
       hoverActionsBuilder: (goalId) => HoverActionsWidget(
         goalId: goalId,
-        onUnarchive: onUnarchive,
-        onArchive: onArchive,
-        onDone: onDone,
-        onSnooze: onSnooze,
-        onActive: onActive,
         goalMap: widget.goalMap,
       ),
       depthLimit: _mode == GoalViewMode.list ? 1 : null,
@@ -987,11 +919,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       rootGoalIds: goalIds,
       hoverActionsBuilder: (goalId) => HoverActionsWidget(
         goalId: goalId,
-        onUnarchive: onUnarchive,
-        onArchive: onArchive,
-        onDone: onDone,
-        onSnooze: onSnooze,
-        onActive: onActive,
         goalMap: widget.goalMap,
       ),
       depthLimit: _mode == GoalViewMode.list ? 1 : null,
@@ -1054,11 +981,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           rootGoalIds: goalIds,
                           hoverActionsBuilder: (goalId) => HoverActionsWidget(
                             goalId: goalId,
-                            onUnarchive: onUnarchive,
-                            onArchive: onArchive,
-                            onDone: onDone,
-                            onSnooze: onSnooze,
-                            onActive: onActive,
                             goalMap: widget.goalMap,
                           ),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
@@ -1121,13 +1043,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           goalMap: goalMap,
                           rootGoalIds: goalIds,
                           hoverActionsBuilder: (goalId) => HoverActionsWidget(
-                              goalId: goalId,
-                              onUnarchive: onUnarchive,
-                              onArchive: onArchive,
-                              onDone: onDone,
-                              onSnooze: onSnooze,
-                              onActive: onActive,
-                              goalMap: widget.goalMap),
+                              goalId: goalId, goalMap: widget.goalMap),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
                           onDropGoal: this._handleDrop,
                         );
@@ -1205,14 +1121,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         onSelected: this.onSelected,
         onAddGoal: this._onAddGoal,
         onDropGoal: this._handleDrop,
-        hoverActionsBuilder: (goalId) => HoverActionsWidget(
-            goalId: goalId,
-            onUnarchive: this.onUnarchive,
-            onArchive: this.onArchive,
-            onDone: this.onDone,
-            onSnooze: this.onSnooze,
-            onActive: this.onActive,
-            goalMap: widget.goalMap),
+        hoverActionsBuilder: (goalId) =>
+            HoverActionsWidget(goalId: goalId, goalMap: widget.goalMap),
       ),
     );
   }

@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:goals_core/model.dart';
+
+import '../common/time_slice.dart';
+import '../styles.dart';
+import 'flattened_goal_tree.dart';
 
 class ScheduledGoalsV2 extends StatefulWidget {
-  const ScheduledGoalsV2({super.key});
+  final Map<String, Goal> goalMap;
+  const ScheduledGoalsV2({
+    super.key,
+    required this.goalMap,
+  });
 
   @override
   State<ScheduledGoalsV2> createState() => _ScheduledGoalsV2State();
@@ -34,23 +43,17 @@ class _ScheduledGoalsV2State extends State<ScheduledGoalsV2> {
         goalsAccountedFor.addAll(getTransitiveSubGoals(goalMap, goal.id));
       }
 
-      final goalIds = _mode == GoalViewMode.tree
-          ? goalMap.values
-              .where((goal) {
-                for (final superGoal in goal.superGoals) {
-                  if (goalMap.containsKey(superGoal.id)) {
-                    return false;
-                  }
-                }
-                return true;
-              })
-              .map((e) => e.id)
-              .toList()
-          : (goalMap.values.toList(growable: false)
-                ..sort((a, b) =>
-                    a.text.toLowerCase().compareTo(b.text.toLowerCase())))
-              .map((g) => g.id)
-              .toList();
+      final goalIds = goalMap.values
+          .where((goal) {
+            for (final superGoal in goal.superGoals) {
+              if (goalMap.containsKey(superGoal.id)) {
+                return false;
+              }
+            }
+            return true;
+          })
+          .map((e) => e.id)
+          .toList();
       result.add(Padding(
         padding: EdgeInsets.all(uiUnit(2)),
         child: Text(
@@ -62,9 +65,6 @@ class _ScheduledGoalsV2State extends State<ScheduledGoalsV2> {
         section: slice.name,
         goalMap: goalMap,
         rootGoalIds: goalIds,
-        onSelected: onSelected,
-        onExpanded: onExpanded,
-        onFocused: onFocused,
         hoverActionsBuilder: (goalId) => HoverActionsWidget(
           goalId: goalId,
           onUnarchive: onUnarchive,
