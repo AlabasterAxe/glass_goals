@@ -13,6 +13,7 @@ import 'flattened_goal_tree.dart';
 import 'goal_actions_context.dart';
 import 'hover_actions.dart';
 import 'providers.dart';
+import 'package:collection/collection.dart' show IterableExtension;
 
 class ScheduledGoalsV2 extends ConsumerStatefulWidget {
   final Map<String, Goal> goalMap;
@@ -49,14 +50,24 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                 _expandedTimeSlices.add(slice);
               });
             },
-            child: Text(slice.displayName)),
-        for (final goalId in goalIds)
-          if (getGoalStatus(worldContext, sliceGoalMap[goalId]!).status ==
+            child: Text(
+              slice.displayName,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium!
+                  .copyWith(fontWeight: FontWeight.bold),
+            )),
+        for (final goal in goalIds
+            .map((id) => sliceGoalMap[id])
+            .where((goal) => goal != null)
+            .cast<Goal>()
+            .sorted(getPriorityComparator(worldContext)))
+          if (getGoalStatus(worldContext, goal).status ==
               GoalStatus.active) ...[
             Text("|"),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: uiUnit(2)),
-              child: Text(sliceGoalMap[goalId]!.text,
+              child: Text(goal.text,
                   style: Theme.of(context).textTheme.bodyMedium),
             ),
           ]
@@ -67,7 +78,7 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
   List<Widget> _timeSlices(WorldContext worldContext, List<TimeSlice> slices) {
     final Map<String, Goal> goalsAccountedFor = {};
     final List<Widget> result = [];
-    for (final (i, slice) in slices.indexed) {
+    for (final slice in slices) {
       final sliceGoalMap = getGoalsForDateRange(
         worldContext,
         widget.goalMap,
@@ -98,111 +109,94 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
           .map((e) => e.id)
           .toList();
       if (_expandedTimeSlices.contains(slice)) {
-        result.add(AnimatedTheme(
-          duration: const Duration(milliseconds: 100),
-          data: Theme.of(this.context).copyWith(
-              textButtonTheme: TextButtonThemeData(
-                  style: ButtonStyle(
-            textStyle: MaterialStateProperty.all(
-                Theme.of(this.context).textTheme.headlineSmall),
-          ))),
-          child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _expandedTimeSlices.remove(slice);
-                    });
-                  },
-                  child: Text(
-                    slice.displayName,
-                  ),
-                ),
-                Builder(builder: (context) {
-                  final onAddGoal = GoalActionsContext.of(context).onAddGoal;
-                  final onDropGoal = GoalActionsContext.of(context).onDropGoal;
-                  return GoalActionsContext.overrideWith(
-                    context,
-                    onAddGoal: (String? parentId, String text,
-                            [TimeSlice? _]) =>
-                        onAddGoal(parentId, text, slice),
-                    onDropGoal: (
-                      droppedGoalId, {
-                      List<String>? dropPath,
-                      List<String>? prevDropPath,
-                      List<String>? nextDropPath,
-                    }) {
-                      onDropGoal(
-                        droppedGoalId,
-                        dropPath: dropPath,
-                        prevDropPath: prevDropPath,
-                        nextDropPath: nextDropPath,
-                      );
-                      final selectedGoals = ref.read(selectedGoalsProvider);
-                      final goalsToUpdate =
-                          selectedGoals.contains(droppedGoalId)
-                              ? selectedGoals
-                              : {droppedGoalId};
-                      bool setNullParent =
-                          goalsToUpdate.every(sliceGoalMap.containsKey);
-                      bool addStatus = goalsToUpdate
-                          .every((goalId) => !sliceGoalMap.containsKey(goalId));
-                      for (final goalId in goalsToUpdate) {
-                        if (addStatus) {
-                          AppContext.of(this.context)
-                              .syncClient
-                              .modifyGoal(GoalDelta(
-                                  id: goalId,
-                                  logEntry: StatusLogEntry(
-                                    id: const Uuid().v4(),
-                                    creationTime: DateTime.now(),
-                                    status: GoalStatus.active,
-                                    startTime:
-                                        slice.startTime(worldContext.time),
-                                    endTime: slice.endTime(worldContext.time),
-                                  )));
-                        }
-
-                        if (setNullParent &&
-                            (prevDropPath?.length == 0 ||
-                                prevDropPath?.length == 1) &&
-                            (nextDropPath?.length == 0 ||
-                                nextDropPath?.length == 1)) {
-                          AppContext.of(this.context).syncClient.modifyGoal(
-                              GoalDelta(
-                                  id: goalId,
-                                  logEntry: SetParentLogEntry(
-                                      id: const Uuid().v4(),
-                                      parentId: null,
-                                      creationTime: DateTime.now())));
-                        }
-                      }
-                    },
-                    child: FlattenedGoalTree(
-                      section: slice.name,
-                      goalMap: sliceGoalMap,
-                      rootGoalIds: goalIds,
-                      hoverActionsBuilder: (goalId) => HoverActionsWidget(
-                        goalId: goalId,
-                        goalMap: widget.goalMap,
+        result.add(Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _expandedTimeSlices.remove(slice);
+                  });
+                },
+                child: Text(
+                  slice.displayName,
+                  style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
+                ),
+              ),
+              Builder(builder: (context) {
+                final onAddGoal = GoalActionsContext.of(context).onAddGoal;
+                final onDropGoal = GoalActionsContext.of(context).onDropGoal;
+                return GoalActionsContext.overrideWith(
+                  context,
+                  onAddGoal: (String? parentId, String text, [TimeSlice? _]) =>
+                      onAddGoal(parentId, text, slice),
+                  onDropGoal: (
+                    droppedGoalId, {
+                    List<String>? dropPath,
+                    List<String>? prevDropPath,
+                    List<String>? nextDropPath,
+                  }) {
+                    onDropGoal(
+                      droppedGoalId,
+                      dropPath: dropPath,
+                      prevDropPath: prevDropPath,
+                      nextDropPath: nextDropPath,
+                    );
+                    final selectedGoals = ref.read(selectedGoalsProvider);
+                    final goalsToUpdate = selectedGoals.contains(droppedGoalId)
+                        ? selectedGoals
+                        : {droppedGoalId};
+                    bool setNullParent =
+                        goalsToUpdate.every(sliceGoalMap.containsKey);
+                    bool addStatus = goalsToUpdate
+                        .every((goalId) => !sliceGoalMap.containsKey(goalId));
+                    for (final goalId in goalsToUpdate) {
+                      if (addStatus) {
+                        AppContext.of(this.context)
+                            .syncClient
+                            .modifyGoal(GoalDelta(
+                                id: goalId,
+                                logEntry: StatusLogEntry(
+                                  id: const Uuid().v4(),
+                                  creationTime: DateTime.now(),
+                                  status: GoalStatus.active,
+                                  startTime: slice.startTime(worldContext.time),
+                                  endTime: slice.endTime(worldContext.time),
+                                )));
+                      }
+
+                      if (setNullParent &&
+                          (prevDropPath?.length == 1 ||
+                              prevDropPath?.length == 2) &&
+                          (nextDropPath?.length == 1 ||
+                              nextDropPath?.length == 2)) {
+                        AppContext.of(this.context).syncClient.modifyGoal(
+                            GoalDelta(
+                                id: goalId,
+                                logEntry: SetParentLogEntry(
+                                    id: const Uuid().v4(),
+                                    parentId: null,
+                                    creationTime: DateTime.now())));
+                      }
+                    }
+                  },
+                  child: FlattenedGoalTree(
+                    section: slice.name,
+                    goalMap: sliceGoalMap,
+                    rootGoalIds: goalIds,
+                    hoverActionsBuilder: (goalId) => HoverActionsWidget(
+                      goalId: goalId,
+                      goalMap: widget.goalMap,
                     ),
-                  );
-                })
-              ]),
-        ));
+                  ),
+                );
+              })
+            ]));
       } else {
-        result.add(AnimatedTheme(
-            duration: Duration(milliseconds: 200),
-            data: Theme.of(this.context).copyWith(
-                textButtonTheme: TextButtonThemeData(
-                    style: ButtonStyle(
-              textStyle: MaterialStateProperty.all(
-                  Theme.of(this.context).textTheme.titleSmall),
-            ))),
-            child: _smallSlice(worldContext, slice, sliceGoalMap)));
+        result.add(_smallSlice(worldContext, slice, sliceGoalMap));
       }
     }
     return result.reversed.toList();
