@@ -28,10 +28,6 @@ typedef FlattenedGoalItem = ({
 class FlattenedGoalTree extends ConsumerWidget {
   final Map<String, Goal> goalMap;
   final List<String> rootGoalIds;
-  final Function(String goalId) onSelected;
-  final Function(String goalId)? onFocused;
-  final Function(String goalId, {bool? expanded}) onExpanded;
-  final Function(String?, String)? onAddGoal;
   final Function(
     String goalId, {
     List<String>? dropPath,
@@ -43,17 +39,15 @@ class FlattenedGoalTree extends ConsumerWidget {
   final HoverActionsBuilder hoverActionsBuilder;
   final List<String> path;
   final String section;
+  final bool showAddGoal;
   const FlattenedGoalTree({
     super.key,
     required this.goalMap,
     required this.rootGoalIds,
-    required this.onSelected,
-    required this.onExpanded,
-    this.onFocused,
     this.depthLimit,
     this.showParentName = false,
     required this.hoverActionsBuilder,
-    this.onAddGoal,
+    this.showAddGoal = true,
     this.path = const [],
     this.onDropGoal,
     required this.section,
@@ -87,7 +81,7 @@ class FlattenedGoalTree extends ConsumerWidget {
           }
         },
         onDepart: (String goalId, List<String> path) {
-          if (expandedGoalIds.contains(goalId) && this.onAddGoal != null) {
+          if (expandedGoalIds.contains(goalId) && this.showAddGoal) {
             flattenedGoals.add((
               goalPath: [
                 this.section,
@@ -103,7 +97,7 @@ class FlattenedGoalTree extends ConsumerWidget {
         childTraversalComparator: priorityComparator,
       );
     }
-    if (this.onAddGoal != null) {
+    if (this.showAddGoal) {
       flattenedGoals.add((
         goalPath: [this.section, ...this.path, NEW_GOAL_PLACEHOLDER],
         hasRenderableChildren: false,
@@ -121,6 +115,7 @@ class FlattenedGoalTree extends ConsumerWidget {
     final isNarrow = MediaQuery.of(context).size.width < 600;
 
     final goalItems = <Widget>[];
+
     for (int i = 0; i < flattenedGoalItems.length; i++) {
       final prevGoal = i > 0 ? flattenedGoalItems[i - 1] : null;
       final flattenedGoal = flattenedGoalItems[i];
@@ -152,8 +147,6 @@ class FlattenedGoalTree extends ConsumerWidget {
                   }
                 },
                 goal: this.goalMap[goalId]!,
-                onExpanded: this.onExpanded,
-                onFocused: this.onFocused,
                 hoverActionsBuilder: this.hoverActionsBuilder,
                 hasRenderableChildren: flattenedGoal.hasRenderableChildren,
                 showExpansionArrow: true,
@@ -163,7 +156,6 @@ class FlattenedGoalTree extends ConsumerWidget {
                 path: flattenedGoal.goalPath,
               )
             : AddSubgoalItemWidget(
-                onAddGoal: this.onAddGoal!,
                 path: flattenedGoal.goalPath,
               ),
       ));

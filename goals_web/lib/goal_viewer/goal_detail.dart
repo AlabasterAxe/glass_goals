@@ -418,11 +418,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
               .where((g) => subgoalMap.containsKey(g.id))
               .map((g) => g.id)
               .toList(),
-          onSelected: widget.onSelected,
-          onExpanded: widget.onExpanded,
-          onFocused: widget.onFocused,
           hoverActionsBuilder: widget.hoverActionsBuilder,
-          onAddGoal: widget.onAddGoal,
           path: [widget.goal.id],
           onDropGoal: this.widget.onDropGoal,
           section: 'detail',

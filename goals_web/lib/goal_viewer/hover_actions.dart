@@ -1,4 +1,4 @@
-import 'dart:ui' show Locale;
+import 'dart:ui' show Locale, VoidCallback;
 
 import 'package:flutter/material.dart'
     show
@@ -13,9 +13,8 @@ import 'package:flutter/material.dart'
         showTimePicker;
 import 'package:flutter/rendering.dart'
     show EdgeInsets, MainAxisAlignment, MainAxisSize;
-import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
-    show BuildContext, Icon, IconData, Row, Text, Widget;
+    show BuildContext, Icon, IconData, Row, SizedBox, Text, Widget;
 import 'package:goals_core/model.dart' show Goal, getGoalStatus;
 import 'package:goals_core/sync.dart' show GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
