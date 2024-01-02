@@ -1,28 +1,37 @@
 import 'package:flutter/widgets.dart'
     show BuildContext, InheritedWidget, Widget;
 
+import '../common/time_slice.dart';
+
 class GoalActionsContext extends InheritedWidget {
   final Function(String goalId) onSelected;
-  final Function(String goalId)? onFocused;
+  final Function(String goalId) onFocused;
   final Function(String goalId, {bool? expanded}) onExpanded;
-  final Function(String? parentId, String text)? onAddGoal;
+  final Function(String? parentId, String text, [TimeSlice? slice]) onAddGoal;
   final Function(String?) onUnarchive;
   final Function(String?) onArchive;
   final Function(String?, DateTime?) onDone;
   final Function(String?, DateTime?) onSnooze;
+  final Function(
+    String goalId, {
+    List<String>? dropPath,
+    List<String>? prevDropPath,
+    List<String>? nextDropPath,
+  }) onDropGoal;
   final Function(String?, {DateTime startTime, DateTime? endTime}) onActive;
 
   const GoalActionsContext({
     required Widget child,
     required this.onSelected,
-    this.onFocused,
+    required this.onFocused,
     required this.onExpanded,
-    this.onAddGoal,
+    required this.onAddGoal,
     required this.onUnarchive,
     required this.onArchive,
     required this.onDone,
     required this.onSnooze,
     required this.onActive,
+    required this.onDropGoal,
   }) : super(child: child);
 
   @override
@@ -40,12 +49,18 @@ class GoalActionsContext extends InheritedWidget {
     BuildContext context, {
     required Widget child,
     Function(String goalId)? onFocused,
-    Function(String? parentId, String text)? onAddGoal,
+    Function(String? parentId, String text, [TimeSlice? slice])? onAddGoal,
     Function(String?)? onUnarchive,
     Function(String?)? onArchive,
     Function(String?, DateTime?)? onDone,
     Function(String?, DateTime?)? onSnooze,
     Function(String?, {DateTime startTime, DateTime? endTime})? onActive,
+    Function(
+      String goalId, {
+      List<String>? dropPath,
+      List<String>? prevDropPath,
+      List<String>? nextDropPath,
+    })? onDropGoal,
   }) {
     return GoalActionsContext(
       child: child,
@@ -58,6 +73,7 @@ class GoalActionsContext extends InheritedWidget {
       onDone: onDone ?? GoalActionsContext.of(context).onDone,
       onSnooze: onSnooze ?? GoalActionsContext.of(context).onSnooze,
       onActive: onActive ?? GoalActionsContext.of(context).onActive,
+      onDropGoal: onDropGoal ?? GoalActionsContext.of(context).onDropGoal,
     );
   }
 }

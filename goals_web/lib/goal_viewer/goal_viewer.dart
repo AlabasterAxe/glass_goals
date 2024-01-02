@@ -113,7 +113,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     )
   ]);
 
-  onSelected(String goalId) {
+  _onSelected(String goalId) {
     setState(() {
       ref.read(selectedGoalsProvider.notifier).toggle(goalId);
       Hive.box('goals_web.ui')
@@ -121,7 +121,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     });
   }
 
-  onSwitchFilter(GoalFilter filter) {
+  _onSwitchFilter(GoalFilter filter) {
     setState(() {
       ref.read(selectedGoalsProvider.notifier).clear();
       _filter = filter;
@@ -129,14 +129,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     Hive.box('goals_web.ui').put('goalViewerFilter', filter.name);
   }
 
-  onSwitchDisplayMode(GoalViewMode mode) {
+  _onSwitchDisplayMode(GoalViewMode mode) {
     setState(() {
       _mode = mode;
     });
     Hive.box('goals_web.ui').put('goalViewerDisplayMode', mode.name);
   }
 
-  onExpanded(String goalId, {bool? expanded}) {
+  _onExpanded(String goalId, {bool? expanded}) {
     setState(() {
       ref.read(expandedGoalsProvider.notifier).toggle(goalId);
       Hive.box('goals_web.ui')
@@ -144,7 +144,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     });
   }
 
-  onFocused(String? goalId) {
+  _onFocused(String? goalId) {
     setState(() {
       if (goalId != null) {
         final selectedGoals = ref.read(selectedGoalsProvider.notifier);
@@ -222,15 +222,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     ref.read(selectedGoalsProvider.notifier).clear();
   }
 
-  onUnarchive(String? goalId) {
+  _onUnarchive(String? goalId) {
     this._onSetStatus(goalId, null);
   }
 
-  onArchive(String? goalId) {
+  _onArchive(String? goalId) {
     this._onSetStatus(goalId, GoalStatus.archived);
   }
 
-  onDone(String? goalId, DateTime? endDate) {
+  _onDone(String? goalId, DateTime? endDate) {
     var focusedGoalId = this.ref.read(focusedGoalProvider);
     if (focusedGoalId == goalId ||
         this
@@ -242,7 +242,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     this._onSetStatus(goalId, GoalStatus.done, endTime: endDate);
   }
 
-  onSnooze(String? goalId, DateTime? endDate) {
+  _onSnooze(String? goalId, DateTime? endDate) {
     this._onSetStatus(goalId, GoalStatus.pending, endTime: endDate);
   }
 
@@ -374,7 +374,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                   : null,
               onTap: () {
                 // Update the state of the app
-                onSwitchFilter(filter);
+                _onSwitchFilter(filter);
                 if (drawer) {
                   Navigator.pop(context);
                 }
@@ -482,7 +482,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     ref.read(selectedGoalsProvider.notifier).clear();
   }
 
-  _handleDrop(
+  _onDropGoal(
     String droppedGoalId, {
     List<String>? dropPath,
     List<String>? prevDropPath,
@@ -538,14 +538,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
     return GoalActionsContext(
       onActive: this.onActive,
-      onArchive: this.onArchive,
-      onDone: this.onDone,
-      onExpanded: this.onExpanded,
-      onSelected: this.onSelected,
-      onSnooze: this.onSnooze,
-      onUnarchive: this.onUnarchive,
+      onArchive: this._onArchive,
+      onDone: this._onDone,
+      onExpanded: this._onExpanded,
+      onSelected: this._onSelected,
+      onSnooze: this._onSnooze,
+      onUnarchive: this._onUnarchive,
       onAddGoal: this._onAddGoal,
-      onFocused: this.onFocused,
+      onFocused: this._onFocused,
+      onDropGoal: this._onDropGoal,
       child: Shortcuts(
         shortcuts: <LogicalKeySet, Intent>{
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyK):
@@ -732,8 +733,52 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       result.add(Builder(builder: (context) {
         return GoalActionsContext.overrideWith(
           context,
-          onAddGoal: (String? parentId, String text) =>
+          onAddGoal: (String? parentId, String text, [TimeSlice? _]) =>
               this._onAddGoal(parentId, text, slice),
+          onDropGoal: (
+            droppedGoalId, {
+            List<String>? dropPath,
+            List<String>? prevDropPath,
+            List<String>? nextDropPath,
+          }) {
+            this._onDropGoal(
+              droppedGoalId,
+              dropPath: dropPath,
+              prevDropPath: prevDropPath,
+              nextDropPath: nextDropPath,
+            );
+            final selectedGoals = ref.read(selectedGoalsProvider);
+            final goalsToUpdate = selectedGoals.contains(droppedGoalId)
+                ? selectedGoals
+                : {droppedGoalId};
+            bool setNullParent = goalsToUpdate.every(goalMap.containsKey);
+            bool addStatus =
+                goalsToUpdate.every((goalId) => !goalMap.containsKey(goalId));
+            for (final goalId in goalsToUpdate) {
+              if (addStatus) {
+                AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
+                    id: goalId,
+                    logEntry: StatusLogEntry(
+                      id: const Uuid().v4(),
+                      creationTime: DateTime.now(),
+                      status: GoalStatus.active,
+                      startTime: slice.startTime(worldContext.time),
+                      endTime: slice.endTime(worldContext.time),
+                    )));
+              }
+
+              if (setNullParent &&
+                  (prevDropPath?.length == 0 || prevDropPath?.length == 1) &&
+                  (nextDropPath?.length == 0 || nextDropPath?.length == 1)) {
+                AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
+                    id: goalId,
+                    logEntry: SetParentLogEntry(
+                        id: const Uuid().v4(),
+                        parentId: null,
+                        creationTime: DateTime.now())));
+              }
+            }
+          },
           child: FlattenedGoalTree(
             section: slice.name,
             goalMap: goalMap,
@@ -743,50 +788,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               goalMap: widget.goalMap,
             ),
             depthLimit: _mode == GoalViewMode.list ? 1 : null,
-            onDropGoal: (
-              droppedGoalId, {
-              List<String>? dropPath,
-              List<String>? prevDropPath,
-              List<String>? nextDropPath,
-            }) {
-              this._handleDrop(
-                droppedGoalId,
-                dropPath: dropPath,
-                prevDropPath: prevDropPath,
-                nextDropPath: nextDropPath,
-              );
-              final selectedGoals = ref.read(selectedGoalsProvider);
-              final goalsToUpdate = selectedGoals.contains(droppedGoalId)
-                  ? selectedGoals
-                  : {droppedGoalId};
-              bool setNullParent = goalsToUpdate.every(goalMap.containsKey);
-              bool addStatus =
-                  goalsToUpdate.every((goalId) => !goalMap.containsKey(goalId));
-              for (final goalId in goalsToUpdate) {
-                if (addStatus) {
-                  AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
-                      id: goalId,
-                      logEntry: StatusLogEntry(
-                        id: const Uuid().v4(),
-                        creationTime: DateTime.now(),
-                        status: GoalStatus.active,
-                        startTime: slice.startTime(worldContext.time),
-                        endTime: slice.endTime(worldContext.time),
-                      )));
-                }
-
-                if (setNullParent &&
-                    (prevDropPath?.length == 0 || prevDropPath?.length == 1) &&
-                    (nextDropPath?.length == 0 || nextDropPath?.length == 1)) {
-                  AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
-                      id: goalId,
-                      logEntry: SetParentLogEntry(
-                          id: const Uuid().v4(),
-                          parentId: null,
-                          creationTime: DateTime.now())));
-                }
-              }
-            },
           ),
         );
       }));
@@ -984,7 +985,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                             goalMap: widget.goalMap,
                           ),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                          onDropGoal: this._handleDrop,
                         );
                       case GoalFilter.to_review:
                         final toReview = {
@@ -1045,7 +1045,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           hoverActionsBuilder: (goalId) => HoverActionsWidget(
                               goalId: goalId, goalMap: widget.goalMap),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                          onDropGoal: this._handleDrop,
                         );
                       case GoalFilter.today:
                         final additionalSections = {
@@ -1116,11 +1115,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       child: GoalDetail(
         goal: focusedGoal,
         goalMap: widget.goalMap,
-        onExpanded: this.onExpanded,
-        onFocused: this.onFocused,
-        onSelected: this.onSelected,
+        onExpanded: this._onExpanded,
+        onFocused: this._onFocused,
+        onSelected: this._onSelected,
         onAddGoal: this._onAddGoal,
-        onDropGoal: this._handleDrop,
+        onDropGoal: this._onDropGoal,
         hoverActionsBuilder: (goalId) =>
             HoverActionsWidget(goalId: goalId, goalMap: widget.goalMap),
       ),

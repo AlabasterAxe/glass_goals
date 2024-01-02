@@ -14,6 +14,7 @@ import 'package:goals_web/goal_viewer/hover_actions.dart'
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
 import '../styles.dart';
+import 'goal_actions_context.dart';
 import 'goal_item.dart';
 import 'goal_separator.dart';
 import 'goal_viewer_constants.dart';
@@ -28,12 +29,6 @@ typedef FlattenedGoalItem = ({
 class FlattenedGoalTree extends ConsumerWidget {
   final Map<String, Goal> goalMap;
   final List<String> rootGoalIds;
-  final Function(
-    String goalId, {
-    List<String>? dropPath,
-    List<String>? prevDropPath,
-    List<String>? nextDropPath,
-  })? onDropGoal;
   final int? depthLimit;
   final bool showParentName;
   final HoverActionsBuilder hoverActionsBuilder;
@@ -49,7 +44,6 @@ class FlattenedGoalTree extends ConsumerWidget {
     required this.hoverActionsBuilder,
     this.showAddGoal = true,
     this.path = const [],
-    this.onDropGoal,
     required this.section,
   });
 
@@ -115,36 +109,32 @@ class FlattenedGoalTree extends ConsumerWidget {
     final isNarrow = MediaQuery.of(context).size.width < 600;
 
     final goalItems = <Widget>[];
+    final onDropGoal = GoalActionsContext.of(context).onDropGoal;
 
     for (int i = 0; i < flattenedGoalItems.length; i++) {
       final prevGoal = i > 0 ? flattenedGoalItems[i - 1] : null;
       final flattenedGoal = flattenedGoalItems[i];
       final goalId = flattenedGoal.goalPath.last;
       goalItems.add(GoalSeparator(
-        isFirst: i == 0,
-        prevGoalPath: prevGoal?.goalPath ?? [section, ...this.path],
-        nextGoalPath: flattenedGoal.goalPath,
-        goalMap: this.goalMap,
-        onDropGoal: this.onDropGoal != null
-            ? (droppedGoalId) {
-                this.onDropGoal!(droppedGoalId,
-                    prevDropPath: prevGoal?.goalPath ?? [section, ...this.path],
-                    nextDropPath: flattenedGoal.goalPath);
-              }
-            : null,
-      ));
+          isFirst: i == 0,
+          prevGoalPath: prevGoal?.goalPath ?? [section, ...this.path],
+          nextGoalPath: flattenedGoal.goalPath,
+          goalMap: this.goalMap,
+          onDropGoal: (droppedGoalId) {
+            onDropGoal(droppedGoalId,
+                prevDropPath: prevGoal?.goalPath ?? [section, ...this.path],
+                nextDropPath: flattenedGoal.goalPath);
+          }));
       goalItems.add(Padding(
         padding: EdgeInsets.only(
             left: uiUnit(4) * (flattenedGoal.goalPath.length - 2)),
         child: goalId != NEW_GOAL_PLACEHOLDER
             ? GoalItemWidget(
                 onDropGoal: (droppedGoalId) {
-                  if (this.onDropGoal != null) {
-                    this.onDropGoal!(
-                      droppedGoalId,
-                      dropPath: flattenedGoal.goalPath,
-                    );
-                  }
+                  onDropGoal(
+                    droppedGoalId,
+                    dropPath: flattenedGoal.goalPath,
+                  );
                 },
                 goal: this.goalMap[goalId]!,
                 hoverActionsBuilder: this.hoverActionsBuilder,

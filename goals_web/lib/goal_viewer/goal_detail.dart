@@ -420,7 +420,6 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
               .toList(),
           hoverActionsBuilder: widget.hoverActionsBuilder,
           path: [widget.goal.id],
-          onDropGoal: this.widget.onDropGoal,
           section: 'detail',
         ),
         SizedBox(height: uiUnit(2)),
