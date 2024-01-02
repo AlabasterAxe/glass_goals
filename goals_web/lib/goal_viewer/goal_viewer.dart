@@ -126,6 +126,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   _onSwitchFilter(GoalFilter filter) {
     setState(() {
       ref.read(selectedGoalsProvider.notifier).clear();
+      ref.read(focusedGoalProvider.notifier).set(null);
       _filter = filter;
     });
     Hive.box('goals_web.ui').put('goalViewerFilter', filter.name);

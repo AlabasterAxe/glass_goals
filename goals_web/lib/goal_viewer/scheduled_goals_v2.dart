@@ -38,9 +38,10 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
     super.initState();
 
     Hive.openBox('goals_web.ui').then((box) {
-      final List<String> expandedTimeSlices = (box.get(EXPANDED_TIME_SLICES_KEY,
-              defaultValue: <String>['long_term']) as List<dynamic>)
-          .cast();
+      final List<String> expandedTimeSlices =
+          (box.get(EXPANDED_TIME_SLICES_KEY, defaultValue: <String>['today'])
+                  as List<dynamic>)
+              .cast();
       setState(() {
         _expandedTimeSlices = expandedTimeSlices
             .map((e) => TimeSlice.values.firstWhere((slice) => slice.name == e))
