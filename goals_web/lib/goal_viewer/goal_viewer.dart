@@ -79,7 +79,7 @@ enum GoalFilter {
   this_year(displayName: "This Year"),
   long_term(displayName: "Long Term"),
   schedule(displayName: "Scheduled Goals"),
-  schedule_v2(displayName: "Top Down");
+  schedule_v2(displayName: "Scheduled Goals");
 
   const GoalFilter({required this.displayName});
 
@@ -301,11 +301,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               _mode = GoalViewMode.tree;
             }
             final filterString = box.get('goalViewerFilter',
-                defaultValue: GoalFilter.schedule.name);
+                defaultValue: GoalFilter.schedule_v2.name);
+
             try {
-              _filter = GoalFilter.values.byName(filterString);
+              _filter = filterString == GoalFilter.schedule.name
+                  ? GoalFilter.schedule_v2
+                  : GoalFilter.values.byName(filterString);
             } catch (_) {
-              _filter = GoalFilter.to_review;
+              _filter = GoalFilter.schedule_v2;
             }
           }
         });
@@ -333,14 +336,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   _viewSwitcher(bool drawer, WorldContext worldContext, bool debug) {
     final sidebarFilters = [
-      GoalFilter.schedule,
+      GoalFilter.schedule_v2,
       GoalFilter.to_review,
       GoalFilter.all,
     ];
-
-    if (debug) {
-      sidebarFilters.add(GoalFilter.schedule_v2);
-    }
 
     final toReview = {
       ...getGoalsRequiringAttention(worldContext, widget.goalMap),
@@ -424,7 +423,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       }
     } else if (prevGoalPath.length == nextGoalPath.length - 1) {
       // dropped between parent and child
-      newParentId = prevGoalPath.lastOrNull;
+      newParentId = prevGoalPath.length > 1 ? prevGoalPath.lastOrNull : null;
       newPriority = nextGoalId == NEW_GOAL_PLACEHOLDER
           ? null
           : getGoalPriority(worldContext, widget.goalMap[nextGoalId]!) / 2;

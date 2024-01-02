@@ -37,11 +37,14 @@ class Breadcrumb extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return GestureDetector(
-        child: Text(goal.text),
-        onTap: () {
-          ref.read(focusedGoalProvider.notifier).set(goal.id);
-        });
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+          child: Text(goal.text),
+          onTap: () {
+            ref.read(focusedGoalProvider.notifier).set(goal.id);
+          }),
+    );
   }
 }
 
