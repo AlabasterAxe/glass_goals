@@ -139,7 +139,8 @@ class FlattenedGoalTree extends ConsumerWidget {
                 goal: this.goalMap[goalId]!,
                 hoverActionsBuilder: this.hoverActionsBuilder,
                 hasRenderableChildren: flattenedGoal.hasRenderableChildren,
-                showExpansionArrow: true,
+                showExpansionArrow:
+                    flattenedGoal.hasRenderableChildren || showAddGoal,
                 dragHandle: isNarrow
                     ? GoalItemDragHandle.bullet
                     : GoalItemDragHandle.item,

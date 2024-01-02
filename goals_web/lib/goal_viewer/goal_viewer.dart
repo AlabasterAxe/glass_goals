@@ -37,6 +37,7 @@ import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
+import 'package:goals_web/goal_viewer/scheduled_goals_v2.dart';
 import 'package:goals_web/intents.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -77,7 +78,8 @@ enum GoalFilter {
   this_quarter(displayName: "This Quarter"),
   this_year(displayName: "This Year"),
   long_term(displayName: "Long Term"),
-  schedule(displayName: "Scheduled Goals");
+  schedule(displayName: "Scheduled Goals"),
+  schedule_v2(displayName: "Top Down");
 
   const GoalFilter({required this.displayName});
 
@@ -329,12 +331,17 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
   }
 
-  _viewSwitcher(bool drawer, WorldContext worldContext) {
+  _viewSwitcher(bool drawer, WorldContext worldContext, bool debug) {
     final sidebarFilters = [
       GoalFilter.schedule,
       GoalFilter.to_review,
       GoalFilter.all,
     ];
+
+    if (debug) {
+      sidebarFilters.add(GoalFilter.schedule_v2);
+    }
+
     final toReview = {
       ...getGoalsRequiringAttention(worldContext, widget.goalMap),
       ...getPreviouslyActiveGoals(
@@ -518,7 +525,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
     final isNarrow = MediaQuery.of(context).size.width < 600;
     if (!isNarrow) {
-      children.add(_viewSwitcher(false, worldContext));
+      children.add(_viewSwitcher(false, worldContext, debugMode));
     }
 
     var appBarTitle = 'Glass Goals';
@@ -597,7 +604,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               ),
               drawer: isNarrow && focusedGoalId == null
                   ? Drawer(
-                      child: _viewSwitcher(true, worldContext),
+                      child: _viewSwitcher(true, worldContext, debugMode),
                     )
                   : null,
               body: Stack(
@@ -1096,6 +1103,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                             TimeSlice.long_term
                           ]),
                         );
+                      case GoalFilter.schedule_v2:
+                        return ScheduledGoalsV2(goalMap: goalMap);
                     }
                   })),
         ),
