@@ -43,9 +43,11 @@ class _FalseCursorState extends State<FalseCursor> {
                   top: y,
                   height: 24,
                   width: 24,
-                  child: Image(
-                      image: AssetImage('assets/cursor.png'),
-                      filterQuality: FilterQuality.high)),
+                  child: IgnorePointer(
+                    child: Image(
+                        image: AssetImage('assets/cursor.png'),
+                        filterQuality: FilterQuality.high),
+                  )),
           ],
         ));
   }
@@ -58,11 +60,10 @@ void main() async {
 
   usePathUrlStrategy();
   runApp(FalseCursor(
-      enabled: false,
+      // enabled: false,
       child: ProviderScope(
           child: WebGoals(
               shouldAuthenticate: false,
-              debug: true,
               persistenceService: InMemoryPersistenceService(ops: [
                 {
                   'hlcTimestamp':

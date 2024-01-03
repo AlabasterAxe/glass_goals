@@ -1,55 +1,86 @@
 function injectLogger() {
   const startTime = Date.now();
-  const log = []
+  chrome.storage.local.set({ log: [], status: "stop" });
+  let log = [];
+  let recording = false;
+
+  chrome.storage.onChanged.addListener(({ status }) => {
+    console.log(status);
+    switch (status?.newValue) {
+      case "start":
+        recording = true;
+        log = [];
+        break;
+      case "stop":
+        recording = false;
+        chrome.storage.local.set({ log: log });
+        break;
+    }
+  });
 
   // on mousemove update div contents to reflect mouse coords
   document.onmousemove = function (e) {
-    log.push({
-      x: e.clientX,
-      y: e.clientY,
-      time: Date.now() - startTime,
-      type: "mousemove",
-    });
+    if (recording) {
+      log.push({
+        x: e.clientX,
+        y: e.clientY,
+        time: Date.now() - startTime,
+        type: "mousemove",
+      });
+    }
   };
 
-  document.onclick = function (e) {
-    log.push({
-      x: e.clientX,
-      y: e.clientY,
-      time: Date.now() - startTime,
-      type: "click",
-    });
+  document.onmousedown = function (e) {
+    if (recording) {
+      log.push({
+        x: e.clientX,
+        y: e.clientY,
+        time: Date.now() - startTime,
+        type: "mousedown",
+      });
+    }
+  };
+
+  document.onmouseup = function (e) {
+    if (recording) {
+      log.push({
+        x: e.clientX,
+        y: e.clientY,
+        time: Date.now() - startTime,
+        type: "mouseup",
+      });
+    }
   };
 
   document.onkeydown = function (e) {
-    log.push({
-      x: e.clientX,
-      y: e.clientY,
-      time: Date.now() - startTime,
-      type: "keydown",
-      payload: {
-        key: e.key,
-        code: e.code,
-      },
-    });
+    if (recording) {
+      log.push({
+        x: e.clientX,
+        y: e.clientY,
+        time: Date.now() - startTime,
+        type: "keydown",
+        payload: {
+          key: e.key,
+          code: e.code,
+        },
+      });
+    }
   };
 
   document.onkeyup = function (e) {
-    log.push({
-      x: e.clientX,
-      y: e.clientY,
-      time: Date.now() - startTime,
-      type: "keyup",
-      payload: {
-        key: e.key,
-        code: e.code,
-      },
-    });
+    if (recording) {
+      log.push({
+        x: e.clientX,
+        y: e.clientY,
+        time: Date.now() - startTime,
+        type: "keyup",
+        payload: {
+          key: e.key,
+          code: e.code,
+        },
+      });
+    }
   };
-
-  setInterval(()=>{
-    chrome.storage.local.set({log: log});
-  }, 10_000)
 }
 
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {

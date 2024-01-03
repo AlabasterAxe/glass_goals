@@ -1,4 +1,4 @@
-import { By, Builder, Origin, Key } from "selenium-webdriver";
+import { By, Builder, Origin, Key, WebDriver } from "selenium-webdriver";
 import { Options } from "selenium-webdriver/chrome";
 import * as events from "./mouse-events.json";
 
@@ -22,7 +22,7 @@ function getKey(key: string): any {
 }
 
 async function processEvents(
-  driver: any,
+  driver: WebDriver,
   events: any[],
   eventIndex: number,
   startTime: number
@@ -53,11 +53,19 @@ async function processEvents(
           // ignore
         });
       break;
-    case "click":
+    case "mousedown":
       await driver
         .actions()
         .move({ x: currentEvent.x, y: currentEvent.y, duration: 1 })
-        .click()
+        .press() 
+        .perform()
+        .catch(() => {});
+      break;
+    case "mouseup":
+      await driver
+        .actions()
+        .move({ x: currentEvent.x, y: currentEvent.y, duration: 1 })
+        .release()
         .perform()
         .catch(() => {});
       break;
@@ -95,6 +103,10 @@ async function processEvents(
 
 (async function test() {
   const opts = new Options();
+  opts.windowSize({
+    width: 1920,
+    height: 1080,
+  });
   opts.setUserPreferences({
     partition: {
       default_zoom_level: {
