@@ -4,14 +4,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
 
 import '../styles.dart';
+import 'goal_actions_context.dart';
 
 class AddSubgoalItemWidget extends ConsumerStatefulWidget {
   final List<String> path;
-  final Function(String? parentId, String text) onAddGoal;
   const AddSubgoalItemWidget({
     super.key,
     required this.path,
-    required this.onAddGoal,
   });
 
   @override
@@ -55,7 +54,7 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
     _textController.selection =
         TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
 
-    widget.onAddGoal(
+    GoalActionsContext.of(context).onAddGoal?.call(
         widget.path.length >= 3 ? widget.path[widget.path.length - 2] : null,
         newText);
   }

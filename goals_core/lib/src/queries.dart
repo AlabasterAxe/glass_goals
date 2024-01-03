@@ -360,7 +360,7 @@ Map<String, Goal> getGoalsForDateRange(
     while (ancestor != null) {
       final ancestorStatus = getGoalStatus(context, ancestor);
       // if any of these goals have an ancestor that has an active status
-      // that is completely contained within this goal, we won't show this goal
+      // that is completely contained within this slice, we won't show this goal
       if (ancestorStatus.status == GoalStatus.active &&
           (ancestorStatus.endTime != null ||
               ancestorStatus.startTime != null) &&
@@ -368,6 +368,12 @@ Map<String, Goal> getGoalsForDateRange(
               ancestorStatus,
               goalStatus.startTime?.add(Duration(seconds: 1)),
               goalStatus.endTime?.subtract(Duration(seconds: 1)))) {
+        goalsToRemove.add(goal.id);
+        break;
+      }
+
+      if (ancestorStatus.status == null ||
+          ancestorStatus.status == GoalStatus.pending) {
         goalsToRemove.add(goal.id);
         break;
       }

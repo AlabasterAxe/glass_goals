@@ -33,11 +33,11 @@ import 'package:goals_core/sync.dart'
         PriorityLogEntry,
         SetParentLogEntry,
         StatusLogEntry;
-import 'package:goals_core/util.dart' show DateTimeExtension;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
+import 'package:goals_web/goal_viewer/scheduled_goals_v2.dart';
 import 'package:goals_web/intents.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -46,6 +46,7 @@ import 'package:uuid/uuid.dart' show Uuid;
 
 import '../actions.dart';
 import '../common/keyboard_utils.dart';
+import '../common/time_slice.dart';
 import '../styles.dart'
     show
         darkElementColor,
@@ -53,6 +54,7 @@ import '../styles.dart'
         multiSplitViewThemeData,
         smallTextStyle,
         uiUnit;
+import 'goal_actions_context.dart';
 import 'goal_search_modal.dart';
 import 'goal_viewer_constants.dart';
 import 'hover_actions.dart';
@@ -66,54 +68,6 @@ class GoalViewer extends StatefulHookConsumerWidget {
   ConsumerState<GoalViewer> createState() => _GoalViewerState();
 }
 
-enum TimeSlice {
-  today(null, "Today"),
-  this_week(TimeSlice.today, "This Week"),
-  this_month(TimeSlice.this_week, "This Month"),
-  this_quarter(TimeSlice.this_month, "This Quarter"),
-  this_year(TimeSlice.this_quarter, "This Year"),
-  long_term(TimeSlice.this_year, "Long Term");
-
-  const TimeSlice(this.zoomDown, this.displayName);
-
-  final TimeSlice? zoomDown;
-  final String displayName;
-
-  DateTime? startTime(DateTime now) {
-    switch (this) {
-      case TimeSlice.today:
-        return now.startOfDay;
-      case TimeSlice.this_week:
-        return now.startOfWeek;
-      case TimeSlice.this_month:
-        return now.startOfMonth;
-      case TimeSlice.this_quarter:
-        return now.startOfQuarter;
-      case TimeSlice.this_year:
-        return now.startOfYear;
-      case TimeSlice.long_term:
-        return null;
-    }
-  }
-
-  DateTime? endTime(DateTime now) {
-    switch (this) {
-      case TimeSlice.today:
-        return now.endOfDay;
-      case TimeSlice.this_week:
-        return now.endOfWeek;
-      case TimeSlice.this_month:
-        return now.endOfMonth;
-      case TimeSlice.this_quarter:
-        return now.endOfQuarter;
-      case TimeSlice.this_year:
-        return now.endOfYear;
-      case TimeSlice.long_term:
-        return null;
-    }
-  }
-}
-
 enum GoalFilter {
   pending(displayName: "Pending Goals"),
   all(displayName: "All Goals"),
@@ -124,7 +78,8 @@ enum GoalFilter {
   this_quarter(displayName: "This Quarter"),
   this_year(displayName: "This Year"),
   long_term(displayName: "Long Term"),
-  schedule(displayName: "Scheduled Goals");
+  schedule(displayName: "Scheduled Goals"),
+  schedule_v2(displayName: "Scheduled Goals");
 
   const GoalFilter({required this.displayName});
 
@@ -160,7 +115,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     )
   ]);
 
-  onSelected(String goalId) {
+  _onSelected(String goalId) {
     setState(() {
       ref.read(selectedGoalsProvider.notifier).toggle(goalId);
       Hive.box('goals_web.ui')
@@ -168,22 +123,23 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     });
   }
 
-  onSwitchFilter(GoalFilter filter) {
+  _onSwitchFilter(GoalFilter filter) {
     setState(() {
       ref.read(selectedGoalsProvider.notifier).clear();
+      ref.read(focusedGoalProvider.notifier).set(null);
       _filter = filter;
     });
     Hive.box('goals_web.ui').put('goalViewerFilter', filter.name);
   }
 
-  onSwitchDisplayMode(GoalViewMode mode) {
+  _onSwitchDisplayMode(GoalViewMode mode) {
     setState(() {
       _mode = mode;
     });
     Hive.box('goals_web.ui').put('goalViewerDisplayMode', mode.name);
   }
 
-  onExpanded(String goalId, {bool? expanded}) {
+  _onExpanded(String goalId, {bool? expanded}) {
     setState(() {
       ref.read(expandedGoalsProvider.notifier).toggle(goalId);
       Hive.box('goals_web.ui')
@@ -191,7 +147,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     });
   }
 
-  onFocused(String? goalId) {
+  _onFocused(String? goalId) {
     setState(() {
       if (goalId != null) {
         final selectedGoals = ref.read(selectedGoalsProvider.notifier);
@@ -269,15 +225,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     ref.read(selectedGoalsProvider.notifier).clear();
   }
 
-  onUnarchive(String? goalId) {
+  _onUnarchive(String? goalId) {
     this._onSetStatus(goalId, null);
   }
 
-  onArchive(String? goalId) {
+  _onArchive(String? goalId) {
     this._onSetStatus(goalId, GoalStatus.archived);
   }
 
-  onDone(String? goalId, DateTime? endDate) {
+  _onDone(String? goalId, DateTime? endDate) {
     var focusedGoalId = this.ref.read(focusedGoalProvider);
     if (focusedGoalId == goalId ||
         this
@@ -289,7 +245,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     this._onSetStatus(goalId, GoalStatus.done, endTime: endDate);
   }
 
-  onSnooze(String? goalId, DateTime? endDate) {
+  _onSnooze(String? goalId, DateTime? endDate) {
     this._onSetStatus(goalId, GoalStatus.pending, endTime: endDate);
   }
 
@@ -346,11 +302,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               _mode = GoalViewMode.tree;
             }
             final filterString = box.get('goalViewerFilter',
-                defaultValue: GoalFilter.schedule.name);
+                defaultValue: GoalFilter.schedule_v2.name);
+
             try {
-              _filter = GoalFilter.values.byName(filterString);
+              _filter = filterString == GoalFilter.schedule.name
+                  ? GoalFilter.schedule_v2
+                  : GoalFilter.values.byName(filterString);
             } catch (_) {
-              _filter = GoalFilter.to_review;
+              _filter = GoalFilter.schedule_v2;
             }
           }
         });
@@ -376,12 +335,13 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
   }
 
-  _viewSwitcher(bool drawer, WorldContext worldContext) {
+  _viewSwitcher(bool drawer, WorldContext worldContext, bool debug) {
     final sidebarFilters = [
-      GoalFilter.schedule,
+      GoalFilter.schedule_v2,
       GoalFilter.to_review,
       GoalFilter.all,
     ];
+
     final toReview = {
       ...getGoalsRequiringAttention(worldContext, widget.goalMap),
       ...getPreviouslyActiveGoals(
@@ -421,7 +381,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                   : null,
               onTap: () {
                 // Update the state of the app
-                onSwitchFilter(filter);
+                _onSwitchFilter(filter);
                 if (drawer) {
                   Navigator.pop(context);
                 }
@@ -464,7 +424,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       }
     } else if (prevGoalPath.length == nextGoalPath.length - 1) {
       // dropped between parent and child
-      newParentId = prevGoalPath.lastOrNull;
+      newParentId = prevGoalPath.length > 1 ? prevGoalPath.lastOrNull : null;
       newPriority = nextGoalId == NEW_GOAL_PLACEHOLDER
           ? null
           : getGoalPriority(worldContext, widget.goalMap[nextGoalId]!) / 2;
@@ -529,7 +489,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     ref.read(selectedGoalsProvider.notifier).clear();
   }
 
-  _handleDrop(
+  _onDropGoal(
     String droppedGoalId, {
     List<String>? dropPath,
     List<String>? prevDropPath,
@@ -565,7 +525,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
     final isNarrow = MediaQuery.of(context).size.width < 600;
     if (!isNarrow) {
-      children.add(_viewSwitcher(false, worldContext));
+      children.add(_viewSwitcher(false, worldContext, debugMode));
     }
 
     var appBarTitle = 'Glass Goals';
@@ -583,114 +543,121 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       }
     }
 
-    return Shortcuts(
-      shortcuts: <LogicalKeySet, Intent>{
-        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyK):
-            const SearchIntent(),
-        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyK):
-            const SearchIntent()
-      },
-      child: Actions(
-        actions: {SearchIntent: RootSearchAction(cb: _openSearch)},
-        child: KeyboardListener(
-          focusNode: this._focusNode,
-          child: Scaffold(
-            appBar: AppBar(
-              automaticallyImplyLeading: false,
-              surfaceTintColor: Colors.transparent,
-              title: Row(
-                children: [
-                  SizedBox(
-                    width: uiUnit(12),
-                    height: uiUnit(12),
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                          0, uiUnit(2), uiUnit(2), uiUnit(2)),
-                      child: SvgPicture.asset(
-                        'assets/logo.svg',
+    return GoalActionsContext(
+      onActive: this.onActive,
+      onArchive: this._onArchive,
+      onDone: this._onDone,
+      onExpanded: this._onExpanded,
+      onSelected: this._onSelected,
+      onSnooze: this._onSnooze,
+      onUnarchive: this._onUnarchive,
+      onAddGoal: this._onAddGoal,
+      onFocused: this._onFocused,
+      onDropGoal: this._onDropGoal,
+      child: Shortcuts(
+        shortcuts: <LogicalKeySet, Intent>{
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyK):
+              const SearchIntent(),
+          LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyK):
+              const SearchIntent()
+        },
+        child: Actions(
+          actions: {SearchIntent: RootSearchAction(cb: _openSearch)},
+          child: KeyboardListener(
+            focusNode: this._focusNode,
+            child: Scaffold(
+              appBar: AppBar(
+                automaticallyImplyLeading: false,
+                surfaceTintColor: Colors.transparent,
+                title: Row(
+                  children: [
+                    SizedBox(
+                      width: uiUnit(12),
+                      height: uiUnit(12),
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                            0, uiUnit(2), uiUnit(2), uiUnit(2)),
+                        child: SvgPicture.asset(
+                          'assets/logo.svg',
+                        ),
                       ),
                     ),
+                    Text(appBarTitle),
+                  ],
+                ),
+                centerTitle: false,
+                leading: isNarrow
+                    ? focusedGoalId != null
+                        ? IconButton(
+                            icon: const Icon(Icons.arrow_back),
+                            onPressed: () {
+                              ref.read(focusedGoalProvider.notifier).set(null);
+                            })
+                        : Builder(builder: (context) {
+                            return IconButton(
+                                icon: const Icon(Icons.menu),
+                                onPressed: () {
+                                  Scaffold.of(context).openDrawer();
+                                });
+                          })
+                    : null,
+              ),
+              drawer: isNarrow && focusedGoalId == null
+                  ? Drawer(
+                      child: _viewSwitcher(true, worldContext, debugMode),
+                    )
+                  : null,
+              body: Stack(
+                children: [
+                  Positioned.fill(
+                    child: children.length == 1
+                        ? children[0]
+                        : MultiSplitViewTheme(
+                            data: multiSplitViewThemeData,
+                            child: MultiSplitView(
+                              controller: _multiSplitViewController,
+                              children: children,
+                            )),
                   ),
-                  Text(appBarTitle),
+                  if (!isNarrow && debugMode)
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        color: Colors.black.withOpacity(0.3),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Selected Goals: ${selectedGoals.join(', ')}',
+                              style: Theme.of(context).textTheme.bodyText1,
+                            ),
+                            StreamBuilder<List<String>?>(
+                                stream: hoverEventStream.stream,
+                                builder: (context, snapshot) {
+                                  return Text('Hovered Path: ${snapshot.data}');
+                                })
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (isNarrow &&
+                      (selectedGoals.isNotEmpty || focusedGoalId != null))
+                    Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: uiUnit(16),
+                        child: Container(
+                          color: lightBackground,
+                          child: isEditingText
+                              ? const TextEditingControls()
+                              : HoverActionsWidget(
+                                  goalMap: widget.goalMap,
+                                  mainAxisSize: MainAxisSize.max,
+                                ),
+                        ))
                 ],
               ),
-              centerTitle: false,
-              leading: isNarrow
-                  ? focusedGoalId != null
-                      ? IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: () {
-                            ref.read(focusedGoalProvider.notifier).set(null);
-                          })
-                      : Builder(builder: (context) {
-                          return IconButton(
-                              icon: const Icon(Icons.menu),
-                              onPressed: () {
-                                Scaffold.of(context).openDrawer();
-                              });
-                        })
-                  : null,
-            ),
-            drawer: isNarrow && focusedGoalId == null
-                ? Drawer(
-                    child: _viewSwitcher(true, worldContext),
-                  )
-                : null,
-            body: Stack(
-              children: [
-                Positioned.fill(
-                  child: children.length == 1
-                      ? children[0]
-                      : MultiSplitViewTheme(
-                          data: multiSplitViewThemeData,
-                          child: MultiSplitView(
-                            controller: _multiSplitViewController,
-                            children: children,
-                          )),
-                ),
-                if (!isNarrow && debugMode)
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      color: Colors.black.withOpacity(0.3),
-                      child: Column(
-                        children: [
-                          Text(
-                            'Selected Goals: ${selectedGoals.join(', ')}',
-                            style: Theme.of(context).textTheme.bodyText1,
-                          ),
-                          StreamBuilder<List<String>?>(
-                              stream: hoverEventStream.stream,
-                              builder: (context, snapshot) {
-                                return Text('Hovered Path: ${snapshot.data}');
-                              })
-                        ],
-                      ),
-                    ),
-                  ),
-                if (isNarrow &&
-                    (selectedGoals.isNotEmpty || focusedGoalId != null))
-                  Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: uiUnit(16),
-                      child: Container(
-                        color: lightBackground,
-                        child: isEditingText
-                            ? const TextEditingControls()
-                            : HoverActionsWidget(
-                                onUnarchive: onUnarchive,
-                                onArchive: onArchive,
-                                onDone: onDone,
-                                onSnooze: onSnooze,
-                                onActive: onActive,
-                                goalMap: widget.goalMap,
-                                mainAxisSize: MainAxisSize.max,
-                              ),
-                      ))
-              ],
             ),
           ),
         ),
@@ -720,15 +687,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   Widget? _timeSlice(WorldContext context, TimeSlice slice) =>
       _timeSlices(context, [slice]).firstOrNull;
 
-  List<Widget> _timeSlices(WorldContext context, List<TimeSlice> slices) {
+  List<Widget> _timeSlices(WorldContext worldContext, List<TimeSlice> slices) {
     final Map<String, Goal> goalsAccountedFor = {};
     final List<Widget> result = [];
     for (final slice in slices) {
       final goalMap = getGoalsForDateRange(
-        context,
+        worldContext,
         widget.goalMap,
-        slice.startTime(context.time),
-        slice.endTime(context.time),
+        slice.startTime(worldContext.time),
+        slice.endTime(worldContext.time),
       );
 
       if (goalMap.isEmpty && slice.zoomDown != null) {
@@ -770,70 +737,67 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
           style: Theme.of(this.context).textTheme.headlineSmall,
         ),
       ));
-      result.add(FlattenedGoalTree(
-        section: slice.name,
-        goalMap: goalMap,
-        rootGoalIds: goalIds,
-        onSelected: onSelected,
-        onExpanded: onExpanded,
-        onFocused: onFocused,
-        hoverActionsBuilder: (goalId) => HoverActionsWidget(
-          goalId: goalId,
-          onUnarchive: onUnarchive,
-          onArchive: onArchive,
-          onDone: onDone,
-          onSnooze: onSnooze,
-          onActive: onActive,
-          goalMap: widget.goalMap,
-        ),
-        depthLimit: _mode == GoalViewMode.list ? 1 : null,
-        onAddGoal: (String? parentId, String text) =>
-            this._onAddGoal(parentId, text, slice),
-        onDropGoal: (
-          droppedGoalId, {
-          List<String>? dropPath,
-          List<String>? prevDropPath,
-          List<String>? nextDropPath,
-        }) {
-          this._handleDrop(
-            droppedGoalId,
-            dropPath: dropPath,
-            prevDropPath: prevDropPath,
-            nextDropPath: nextDropPath,
-          );
-          final selectedGoals = ref.read(selectedGoalsProvider);
-          final goalsToUpdate = selectedGoals.contains(droppedGoalId)
-              ? selectedGoals
-              : {droppedGoalId};
-          bool setNullParent = goalsToUpdate.every(goalMap.containsKey);
-          bool addStatus =
-              goalsToUpdate.every((goalId) => !goalMap.containsKey(goalId));
-          for (final goalId in goalsToUpdate) {
-            if (addStatus) {
-              AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
-                  id: goalId,
-                  logEntry: StatusLogEntry(
-                    id: const Uuid().v4(),
-                    creationTime: DateTime.now(),
-                    status: GoalStatus.active,
-                    startTime: slice.startTime(context.time),
-                    endTime: slice.endTime(context.time),
-                  )));
-            }
-
-            if (setNullParent &&
-                (prevDropPath?.length == 0 || prevDropPath?.length == 1) &&
-                (nextDropPath?.length == 0 || nextDropPath?.length == 1)) {
-              AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
-                  id: goalId,
-                  logEntry: SetParentLogEntry(
+      result.add(Builder(builder: (context) {
+        return GoalActionsContext.overrideWith(
+          context,
+          onAddGoal: (String? parentId, String text, [TimeSlice? _]) =>
+              this._onAddGoal(parentId, text, slice),
+          onDropGoal: (
+            droppedGoalId, {
+            List<String>? dropPath,
+            List<String>? prevDropPath,
+            List<String>? nextDropPath,
+          }) {
+            this._onDropGoal(
+              droppedGoalId,
+              dropPath: dropPath,
+              prevDropPath: prevDropPath,
+              nextDropPath: nextDropPath,
+            );
+            final selectedGoals = ref.read(selectedGoalsProvider);
+            final goalsToUpdate = selectedGoals.contains(droppedGoalId)
+                ? selectedGoals
+                : {droppedGoalId};
+            bool setNullParent = goalsToUpdate.every(goalMap.containsKey);
+            bool addStatus =
+                goalsToUpdate.every((goalId) => !goalMap.containsKey(goalId));
+            for (final goalId in goalsToUpdate) {
+              if (addStatus) {
+                AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
+                    id: goalId,
+                    logEntry: StatusLogEntry(
                       id: const Uuid().v4(),
-                      parentId: null,
-                      creationTime: DateTime.now())));
+                      creationTime: DateTime.now(),
+                      status: GoalStatus.active,
+                      startTime: slice.startTime(worldContext.time),
+                      endTime: slice.endTime(worldContext.time),
+                    )));
+              }
+
+              if (setNullParent &&
+                  (prevDropPath?.length == 0 || prevDropPath?.length == 1) &&
+                  (nextDropPath?.length == 0 || nextDropPath?.length == 1)) {
+                AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
+                    id: goalId,
+                    logEntry: SetParentLogEntry(
+                        id: const Uuid().v4(),
+                        parentId: null,
+                        creationTime: DateTime.now())));
+              }
             }
-          }
-        },
-      ));
+          },
+          child: FlattenedGoalTree(
+            section: slice.name,
+            goalMap: goalMap,
+            rootGoalIds: goalIds,
+            hoverActionsBuilder: (goalId) => HoverActionsWidget(
+              goalId: goalId,
+              goalMap: widget.goalMap,
+            ),
+            depthLimit: _mode == GoalViewMode.list ? 1 : null,
+          ),
+        );
+      }));
     }
     return result;
   }
@@ -888,16 +852,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       section: 'previous-${slice.name}',
       goalMap: goalMap,
       rootGoalIds: goalIds,
-      onSelected: onSelected,
-      onExpanded: onExpanded,
-      onFocused: onFocused,
       hoverActionsBuilder: (goalId) => HoverActionsWidget(
         goalId: goalId,
-        onUnarchive: onUnarchive,
-        onArchive: onArchive,
-        onDone: onDone,
-        onSnooze: onSnooze,
-        onActive: onActive,
         goalMap: widget.goalMap,
       ),
       depthLimit: _mode == GoalViewMode.list ? 1 : null,
@@ -932,19 +888,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       section: 'previously-active',
       goalMap: goalMap,
       rootGoalIds: goalIds,
-      onSelected: onSelected,
-      onExpanded: onExpanded,
-      onFocused: onFocused,
       hoverActionsBuilder: (goalId) => HoverActionsWidget(
         goalId: goalId,
-        onUnarchive: onUnarchive,
-        onArchive: onArchive,
-        onDone: onDone,
-        onSnooze: onSnooze,
-        onActive: onActive,
         goalMap: widget.goalMap,
       ),
       depthLimit: _mode == GoalViewMode.list ? 1 : null,
+      showAddGoal: false,
     );
   }
 
@@ -976,19 +925,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       section: 'orphaned',
       goalMap: goalMap,
       rootGoalIds: goalIds,
-      onSelected: onSelected,
-      onExpanded: onExpanded,
-      onFocused: onFocused,
       hoverActionsBuilder: (goalId) => HoverActionsWidget(
         goalId: goalId,
-        onUnarchive: onUnarchive,
-        onArchive: onArchive,
-        onDone: onDone,
-        onSnooze: onSnooze,
-        onActive: onActive,
         goalMap: widget.goalMap,
       ),
       depthLimit: _mode == GoalViewMode.list ? 1 : null,
+      showAddGoal: false,
     );
   }
 
@@ -1045,21 +987,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           section: 'all-goals',
                           goalMap: goalMap,
                           rootGoalIds: goalIds,
-                          onSelected: onSelected,
-                          onExpanded: onExpanded,
-                          onFocused: onFocused,
                           hoverActionsBuilder: (goalId) => HoverActionsWidget(
                             goalId: goalId,
-                            onUnarchive: onUnarchive,
-                            onArchive: onArchive,
-                            onDone: onDone,
-                            onSnooze: onSnooze,
-                            onActive: onActive,
                             goalMap: widget.goalMap,
                           ),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                          onAddGoal: this._onAddGoal,
-                          onDropGoal: this._handleDrop,
                         );
                       case GoalFilter.to_review:
                         final toReview = {
@@ -1117,20 +1049,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           section: 'pending',
                           goalMap: goalMap,
                           rootGoalIds: goalIds,
-                          onSelected: onSelected,
-                          onExpanded: onExpanded,
-                          onFocused: onFocused,
                           hoverActionsBuilder: (goalId) => HoverActionsWidget(
-                              goalId: goalId,
-                              onUnarchive: onUnarchive,
-                              onArchive: onArchive,
-                              onDone: onDone,
-                              onSnooze: onSnooze,
-                              onActive: onActive,
-                              goalMap: widget.goalMap),
+                              goalId: goalId, goalMap: widget.goalMap),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                          onAddGoal: this._onAddGoal,
-                          onDropGoal: this._handleDrop,
                         );
                       case GoalFilter.today:
                         final additionalSections = {
@@ -1182,6 +1103,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                             TimeSlice.long_term
                           ]),
                         );
+                      case GoalFilter.schedule_v2:
+                        return ScheduledGoalsV2(goalMap: goalMap);
                     }
                   })),
         ),
@@ -1201,19 +1124,13 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       child: GoalDetail(
         goal: focusedGoal,
         goalMap: widget.goalMap,
-        onExpanded: this.onExpanded,
-        onFocused: this.onFocused,
-        onSelected: this.onSelected,
+        onExpanded: this._onExpanded,
+        onFocused: this._onFocused,
+        onSelected: this._onSelected,
         onAddGoal: this._onAddGoal,
-        onDropGoal: this._handleDrop,
-        hoverActionsBuilder: (goalId) => HoverActionsWidget(
-            goalId: goalId,
-            onUnarchive: this.onUnarchive,
-            onArchive: this.onArchive,
-            onDone: this.onDone,
-            onSnooze: this.onSnooze,
-            onActive: this.onActive,
-            goalMap: widget.goalMap),
+        onDropGoal: this._onDropGoal,
+        hoverActionsBuilder: (goalId) =>
+            HoverActionsWidget(goalId: goalId, goalMap: widget.goalMap),
       ),
     );
   }

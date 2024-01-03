@@ -36,12 +36,18 @@ final colorScheme = ColorScheme.fromSwatch(
   backgroundColor: lightBackground,
 ).copyWith(primary: Color.fromARGB(255, 139, 104, 0));
 
-final defaultTextTheme =
-    Typography.material2021(colorScheme: colorScheme).black.apply(
-          fontFamily: defaultFont.fontFamily,
-          bodyColor: defaultFont.color,
-          displayColor: defaultFont.color,
-        );
+final defaultTextTheme = Typography.material2021(colorScheme: colorScheme)
+    .black
+    .copyWith(
+      headlineLarge: TextStyle(fontWeight: FontWeight.w600),
+      headlineMedium: TextStyle(fontWeight: FontWeight.w600),
+      headlineSmall: TextStyle(fontWeight: FontWeight.w600),
+    )
+    .apply(
+      fontFamily: defaultFont.fontFamily,
+      bodyColor: defaultFont.color,
+      displayColor: defaultFont.color,
+    );
 
 final theme = ThemeData(
   useMaterial3: true,

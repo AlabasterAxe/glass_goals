@@ -37,11 +37,14 @@ class Breadcrumb extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return GestureDetector(
-        child: Text(goal.text),
-        onTap: () {
-          ref.read(focusedGoalProvider.notifier).set(goal.id);
-        });
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+          child: Text(goal.text),
+          onTap: () {
+            ref.read(focusedGoalProvider.notifier).set(goal.id);
+          }),
+    );
   }
 }
 
@@ -418,13 +421,8 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
               .where((g) => subgoalMap.containsKey(g.id))
               .map((g) => g.id)
               .toList(),
-          onSelected: widget.onSelected,
-          onExpanded: widget.onExpanded,
-          onFocused: widget.onFocused,
           hoverActionsBuilder: widget.hoverActionsBuilder,
-          onAddGoal: widget.onAddGoal,
           path: [widget.goal.id],
-          onDropGoal: this.widget.onDropGoal,
           section: 'detail',
         ),
         SizedBox(height: uiUnit(2)),

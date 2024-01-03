@@ -10,6 +10,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../app_context.dart';
 import '../styles.dart';
+import 'goal_actions_context.dart';
 import 'providers.dart'
     show
         expandedGoalsProvider,
@@ -26,8 +27,6 @@ enum GoalItemDragHandle {
 
 class GoalItemWidget extends StatefulHookConsumerWidget {
   final Goal goal;
-  final Function(String id, {bool expanded}) onExpanded;
-  final Function(String id)? onFocused;
 
   final HoverActionsBuilder hoverActionsBuilder;
   final bool hasRenderableChildren;
@@ -39,8 +38,6 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
   const GoalItemWidget({
     super.key,
     required this.goal,
-    required this.onExpanded,
-    required this.onFocused,
     required this.hoverActionsBuilder,
     required this.hasRenderableChildren,
     this.showExpansionArrow = true,
@@ -123,6 +120,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     final isFocused = ref.watch(focusedGoalProvider) == widget.goal.id;
     final isSelected = selectedGoals.contains(widget.goal.id);
     final isNarrow = MediaQuery.of(context).size.width < 600;
+    final onExpanded = GoalActionsContext.of(context).onExpanded;
+    final onFocused = GoalActionsContext.of(context).onFocused;
     final bullet = SizedBox(
       width: uiUnit(10),
       height: uiUnit(8),
@@ -149,7 +148,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         onTap: _editing
             ? null
             : () {
-                widget.onFocused?.call(widget.goal.id);
+                onFocused?.call(widget.goal.id);
               },
         child: StreamBuilder<List<String>?>(
             stream: hoverEventStream.stream,
@@ -232,8 +231,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                             height: 32,
                             child: IconButton(
                                 padding: EdgeInsets.zero,
-                                onPressed: () =>
-                                    widget.onExpanded(widget.goal.id),
+                                onPressed: () => onExpanded(widget.goal.id),
                                 icon: Icon(
                                     size: 24,
                                     isExpanded
