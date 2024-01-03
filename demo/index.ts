@@ -3,9 +3,7 @@ import * as events from "./mouse-events.json";
 
 (async function test() {
   const driver = await new Builder().forBrowser("chrome").build();
-  await driver.get(
-    "file:///C:/Users/matth/Documents/glass_goals/demo/replay.html"
-  );
+  await driver.get("http://localhost:55210/");
   const startTime = Date.now();
   const period = 10000;
   const framerate = 60;

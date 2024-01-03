@@ -42,5 +42,11 @@
             "type": "dart",
             "program": "goals_web/lib/main_local.dart",
         },
+        {
+            "name": "goals_web (simulated cursor)",
+            "request": "launch",
+            "type": "dart",
+            "program": "goals_web/lib/main_simulated_cursor.dart",
+        },
     ]
 }

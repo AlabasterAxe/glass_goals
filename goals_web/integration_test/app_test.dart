@@ -19,7 +19,6 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify the counter starts at 0.
       expect(find.text('Scheduled Goals'), findsWidgets);
     });
   });
