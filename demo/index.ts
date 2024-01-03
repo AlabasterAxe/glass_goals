@@ -3,7 +3,7 @@ import * as events from "./mouse-events.json";
 
 (async function test() {
   const driver = await new Builder().forBrowser("chrome").build();
-  await driver.get("http://localhost:55210/");
+  await driver.get("http://localhost:52222/");
   const startTime = Date.now();
   const period = 10000;
   const framerate = 60;

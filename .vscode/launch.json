@@ -47,6 +47,7 @@
             "request": "launch",
             "type": "dart",
             "program": "goals_web/lib/main_simulated_cursor.dart",
+            "args": ["--web-port", "52222"],
         },
     ]
 }

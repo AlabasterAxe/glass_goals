@@ -28,7 +28,6 @@ class _FalseCursorState extends State<FalseCursor> {
             x = event.position.dx;
             y = event.position.dy;
           });
-          print('x: $x, y: $y');
         },
         child: Stack(
           alignment: Alignment.topLeft,
@@ -39,8 +38,8 @@ class _FalseCursorState extends State<FalseCursor> {
             Positioned(
                 left: x,
                 top: y,
-                height: 16,
-                width: 16,
+                height: 24,
+                width: 24,
                 child: Image(
                     image: AssetImage('assets/cursor.png'),
                     filterQuality: FilterQuality.high)),
