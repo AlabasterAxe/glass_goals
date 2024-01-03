@@ -10,7 +10,9 @@ import 'app.dart';
 
 class FalseCursor extends StatefulWidget {
   final Widget child;
-  const FalseCursor({Key? key, required this.child}) : super(key: key);
+  final enabled;
+  const FalseCursor({Key? key, required this.child, this.enabled = true})
+      : super(key: key);
 
   @override
   State<FalseCursor> createState() => _FalseCursorState();
@@ -35,14 +37,15 @@ class _FalseCursorState extends State<FalseCursor> {
             Positioned.fill(
               child: this.widget.child,
             ),
-            Positioned(
-                left: x,
-                top: y,
-                height: 24,
-                width: 24,
-                child: Image(
-                    image: AssetImage('assets/cursor.png'),
-                    filterQuality: FilterQuality.high)),
+            if (this.widget.enabled)
+              Positioned(
+                  left: x,
+                  top: y,
+                  height: 24,
+                  width: 24,
+                  child: Image(
+                      image: AssetImage('assets/cursor.png'),
+                      filterQuality: FilterQuality.high)),
           ],
         ));
   }
@@ -55,6 +58,7 @@ void main() async {
 
   usePathUrlStrategy();
   runApp(FalseCursor(
+      enabled: false,
       child: ProviderScope(
           child: WebGoals(
               shouldAuthenticate: false,

@@ -8,6 +8,42 @@ function injectLogger() {
       x: e.clientX,
       y: e.clientY,
       time: Date.now() - startTime,
+      type: "mousemove",
+    });
+  };
+
+  document.onclick = function (e) {
+    log.push({
+      x: e.clientX,
+      y: e.clientY,
+      time: Date.now() - startTime,
+      type: "click",
+    });
+  };
+
+  document.onkeydown = function (e) {
+    log.push({
+      x: e.clientX,
+      y: e.clientY,
+      time: Date.now() - startTime,
+      type: "keydown",
+      payload: {
+        key: e.key,
+        code: e.code,
+      },
+    });
+  };
+
+  document.onkeyup = function (e) {
+    log.push({
+      x: e.clientX,
+      y: e.clientY,
+      time: Date.now() - startTime,
+      type: "keyup",
+      payload: {
+        key: e.key,
+        code: e.code,
+      },
     });
   };
 
