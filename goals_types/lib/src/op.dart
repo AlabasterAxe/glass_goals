@@ -99,6 +99,12 @@ abstract class GoalLogEntry extends Equatable {
       return ArchiveNoteLogEntry.fromPrevious(legacyEntry);
     } else if (legacyEntry is prev_goal_types.NoteLogEntry) {
       return NoteLogEntry.fromPrevious(legacyEntry);
+    } else if (legacyEntry is prev_goal_types.SetParentLogEntry) {
+      return SetParentLogEntry.fromPrevious(legacyEntry);
+    } else if (legacyEntry is prev_goal_types.ArchiveStatusLogEntry) {
+      return ArchiveStatusLogEntry.fromPrevious(legacyEntry);
+    } else if (legacyEntry is prev_goal_types.PriorityLogEntry) {
+      return PriorityLogEntry.fromPrevious(legacyEntry);
     } else {
       throw Exception('Unknown type: ${legacyEntry.runtimeType}');
     }
@@ -140,6 +146,15 @@ class PriorityLogEntry extends GoalLogEntry {
       'priority': entry.priority,
       'creationTime': entry.creationTime.toUtc().toIso8601String(),
     };
+  }
+
+  static PriorityLogEntry fromPrevious(
+      prev_goal_types.PriorityLogEntry legacyEntry) {
+    return PriorityLogEntry(
+      id: legacyEntry.id,
+      priority: legacyEntry.priority,
+      creationTime: legacyEntry.creationTime,
+    );
   }
 }
 
@@ -283,6 +298,15 @@ class SetParentLogEntry extends GoalLogEntry {
       'creationTime': entry.creationTime.toUtc().toIso8601String(),
     };
   }
+
+  static GoalLogEntry fromPrevious(
+      prev_goal_types.SetParentLogEntry legacyEntry) {
+    return SetParentLogEntry(
+      id: legacyEntry.id,
+      parentId: legacyEntry.parentId,
+      creationTime: legacyEntry.creationTime,
+    );
+  }
 }
 
 class StatusLogEntry extends GoalLogEntry {
@@ -402,6 +426,14 @@ class ArchiveStatusLogEntry extends GoalLogEntry {
       'id': entry.id,
       'creationTime': entry.creationTime.toUtc().toIso8601String(),
     };
+  }
+
+  static ArchiveStatusLogEntry fromPrevious(
+      prev_goal_types.ArchiveStatusLogEntry legacyEntry) {
+    return ArchiveStatusLogEntry(
+      id: legacyEntry.id,
+      creationTime: legacyEntry.creationTime,
+    );
   }
 }
 
