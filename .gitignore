@@ -10,3 +10,5 @@ node_modules/
 flutter_sdk
 
 *.log
+
+.DS_Store
