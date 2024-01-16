@@ -348,7 +348,7 @@ packages:
       path: "../goals_types"
       relative: true
     source: path
-    version: "4.0.0"
+    version: "5.0.0"
   goals_types_01:
     dependency: transitive
     description:
@@ -373,6 +373,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
+  goals_types_04:
+    dependency: transitive
+    description:
+      name: goals_types_04
+      sha256: "17feddb4804b24d7bbe4d8f2336d3bde61b17106f8f6880866b9b4d51c3517d9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.0"
   google_fonts:
     dependency: "direct main"
     description:

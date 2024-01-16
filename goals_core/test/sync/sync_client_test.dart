@@ -38,7 +38,7 @@ void main() {
     await client.init();
     var hlc = HLC.now("test");
     final goals = testGoals();
-    client.applyOp(
+    client.applyDeltaOp(
         goals,
         Op(
             hlcTimestamp: hlc.pack(),
@@ -56,7 +56,7 @@ void main() {
     final client = SyncClient();
     final goals = testGoals();
     var hlc = HLC.now("test");
-    client.applyOp(
+    client.applyDeltaOp(
         goals,
         Op(
             hlcTimestamp: hlc.pack(),
@@ -77,7 +77,7 @@ void main() {
   test('modifies existing goal', () {
     final client = SyncClient();
     final goals = testGoals();
-    client.applyOp(
+    client.applyDeltaOp(
         goals,
         Op(
             hlcTimestamp: '0',
@@ -97,7 +97,7 @@ void main() {
     Hive.init(".");
     await client.init();
     var hlc = HLC.now("test");
-    client.applyOps(goals, [
+    client.applyDeltaOps(goals, [
       Op(
           hlcTimestamp: hlc.pack(),
           delta: GoalDelta(
@@ -125,7 +125,7 @@ void main() {
   test('sorts by timestamp', () {
     final client = SyncClient();
     final goals = testGoals();
-    client.applyOps(goals, [
+    client.applyDeltaOps(goals, [
       const Op(hlcTimestamp: '0', delta: GoalDelta(id: '0', text: 'foo')),
       const Op(hlcTimestamp: '2', delta: GoalDelta(id: '0', text: 'qux')),
       const Op(hlcTimestamp: '1', delta: GoalDelta(id: '0', text: 'baz')),
@@ -139,7 +139,7 @@ void main() {
   test('rehomes goal', () {
     final client = SyncClient();
     final goals = testGoals();
-    client.applyOp(
+    client.applyDeltaOp(
       goals,
       Op(
           hlcTimestamp: '0',
@@ -157,7 +157,7 @@ void main() {
     final childGoal = parentGoal.subGoals[0];
     expect(childGoal.text, equals('foo'));
 
-    client.applyOp(
+    client.applyDeltaOp(
       goals,
       Op(
           hlcTimestamp: '1',

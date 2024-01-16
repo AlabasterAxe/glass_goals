@@ -1,5 +1,5 @@
 import 'dart:convert' show jsonDecode, jsonEncode;
-import 'package:goals_types_03/goals_types.dart' as prev_goal_types;
+import 'package:goals_types_04/goals_types.dart' as prev_goal_types;
 import 'package:equatable/equatable.dart' show Equatable;
 import 'version.dart' show TYPES_VERSION;
 
@@ -447,14 +447,6 @@ class GoalDelta extends Equatable {
           id: legacyGoalDelta.id,
           text: legacyGoalDelta.text,
           logEntry: GoalLogEntry.fromPrevious(legacyGoalDelta.logEntry));
-    } else if (legacyGoalDelta.parentId != null) {
-      return GoalDelta(
-          id: legacyGoalDelta.id,
-          text: legacyGoalDelta.text,
-          logEntry: SetParentLogEntry(
-              id: '${DateTime(2023, 1, 1).millisecondsSinceEpoch}',
-              creationTime: DateTime(2023, 1, 1),
-              parentId: legacyGoalDelta.parentId!));
     } else {
       return GoalDelta(id: legacyGoalDelta.id, text: legacyGoalDelta.text);
     }
@@ -481,36 +473,102 @@ class GoalDelta extends Equatable {
   List<Object?> get props => [id, text, logEntry];
 }
 
-class Op extends Equatable {
-  final GoalDelta delta;
+enum OpType {
+  delta,
+}
+
+abstract class Op extends Equatable {
   final String hlcTimestamp;
   final int version = TYPES_VERSION;
-  const Op({
-    required this.hlcTimestamp,
-    required this.delta,
-  });
+  final OpType type;
+  const Op({required this.hlcTimestamp, required this.type});
 
-  static Map<String, dynamic> toJsonMap(Op op) {
-    return {
-      'hlcTimestamp': op.hlcTimestamp,
-      'delta': GoalDelta.toJsonMap(op.delta),
-      'version': op.version,
-    };
+  static String toJson(Op op) {
+    switch (op) {
+      case DeltaOp op:
+        return DeltaOp.toJson(op);
+    }
+    throw Exception('Unknown type: ${op.runtimeType}');
   }
 
-  static Op fromJsonMap(dynamic json) {
-    final int? version = json['version'];
-    return Op(
-        hlcTimestamp: json['hlcTimestamp'],
-        delta: GoalDelta.fromJsonMap(json['delta'], version));
+  static Map<String, dynamic> toJsonMap(Op op) {
+    switch (op) {
+      case DeltaOp op:
+        return DeltaOp.toJsonMap(op);
+    }
+    throw Exception('Unknown type: ${op.runtimeType}');
   }
 
   static Op fromJson(String jsonString) {
     return fromJsonMap(jsonDecode(jsonString));
   }
 
-  static String toJson(Op op) {
+  static Op fromJsonMap(dynamic json) {
+    final int? version = json['version'];
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+    if (version == null || version < TYPES_VERSION) {
+      if (json is Map) {
+        return fromPrevious(prev_goal_types.Op.fromJson(jsonEncode(json)));
+      } else {
+        return fromPrevious(prev_goal_types.Op.fromJson(json));
+      }
+    }
+    final type = json['type'];
+    if (type == null) {
+      throw Exception('Invalid data: $json is missing type');
+    }
+
+    switch (type) {
+      case 'delta':
+        return DeltaOp.fromJsonMap(json);
+      default:
+        throw Exception('Invalid data: $json has unknown type: $type');
+    }
+  }
+
+  static Op fromPrevious(prev_goal_types.Op legacyOp) {
+    return DeltaOp.fromPrevious(legacyOp);
+  }
+}
+
+class DeltaOp extends Op {
+  final GoalDelta delta;
+  const DeltaOp({
+    required hlcTimestamp,
+    required this.delta,
+  }) : super(hlcTimestamp: hlcTimestamp, type: OpType.delta);
+
+  static Map<String, dynamic> toJsonMap(DeltaOp op) {
+    return {
+      'hlcTimestamp': op.hlcTimestamp,
+      'delta': GoalDelta.toJsonMap(op.delta),
+      'version': op.version,
+      'type': 'delta',
+    };
+  }
+
+  static DeltaOp fromJsonMap(dynamic json) {
+    final int? version = json['version'];
+    return DeltaOp(
+        hlcTimestamp: json['hlcTimestamp'],
+        delta: GoalDelta.fromJsonMap(json['delta'], version));
+  }
+
+  static DeltaOp fromJson(String jsonString) {
+    return fromJsonMap(jsonDecode(jsonString));
+  }
+
+  static String toJson(DeltaOp op) {
     return jsonEncode(toJsonMap(op));
+  }
+
+  static DeltaOp fromPrevious(prev_goal_types.Op legacyOp) {
+    return DeltaOp(
+      hlcTimestamp: legacyOp.hlcTimestamp,
+      delta: GoalDelta.fromPrevious(legacyOp.delta),
+    );
   }
 
   @override

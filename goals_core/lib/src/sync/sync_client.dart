@@ -9,7 +9,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_types/goals_types.dart'
-    show GoalDelta, GoalLogEntry, Op, SetParentLogEntry;
+    show DeltaOp, GoalDelta, GoalLogEntry, Op, SetParentLogEntry;
 import 'persistence_service.dart' show PersistenceService;
 
 Map<String, Goal> initialGoalState() => {};
@@ -42,7 +42,7 @@ class SyncClient {
         (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
             .cast<String>();
 
-    final op = Op(hlcTimestamp: hlc.pack(), delta: delta);
+    final op = DeltaOp(hlcTimestamp: hlc.pack(), delta: delta);
     unsyncedOps.add(Op.toJson(op));
     appBox.put('unsyncedOps', unsyncedOps);
     _computeState();
@@ -56,7 +56,7 @@ class SyncClient {
 
     for (final delta in deltas) {
       hlc = hlc.increment();
-      final op = Op(hlcTimestamp: hlc.pack(), delta: delta);
+      final op = DeltaOp(hlcTimestamp: hlc.pack(), delta: delta);
       unsyncedOps.add(Op.toJson(op));
     }
 
@@ -120,7 +120,7 @@ class SyncClient {
     }
   }
 
-  applyOp(Map<String, Goal> goalMap, Op op) {
+  applyDeltaOp(Map<String, Goal> goalMap, DeltaOp op) {
     final opHlc = HLC.unpack(op.hlcTimestamp);
     hlc = hlc.receive(opHlc);
     Goal? goal = goalMap[op.delta.id];
@@ -142,11 +142,10 @@ class SyncClient {
     }
   }
 
-  applyOps(Map<String, Goal> goalMap, List<Op> ops) {
-    ops.sort((a, b) => a.hlcTimestamp.compareTo(b.hlcTimestamp));
-
-    for (Op op in ops) {
-      applyOp(goalMap, op);
+  applyDeltaOps(Map<String, Goal> goalMap, Iterable<DeltaOp> ops) {
+    for (final op
+        in ops.sorted((a, b) => a.hlcTimestamp.compareTo(b.hlcTimestamp))) {
+      applyDeltaOp(goalMap, op);
     }
   }
 
@@ -172,7 +171,7 @@ class SyncClient {
 
     Map<String, Goal> goals = initialGoalState();
 
-    applyOps(goals, ops);
+    applyDeltaOps(goals, ops.whereType<DeltaOp>());
 
     return stateSubject.add(goals);
   }

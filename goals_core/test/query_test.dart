@@ -19,7 +19,7 @@ void main() {
   test('getActiveGoalExpiringSoonest', () {
     final client = SyncClient();
     final Map<String, Goal> goals = testGoals();
-    client.applyOps(goals, [
+    client.applyDeltaOps(goals, [
       Op(
           hlcTimestamp: '0',
           delta: GoalDelta(
@@ -46,7 +46,7 @@ void main() {
 
     final Map<String, Goal> goals = testGoals();
     var hlc = HLC.now("test");
-    client.applyOps(goals, [
+    client.applyDeltaOps(goals, [
       Op(
           hlcTimestamp: hlc.pack(),
           delta: GoalDelta(
@@ -81,7 +81,7 @@ void main() {
 
     final Map<String, Goal> goals = testGoals();
     var hlc = HLC.now("test");
-    client.applyOps(goals, [
+    client.applyDeltaOps(goals, [
       Op(
           hlcTimestamp: hlc.pack(),
           delta: GoalDelta(
@@ -113,7 +113,7 @@ void main() {
       return hlc.pack();
     }
 
-    client.applyOps(goals, [
+    client.applyDeltaOps(goals, [
       Op(
           hlcTimestamp: tick(),
           delta: GoalDelta(
@@ -190,7 +190,7 @@ void main() {
       return hlc.pack();
     }
 
-    client.applyOps(goals, [
+    client.applyDeltaOps(goals, [
       Op(
         hlcTimestamp: tick(),
         delta: GoalDelta(id: '0'),
@@ -233,7 +233,7 @@ void main() {
       return hlc.pack();
     }
 
-    client.applyOps(goals, [
+    client.applyDeltaOps(goals, [
       Op(
         hlcTimestamp: tick(),
         delta: GoalDelta(
@@ -321,7 +321,7 @@ void main() {
 
     final now = DateTime(2020, 1, 1, 12);
 
-    client.applyOps(goals, [
+    client.applyDeltaOps(goals, [
       Op(
         hlcTimestamp: tick(),
         delta: GoalDelta(
