@@ -9,7 +9,14 @@ import 'package:uuid/uuid.dart';
 
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_types/goals_types.dart'
-    show DeltaOp, GoalDelta, GoalLogEntry, Op, SetParentLogEntry;
+    show
+        DeltaOp,
+        DisableOp,
+        EnableOp,
+        GoalDelta,
+        GoalLogEntry,
+        Op,
+        SetParentLogEntry;
 import 'persistence_service.dart' show PersistenceService;
 
 Map<String, Goal> initialGoalState() => {};
@@ -28,7 +35,7 @@ class SyncClient {
   init() async {
     appBox = await Hive.openBox('glass_goals.sync');
     clientId = appBox.get('clientId', defaultValue: const Uuid().v4());
-    hlc = HLC.now(clientId!);
+    hlc = HLC.now(clientId);
     _computeState();
     sync();
     Timer.periodic(const Duration(minutes: 1), (_) async {
@@ -120,7 +127,11 @@ class SyncClient {
     }
   }
 
-  applyDeltaOp(Map<String, Goal> goalMap, DeltaOp op) {
+  applyDeltaOp(Map<String, Goal> goalMap, DeltaOp op,
+      [Set<String> disabledOps = const {}]) {
+    if (disabledOps.contains(op.hlcTimestamp)) {
+      return;
+    }
     final opHlc = HLC.unpack(op.hlcTimestamp);
     hlc = hlc.receive(opHlc);
     Goal? goal = goalMap[op.delta.id];
@@ -142,10 +153,11 @@ class SyncClient {
     }
   }
 
-  applyDeltaOps(Map<String, Goal> goalMap, Iterable<DeltaOp> ops) {
+  applyDeltaOps(Map<String, Goal> goalMap, Iterable<DeltaOp> ops,
+      [Set<String> disabledOps = const {}]) {
     for (final op
         in ops.sorted((a, b) => a.hlcTimestamp.compareTo(b.hlcTimestamp))) {
-      applyDeltaOp(goalMap, op);
+      applyDeltaOp(goalMap, op, disabledOps);
     }
   }
 
@@ -164,14 +176,31 @@ class SyncClient {
     return result;
   }
 
+  Set<String> _computeDisabledOps(List<Op> ops) {
+    final disabledOps = <String>{};
+
+    for (final op in ops) {
+      if (op is DisableOp) {
+        disabledOps.add(op.hlcToDisable);
+      } else if (op is EnableOp) {
+        disabledOps.remove(op.hlcToEnable);
+      }
+    }
+
+    return disabledOps;
+  }
+
   _computeState() {
     List<Op> ops = _getOpsFromBox('ops').toList();
 
     ops.addAll(_getOpsFromBox('unsyncedOps'));
 
+    ops.sort((a, b) => a.hlcTimestamp.compareTo(b.hlcTimestamp));
+
     Map<String, Goal> goals = initialGoalState();
 
-    applyDeltaOps(goals, ops.whereType<DeltaOp>());
+    applyDeltaOps(
+        goals, ops.whereType<DeltaOp>(), this._computeDisabledOps(ops));
 
     return stateSubject.add(goals);
   }
@@ -183,7 +212,7 @@ class SyncClient {
 
     List<Op> result = [];
     for (Op op
-        in ops.sorted(((a, b) => a.hlcTimestamp.compareTo(b.hlcTimestamp)))) {
+        in ops.sorted((a, b) => a.hlcTimestamp.compareTo(b.hlcTimestamp))) {
       result
           .add(Op.fromJsonMap(Op.toJsonMap(op)..['hlcTimestamp'] = hlc.pack()));
       this.hlc = this.hlc.increment();

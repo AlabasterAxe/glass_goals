@@ -507,6 +507,8 @@ class GoalDelta extends Equatable {
 
 enum OpType {
   delta,
+  disableOp,
+  enableOp,
 }
 
 abstract class Op extends Equatable {
@@ -519,6 +521,10 @@ abstract class Op extends Equatable {
     switch (op) {
       case DeltaOp op:
         return DeltaOp.toJson(op);
+      case DisableOp op:
+        return DisableOp.toJson(op);
+      case EnableOp op:
+        return EnableOp.toJson(op);
     }
     throw Exception('Unknown type: ${op.runtimeType}');
   }
@@ -527,6 +533,10 @@ abstract class Op extends Equatable {
     switch (op) {
       case DeltaOp op:
         return DeltaOp.toJsonMap(op);
+      case DisableOp op:
+        return DisableOp.toJsonMap(op);
+      case EnableOp op:
+        return EnableOp.toJsonMap(op);
     }
     throw Exception('Unknown type: ${op.runtimeType}');
   }
@@ -563,6 +573,9 @@ abstract class Op extends Equatable {
   static Op fromPrevious(prev_goal_types.Op legacyOp) {
     return DeltaOp.fromPrevious(legacyOp);
   }
+
+  @override
+  List<Object?> get props => [hlcTimestamp];
 }
 
 class DeltaOp extends Op {
@@ -602,7 +615,68 @@ class DeltaOp extends Op {
       delta: GoalDelta.fromPrevious(legacyOp.delta),
     );
   }
+}
 
-  @override
-  List<Object?> get props => [hlcTimestamp, delta];
+class DisableOp extends Op {
+  final String hlcToDisable;
+  const DisableOp({required hlcTimestamp, required this.hlcToDisable})
+      : super(hlcTimestamp: hlcTimestamp, type: OpType.disableOp);
+
+  static Map<String, dynamic> toJsonMap(DisableOp op) {
+    return {
+      'hlcTimestamp': op.hlcTimestamp,
+      'version': op.version,
+      'type': 'disableOp',
+      'hlcToDisable': op.hlcToDisable,
+    };
+  }
+
+  static DisableOp fromJsonMap(dynamic json) {
+    return DisableOp(
+        hlcTimestamp: json['hlcTimestamp'], hlcToDisable: json['hlcToDisable']);
+  }
+
+  static DisableOp fromJson(String jsonString) {
+    return fromJsonMap(jsonDecode(jsonString));
+  }
+
+  static String toJson(DisableOp op) {
+    return jsonEncode(toJsonMap(op));
+  }
+
+  static DisableOp fromPrevious(dynamic legacyOp) {
+    throw Exception('No historical version of this op to convert from!');
+  }
+}
+
+class EnableOp extends Op {
+  final String hlcToEnable;
+  const EnableOp({required hlcTimestamp, required this.hlcToEnable})
+      : super(hlcTimestamp: hlcTimestamp, type: OpType.enableOp);
+
+  static Map<String, dynamic> toJsonMap(EnableOp op) {
+    return {
+      'hlcTimestamp': op.hlcTimestamp,
+      'version': op.version,
+      'type': 'enableOp',
+      'hlcToEnable': op.hlcToEnable,
+    };
+  }
+
+  static EnableOp fromJsonMap(dynamic json) {
+    return EnableOp(
+        hlcTimestamp: json['hlcTimestamp'], hlcToEnable: json['hlcToEnable']);
+  }
+
+  static EnableOp fromJson(String jsonString) {
+    return fromJsonMap(jsonDecode(jsonString));
+  }
+
+  static String toJson(EnableOp op) {
+    return jsonEncode(toJsonMap(op));
+  }
+
+  static EnableOp fromPrevious(dynamic legacyOp) {
+    throw Exception('No historical version of this op to convert from!');
+  }
 }
