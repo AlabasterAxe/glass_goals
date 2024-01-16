@@ -32,6 +32,12 @@ class SyncClient {
 
   SyncClient({this.persistenceService});
 
+  // in memory mapping from "action" ids, to the set of hlc timestamps that that action contained
+  Map<String, Set<String>> _modificationMap = {};
+
+  List<String> undoStack = [];
+  List<String> redoStack = [];
+
   init() async {
     appBox = await Hive.openBox('glass_goals.sync');
     clientId = appBox.get('clientId', defaultValue: const Uuid().v4());
@@ -50,10 +56,14 @@ class SyncClient {
             .cast<String>();
 
     final op = DeltaOp(hlcTimestamp: hlc.pack(), delta: delta);
+    final actionId = const Uuid().v4();
+    this._modificationMap[actionId] = {op.hlcTimestamp};
     unsyncedOps.add(Op.toJson(op));
     appBox.put('unsyncedOps', unsyncedOps);
     _computeState();
     sync();
+    undoStack.add(actionId);
+    redoStack.clear();
   }
 
   void modifyGoals(List<GoalDelta> deltas) {
@@ -61,12 +71,72 @@ class SyncClient {
         (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
             .cast<String>();
 
+    final actionHlcs = <String>{};
     for (final delta in deltas) {
       hlc = hlc.increment();
       final op = DeltaOp(hlcTimestamp: hlc.pack(), delta: delta);
+      actionHlcs.add(op.hlcTimestamp);
       unsyncedOps.add(Op.toJson(op));
     }
+    final actionId = const Uuid().v4();
+    this._modificationMap[actionId] = actionHlcs;
 
+    appBox.put('unsyncedOps', unsyncedOps);
+    _computeState();
+    sync();
+    undoStack.add(actionId);
+    redoStack.clear();
+  }
+
+  void undo() {
+    if (undoStack.isEmpty) {
+      return;
+    }
+    final actionToUndo = undoStack.removeLast();
+    _undoAction(actionToUndo);
+    redoStack.add(actionToUndo);
+  }
+
+  void redo() {
+    if (redoStack.isEmpty) {
+      return;
+    }
+    final actionToRedo = redoStack.removeLast();
+    _redoAction(actionToRedo);
+    undoStack.add(actionToRedo);
+  }
+
+  void _undoAction(String actionId) {
+    final actionHlcs = _modificationMap[actionId];
+    if (actionHlcs == null) {
+      throw Exception('Action not found: $actionId');
+    }
+    List<String> unsyncedOps =
+        (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
+            .cast<String>();
+    for (final actionHlc in actionHlcs) {
+      hlc = hlc.increment();
+      final op = DisableOp(hlcTimestamp: hlc.pack(), hlcToDisable: actionHlc);
+      unsyncedOps.add(Op.toJson(op));
+    }
+    appBox.put('unsyncedOps', unsyncedOps);
+    _computeState();
+    sync();
+  }
+
+  void _redoAction(String actionId) {
+    final actionHlcs = _modificationMap[actionId];
+    if (actionHlcs == null) {
+      throw Exception('Action not found: $actionId');
+    }
+    List<String> unsyncedOps =
+        (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
+            .cast<String>();
+    for (final actionHlc in actionHlcs) {
+      hlc = hlc.increment();
+      final op = EnableOp(hlcTimestamp: hlc.pack(), hlcToEnable: actionHlc);
+      unsyncedOps.add(Op.toJson(op));
+    }
     appBox.put('unsyncedOps', unsyncedOps);
     _computeState();
     sync();
@@ -211,11 +281,31 @@ class SyncClient {
     }
 
     List<Op> result = [];
+    Map<String, String> hlcMapping = {};
     for (Op op
         in ops.sorted((a, b) => a.hlcTimestamp.compareTo(b.hlcTimestamp))) {
-      result
-          .add(Op.fromJsonMap(Op.toJsonMap(op)..['hlcTimestamp'] = hlc.pack()));
+      final newHlc = hlc.pack();
+      hlcMapping[op.hlcTimestamp] = newHlc;
+      final newJsonOp = Op.toJsonMap(op)..['hlcTimestamp'] = newHlc;
+
+      if (newJsonOp.containsKey('hlcToDisable')) {
+        newJsonOp['hlcToDisable'] = hlcMapping[newJsonOp['hlcToDisable']];
+      }
+
+      if (newJsonOp.containsKey('hlcToEnable')) {
+        newJsonOp['hlcToEnable'] = hlcMapping[newJsonOp['hlcToEnable']];
+      }
+
+      result.add(Op.fromJsonMap(Op.toJsonMap(op)..['hlcTimestamp'] = newHlc));
       this.hlc = this.hlc.increment();
+    }
+    for (final hlcSet in _modificationMap.values) {
+      for (final hlc in [...hlcSet]) {
+        if (hlcMapping.containsKey(hlc)) {
+          hlcSet.remove(hlc);
+          hlcSet.add(hlcMapping[hlc]!);
+        }
+      }
     }
     return result;
   }

@@ -565,6 +565,10 @@ abstract class Op extends Equatable {
     switch (type) {
       case 'delta':
         return DeltaOp.fromJsonMap(json);
+      case 'disableOp':
+        return DisableOp.fromJsonMap(json);
+      case 'enableOp':
+        return EnableOp.fromJsonMap(json);
       default:
         throw Exception('Invalid data: $json has unknown type: $type');
     }

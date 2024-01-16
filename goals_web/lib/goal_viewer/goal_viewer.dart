@@ -44,7 +44,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 import 'package:uuid/uuid.dart' show Uuid;
 
-import '../actions.dart';
 import '../common/keyboard_utils.dart';
 import '../common/time_slice.dart';
 import '../styles.dart'
@@ -130,13 +129,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       _filter = filter;
     });
     Hive.box('goals_web.ui').put('goalViewerFilter', filter.name);
-  }
-
-  _onSwitchDisplayMode(GoalViewMode mode) {
-    setState(() {
-      _mode = mode;
-    });
-    Hive.box('goals_web.ui').put('goalViewerDisplayMode', mode.name);
   }
 
   _onExpanded(String goalId, {bool? expanded}) {
@@ -559,10 +551,28 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyK):
               const SearchIntent(),
           LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyK):
-              const SearchIntent()
+              const SearchIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyZ):
+              const UndoIntent(),
+          LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyZ):
+              const UndoIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift,
+              LogicalKeyboardKey.keyZ): const RedoIntent(),
+          LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.shift,
+              LogicalKeyboardKey.keyZ): const RedoIntent(),
         },
         child: Actions(
-          actions: {SearchIntent: RootSearchAction(cb: _openSearch)},
+          actions: {
+            SearchIntent: CallbackAction(onInvoke: _openSearch),
+            UndoIntent: CallbackAction(onInvoke: (_) {
+              print("undo");
+              AppContext.of(context).syncClient.undo();
+            }),
+            RedoIntent: CallbackAction(onInvoke: (_) {
+              print("redo");
+              AppContext.of(context).syncClient.redo();
+            }),
+          },
           child: KeyboardListener(
             focusNode: this._focusNode,
             child: Scaffold(
@@ -665,7 +675,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     );
   }
 
-  _openSearch() async {
+  _openSearch(_) async {
     final focusedGoalId = await showDialog(
         barrierColor: Colors.black26,
         context: context,
