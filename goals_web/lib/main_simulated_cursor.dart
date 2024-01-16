@@ -64,12 +64,5 @@ void main() async {
       child: ProviderScope(
           child: WebGoals(
               shouldAuthenticate: false,
-              persistenceService: InMemoryPersistenceService(ops: [
-                {
-                  'hlcTimestamp':
-                      '001674571071065:00001:db86cca1-fa15-4f6d-b37e-0d19bfb8f95a',
-                  'version': 2,
-                  'delta': {'id': 'root', 'text': 'Test Root'}
-                }
-              ])))));
+              persistenceService: InMemoryPersistenceService(ops: [])))));
 }

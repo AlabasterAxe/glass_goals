@@ -1,6 +1,6 @@
-import { By, Builder, Origin, Key, WebDriver } from "selenium-webdriver";
+import { Builder, Key, WebDriver } from "selenium-webdriver";
 import { Options } from "selenium-webdriver/chrome";
-import * as events from "./mouse-events.json";
+import * as events from "./mouse-events_take-4.json";
 
 const FRAMERATE = 60;
 
@@ -16,6 +16,8 @@ function getKey(key: string): any {
       return Key.META;
     case "Enter":
       return Key.ENTER;
+    case "Backspace":
+      return Key.BACK_SPACE;
     default:
       return key;
   }

@@ -23,7 +23,7 @@ const recordButton = document.getElementById("record-button");
 recordButton.onclick = () => {
   if (recording) {
     chrome.storage.local.set({ status: 'stop' });
-    recordButton.innerText = "Start";
+    recordButton.innerText = "Record";
   } else {
     chrome.storage.local.set({ status: 'start' });
     recordButton.innerText = "Stop";

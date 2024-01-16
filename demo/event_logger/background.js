@@ -1,6 +1,6 @@
 function injectLogger() {
-  const startTime = Date.now();
   chrome.storage.local.set({ log: [], status: "stop" });
+  let startTime = Date.now();
   let log = [];
   let recording = false;
 
@@ -8,6 +8,7 @@ function injectLogger() {
     console.log(status);
     switch (status?.newValue) {
       case "start":
+        startTime = Date.now();
         recording = true;
         log = [];
         break;
