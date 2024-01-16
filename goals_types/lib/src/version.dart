@@ -1,1 +1,1 @@
-const TYPES_VERSION = 4;
+const TYPES_VERSION = 5;
