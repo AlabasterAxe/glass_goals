@@ -194,6 +194,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                   onTapOutside: (_) {
                                     setState(() {
                                       _editing = false;
+                                      _focusNode.unfocus();
                                     });
                                   },
                                   focusNode: _focusNode,

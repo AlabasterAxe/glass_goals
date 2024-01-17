@@ -58,6 +58,12 @@ class _KeyboardFocusableListTileState extends State<KeyboardFocusableListTile> {
   }
 
   @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ListTile(
       focusNode: _focusNode,
@@ -87,6 +93,13 @@ class _GoalSearchModalState extends State<GoalSearchModal> {
     super.initState();
 
     _textFocusNode.requestFocus();
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _textFocusNode.dispose();
+    super.dispose();
   }
 
   @override

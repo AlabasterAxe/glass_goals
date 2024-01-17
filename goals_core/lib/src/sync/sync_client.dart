@@ -33,7 +33,7 @@ class SyncClient {
   SyncClient({this.persistenceService});
 
   // in memory mapping from "action" ids, to the set of hlc timestamps that that action contained
-  Map<String, Set<String>> _modificationMap = {};
+  final modificationMap = <String, Set<String>>{};
 
   List<String> undoStack = [];
   List<String> redoStack = [];
@@ -57,7 +57,7 @@ class SyncClient {
 
     final op = DeltaOp(hlcTimestamp: hlc.pack(), delta: delta);
     final actionId = const Uuid().v4();
-    this._modificationMap[actionId] = {op.hlcTimestamp};
+    this.modificationMap[actionId] = {op.hlcTimestamp};
     unsyncedOps.add(Op.toJson(op));
     appBox.put('unsyncedOps', unsyncedOps);
     _computeState();
@@ -79,7 +79,7 @@ class SyncClient {
       unsyncedOps.add(Op.toJson(op));
     }
     final actionId = const Uuid().v4();
-    this._modificationMap[actionId] = actionHlcs;
+    this.modificationMap[actionId] = actionHlcs;
 
     appBox.put('unsyncedOps', unsyncedOps);
     _computeState();
@@ -107,7 +107,7 @@ class SyncClient {
   }
 
   void _undoAction(String actionId) {
-    final actionHlcs = _modificationMap[actionId];
+    final actionHlcs = modificationMap[actionId];
     if (actionHlcs == null) {
       throw Exception('Action not found: $actionId');
     }
@@ -125,7 +125,7 @@ class SyncClient {
   }
 
   void _redoAction(String actionId) {
-    final actionHlcs = _modificationMap[actionId];
+    final actionHlcs = modificationMap[actionId];
     if (actionHlcs == null) {
       throw Exception('Action not found: $actionId');
     }
@@ -299,7 +299,7 @@ class SyncClient {
       result.add(Op.fromJsonMap(Op.toJsonMap(op)..['hlcTimestamp'] = newHlc));
       this.hlc = this.hlc.increment();
     }
-    for (final hlcSet in _modificationMap.values) {
+    for (final hlcSet in modificationMap.values) {
       for (final hlc in [...hlcSet]) {
         if (hlcMapping.containsKey(hlc)) {
           hlcSet.remove(hlc);
