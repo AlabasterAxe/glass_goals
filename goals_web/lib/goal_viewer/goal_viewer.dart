@@ -604,11 +604,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         actions: {
           SearchIntent: CallbackAction(onInvoke: _openSearch),
           UndoIntent: CallbackAction(onInvoke: (_) {
-            print("undo");
             AppContext.of(context).syncClient.undo();
           }),
           RedoIntent: CallbackAction(onInvoke: (_) {
-            print("redo");
             AppContext.of(context).syncClient.redo();
           }),
         },
