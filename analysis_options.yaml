@@ -1,5 +1,9 @@
 include: package:lints/recommended.yaml
 
+analyzer:
+  errors:
+    body_might_complete_normally_nullable: false
+
 linter:
   rules:
     unnecessary_this: false

@@ -44,9 +44,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 import 'package:uuid/uuid.dart' show Uuid;
 
-import '../actions.dart';
 import '../common/keyboard_utils.dart';
 import '../common/time_slice.dart';
+import '../debug/debug_sync_info.dart' show DebugSyncInfo;
 import '../styles.dart'
     show
         darkElementColor,
@@ -92,28 +92,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   GoalFilter _filter = GoalFilter.schedule;
   GoalViewMode _mode = GoalViewMode.tree;
   final FocusNode _focusNode = FocusNode();
+  bool _isDebug = false;
 
   Future<void>? openBoxFuture;
   bool isInitted = false;
-  final _multiSplitViewController = MultiSplitViewController(areas: [
-    Area(
-      size: 200,
-      minimalSize: 200,
-      key: const ValueKey('viewSwitcher'),
-    ),
-    Area(
-      weight: 0.5,
-      minimalSize: 200,
-      key: const ValueKey('list'),
-      flex: true,
-    ),
-    Area(
-      weight: 0.5,
-      minimalSize: 200,
-      key: const ValueKey('detail'),
-      flex: true,
-    )
-  ]);
+  late MultiSplitViewController _multiSplitViewController =
+      this._getMultiSplitViewController(false);
 
   _onSelected(String goalId) {
     setState(() {
@@ -130,13 +114,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       _filter = filter;
     });
     Hive.box('goals_web.ui').put('goalViewerFilter', filter.name);
-  }
-
-  _onSwitchDisplayMode(GoalViewMode mode) {
-    setState(() {
-      _mode = mode;
-    });
-    Hive.box('goals_web.ui').put('goalViewerDisplayMode', mode.name);
   }
 
   _onExpanded(String goalId, {bool? expanded}) {
@@ -269,6 +246,35 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     return null;
   }
 
+  _getMultiSplitViewController(bool debugMode) {
+    return MultiSplitViewController(areas: [
+      Area(
+        size: 200,
+        minimalSize: 200,
+        key: const ValueKey('viewSwitcher'),
+      ),
+      Area(
+        weight: debugMode ? 1 / 3 : 1 / 2,
+        minimalSize: 200,
+        key: const ValueKey('list'),
+        flex: true,
+      ),
+      Area(
+        weight: debugMode ? 1 / 3 : 1 / 2,
+        minimalSize: 200,
+        key: const ValueKey('detail'),
+        flex: true,
+      ),
+      if (debugMode)
+        Area(
+          weight: 1 / 3,
+          minimalSize: 200,
+          key: const ValueKey('debug'),
+          flex: true,
+        )
+    ]);
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -316,6 +322,21 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         isInitted = true;
       });
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    Future.delayed(Duration.zero, () {
+      if (ref.read(debugProvider)) {
+        this.setState(() {
+          this._multiSplitViewController =
+              this._getMultiSplitViewController(true);
+          this._isDebug = true;
+        });
+      }
+    });
   }
 
   @override
@@ -518,14 +539,19 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final worldContext = ref.watch(worldContextProvider);
     final selectedGoals = ref.watch(selectedGoalsProvider);
     final isEditingText = ref.watch(isEditingTextProvider);
-    final debugMode = ref.watch(debugProvider);
     ref.listen(focusedGoalProvider, _handleFocusedGoalChange);
+    ref.listen(debugProvider, (_, isDebug) {
+      setState(() {
+        _isDebug = isDebug;
+        _multiSplitViewController = _getMultiSplitViewController(isDebug);
+      });
+    });
 
     final children = <Widget>[];
 
     final isNarrow = MediaQuery.of(context).size.width < 600;
     if (!isNarrow) {
-      children.add(_viewSwitcher(false, worldContext, debugMode));
+      children.add(_viewSwitcher(false, worldContext, this._isDebug));
     }
 
     var appBarTitle = 'Glass Goals';
@@ -543,6 +569,34 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       }
     }
 
+    if (!isNarrow && this._isDebug)
+      children.add(
+        Container(
+          key: const ValueKey('debug'),
+          color: Colors.black.withOpacity(0.3),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('UI State', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Selected Goals: ${selectedGoals.join(', ')}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              Text('Focused Thing: ${FocusManager.instance.primaryFocus}'),
+              StreamBuilder<List<String>?>(
+                  stream: hoverEventStream.stream,
+                  builder: (context, snapshot) {
+                    return Text('Hovered Path: ${snapshot.data}',
+                        style: Theme.of(context).textTheme.bodySmall);
+                  }),
+              DebugSyncInfo(
+                syncClient: AppContext.of(context).syncClient,
+              ),
+            ],
+          ),
+        ),
+      );
+
     return GoalActionsContext(
       onActive: this.onActive,
       onArchive: this._onArchive,
@@ -554,110 +608,103 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       onAddGoal: this._onAddGoal,
       onFocused: this._onFocused,
       onDropGoal: this._onDropGoal,
-      child: Shortcuts(
+      child: FocusableActionDetector(
+        autofocus: true,
         shortcuts: <LogicalKeySet, Intent>{
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyK):
               const SearchIntent(),
           LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyK):
-              const SearchIntent()
+              const SearchIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyZ):
+              const UndoIntent(),
+          LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyZ):
+              const UndoIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift,
+              LogicalKeyboardKey.keyZ): const RedoIntent(),
+          LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.shift,
+              LogicalKeyboardKey.keyZ): const RedoIntent(),
         },
-        child: Actions(
-          actions: {SearchIntent: RootSearchAction(cb: _openSearch)},
-          child: KeyboardListener(
-            focusNode: this._focusNode,
-            child: Scaffold(
-              appBar: AppBar(
-                automaticallyImplyLeading: false,
-                surfaceTintColor: Colors.transparent,
-                title: Row(
-                  children: [
-                    SizedBox(
-                      width: uiUnit(12),
-                      height: uiUnit(12),
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                            0, uiUnit(2), uiUnit(2), uiUnit(2)),
-                        child: SvgPicture.asset(
-                          'assets/logo.svg',
-                        ),
-                      ),
-                    ),
-                    Text(appBarTitle),
-                  ],
-                ),
-                centerTitle: false,
-                leading: isNarrow
-                    ? focusedGoalId != null
-                        ? IconButton(
-                            icon: const Icon(Icons.arrow_back),
-                            onPressed: () {
-                              ref.read(focusedGoalProvider.notifier).set(null);
-                            })
-                        : Builder(builder: (context) {
-                            return IconButton(
-                                icon: const Icon(Icons.menu),
-                                onPressed: () {
-                                  Scaffold.of(context).openDrawer();
-                                });
-                          })
-                    : null,
-              ),
-              drawer: isNarrow && focusedGoalId == null
-                  ? Drawer(
-                      child: _viewSwitcher(true, worldContext, debugMode),
-                    )
-                  : null,
-              body: Stack(
+        actions: {
+          SearchIntent: CallbackAction(onInvoke: _openSearch),
+          UndoIntent: CallbackAction(onInvoke: (_) {
+            AppContext.of(context).syncClient.undo();
+          }),
+          RedoIntent: CallbackAction(onInvoke: (_) {
+            AppContext.of(context).syncClient.redo();
+          }),
+        },
+        child: FocusScope(
+          child: Scaffold(
+            appBar: AppBar(
+              automaticallyImplyLeading: false,
+              surfaceTintColor: Colors.transparent,
+              title: Row(
                 children: [
-                  Positioned.fill(
-                    child: children.length == 1
-                        ? children[0]
-                        : MultiSplitViewTheme(
-                            data: multiSplitViewThemeData,
-                            child: MultiSplitView(
-                              controller: _multiSplitViewController,
-                              children: children,
-                            )),
-                  ),
-                  if (!isNarrow && debugMode)
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        color: Colors.black.withOpacity(0.3),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Selected Goals: ${selectedGoals.join(', ')}',
-                              style: Theme.of(context).textTheme.bodyText1,
-                            ),
-                            StreamBuilder<List<String>?>(
-                                stream: hoverEventStream.stream,
-                                builder: (context, snapshot) {
-                                  return Text('Hovered Path: ${snapshot.data}');
-                                })
-                          ],
-                        ),
+                  SizedBox(
+                    width: uiUnit(12),
+                    height: uiUnit(12),
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                          0, uiUnit(2), uiUnit(2), uiUnit(2)),
+                      child: SvgPicture.asset(
+                        'assets/logo.svg',
                       ),
                     ),
-                  if (isNarrow &&
-                      (selectedGoals.isNotEmpty || focusedGoalId != null))
-                    Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        height: uiUnit(16),
-                        child: Container(
-                          color: lightBackground,
-                          child: isEditingText
-                              ? const TextEditingControls()
-                              : HoverActionsWidget(
-                                  goalMap: widget.goalMap,
-                                  mainAxisSize: MainAxisSize.max,
-                                ),
-                        ))
+                  ),
+                  Text(appBarTitle),
                 ],
               ),
+              centerTitle: false,
+              leading: isNarrow
+                  ? focusedGoalId != null
+                      ? IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: () {
+                            ref.read(focusedGoalProvider.notifier).set(null);
+                          })
+                      : Builder(builder: (context) {
+                          return IconButton(
+                              icon: const Icon(Icons.menu),
+                              onPressed: () {
+                                Scaffold.of(context).openDrawer();
+                              });
+                        })
+                  : null,
+            ),
+            drawer: isNarrow && focusedGoalId == null
+                ? Drawer(
+                    child: _viewSwitcher(true, worldContext, this._isDebug),
+                  )
+                : null,
+            body: Stack(
+              children: [
+                Positioned.fill(
+                  child: children.length == 1
+                      ? children[0]
+                      : MultiSplitViewTheme(
+                          data: multiSplitViewThemeData,
+                          child: MultiSplitView(
+                            controller: _multiSplitViewController,
+                            children: children,
+                          )),
+                ),
+                if (isNarrow &&
+                    (selectedGoals.isNotEmpty || focusedGoalId != null))
+                  Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: uiUnit(16),
+                      child: Container(
+                        color: lightBackground,
+                        child: isEditingText
+                            ? const TextEditingControls()
+                            : HoverActionsWidget(
+                                goalMap: widget.goalMap,
+                                mainAxisSize: MainAxisSize.max,
+                              ),
+                      ))
+              ],
             ),
           ),
         ),
@@ -665,7 +712,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     );
   }
 
-  _openSearch() async {
+  _openSearch(_) async {
     final focusedGoalId = await showDialog(
         barrierColor: Colors.black26,
         context: context,

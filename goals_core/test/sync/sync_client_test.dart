@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_types/goals_types.dart'
-    show GoalDelta, Op, SetParentLogEntry;
+    show DeltaOp, GoalDelta, Op, SetParentLogEntry;
 import 'package:goals_core/src/sync/sync_client.dart' show SyncClient;
 import 'package:hive/hive.dart';
 import 'package:hlc/hlc.dart';
@@ -40,7 +40,7 @@ void main() {
     final goals = testGoals();
     client.applyDeltaOp(
         goals,
-        Op(
+        DeltaOp(
             hlcTimestamp: hlc.pack(),
             delta: GoalDelta(
                 id: '1',
@@ -58,7 +58,7 @@ void main() {
     var hlc = HLC.now("test");
     client.applyDeltaOp(
         goals,
-        Op(
+        DeltaOp(
             hlcTimestamp: hlc.pack(),
             delta: GoalDelta(
                 id: '3',
@@ -79,7 +79,7 @@ void main() {
     final goals = testGoals();
     client.applyDeltaOp(
         goals,
-        Op(
+        DeltaOp(
             hlcTimestamp: '0',
             delta: GoalDelta(
                 id: '2',
@@ -98,14 +98,14 @@ void main() {
     await client.init();
     var hlc = HLC.now("test");
     client.applyDeltaOps(goals, [
-      Op(
+      DeltaOp(
           hlcTimestamp: hlc.pack(),
           delta: GoalDelta(
               id: '3',
               text: 'foo',
               logEntry: SetParentLogEntry(
                   id: '3', parentId: '2', creationTime: DateTime.now()))),
-      Op(
+      DeltaOp(
           hlcTimestamp: hlc.increment().pack(),
           delta: GoalDelta(
               id: '4',
@@ -126,9 +126,9 @@ void main() {
     final client = SyncClient();
     final goals = testGoals();
     client.applyDeltaOps(goals, [
-      const Op(hlcTimestamp: '0', delta: GoalDelta(id: '0', text: 'foo')),
-      const Op(hlcTimestamp: '2', delta: GoalDelta(id: '0', text: 'qux')),
-      const Op(hlcTimestamp: '1', delta: GoalDelta(id: '0', text: 'baz')),
+      const DeltaOp(hlcTimestamp: '0', delta: GoalDelta(id: '0', text: 'foo')),
+      const DeltaOp(hlcTimestamp: '2', delta: GoalDelta(id: '0', text: 'qux')),
+      const DeltaOp(hlcTimestamp: '1', delta: GoalDelta(id: '0', text: 'baz')),
     ]);
 
     final goal = goals['0']!;
@@ -136,13 +136,15 @@ void main() {
     expect(goal.text, equals('qux'));
   });
 
-  test('rehomes goal', () {
+  test('rehomes goal', () async {
+    Hive.init(".");
     final client = SyncClient();
+    await client.init();
     final goals = testGoals();
     client.applyDeltaOp(
       goals,
-      Op(
-          hlcTimestamp: '0',
+      DeltaOp(
+          hlcTimestamp: '0:0:0',
           delta: GoalDelta(
               id: '3',
               text: 'foo',
@@ -159,8 +161,8 @@ void main() {
 
     client.applyDeltaOp(
       goals,
-      Op(
-          hlcTimestamp: '1',
+      DeltaOp(
+          hlcTimestamp: '1:0:0',
           delta: GoalDelta(
               id: '3',
               text: 'foo',
@@ -173,5 +175,84 @@ void main() {
 
     expect(newParentGoal.subGoals, contains(childGoal));
     expect(childGoal.superGoals[0].id, equals('0'));
+  });
+
+  test('undo', () async {
+    Hive.init(".");
+    final client = SyncClient();
+    await client.init();
+    client.modifyGoal(GoalDelta(
+      id: '0',
+      text: 'root',
+    ));
+    client.modifyGoal(GoalDelta(
+      id: '2',
+      text: 'bar',
+    ));
+    client.modifyGoal(
+      GoalDelta(
+          id: '2',
+          text: 'foo',
+          logEntry: SetParentLogEntry(
+              id: '2', parentId: '0', creationTime: DateTime.now())),
+    );
+    client.modifyGoal(
+      GoalDelta(
+          id: '3',
+          text: 'foo',
+          logEntry: SetParentLogEntry(
+              id: '3', parentId: '2', creationTime: DateTime.now())),
+    );
+
+    final initialState = await client.stateSubject.first;
+
+    var parentGoal = initialState['2']!;
+
+    expect(parentGoal.subGoals.length, equals(1));
+
+    var childGoal = parentGoal.subGoals[0];
+    expect(childGoal.text, equals('foo'));
+
+    client.modifyGoal(
+      GoalDelta(
+          id: '3',
+          text: 'foo',
+          logEntry: SetParentLogEntry(
+              id: '4', parentId: '0', creationTime: DateTime.now())),
+    );
+
+    final newState = await client.stateSubject.first;
+
+    parentGoal = newState['2']!;
+
+    expect(parentGoal.subGoals.length, equals(0));
+    final newParentGoal = newState['0']!;
+
+    final newChildGoal = newState['3']!;
+    expect(newParentGoal.subGoals.map((g) => g.id), contains(childGoal.id));
+    expect(newChildGoal.superGoals[0].id, equals('0'));
+
+    client.undo();
+
+    final previousState = await client.stateSubject.first;
+    parentGoal = previousState['2']!;
+
+    expect(parentGoal.subGoals.length, equals(1));
+
+    childGoal = parentGoal.subGoals[0];
+    expect(childGoal.text, equals('foo'));
+
+    client.redo();
+
+    final redoneState = await client.stateSubject.first;
+
+    parentGoal = redoneState['2']!;
+
+    expect(parentGoal.subGoals.length, equals(0));
+    final redoneParentGoal = redoneState['0']!;
+
+    final redoneChildGoal = redoneState['3']!;
+    expect(redoneParentGoal.subGoals.map((g) => g.id), contains(childGoal.id));
+    expect(redoneChildGoal.superGoals[0].id, equals('0'));
   });
 }

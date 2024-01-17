@@ -40,6 +40,13 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
     }
   }
 
+  @override
+  void dispose() {
+    _textController!.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
   _createNote() {
     final newText = _textController!.text;
     _textController!.text = _defaultText;
