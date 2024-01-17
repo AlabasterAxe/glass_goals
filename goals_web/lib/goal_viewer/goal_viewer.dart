@@ -92,34 +92,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   GoalFilter _filter = GoalFilter.schedule;
   GoalViewMode _mode = GoalViewMode.tree;
   final FocusNode _focusNode = FocusNode();
+  bool _isDebug = false;
 
   Future<void>? openBoxFuture;
   bool isInitted = false;
-  final _multiSplitViewController = MultiSplitViewController(areas: [
-    Area(
-      size: 200,
-      minimalSize: 200,
-      key: const ValueKey('viewSwitcher'),
-    ),
-    Area(
-      weight: 1 / 3,
-      minimalSize: 200,
-      key: const ValueKey('list'),
-      flex: true,
-    ),
-    Area(
-      weight: 1 / 3,
-      minimalSize: 200,
-      key: const ValueKey('detail'),
-      flex: true,
-    ),
-    Area(
-      weight: 1 / 3,
-      minimalSize: 200,
-      key: const ValueKey('debug'),
-      flex: true,
-    )
-  ]);
+  late MultiSplitViewController _multiSplitViewController =
+      this._getMultiSplitViewController(false);
 
   _onSelected(String goalId) {
     setState(() {
@@ -268,6 +246,35 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     return null;
   }
 
+  _getMultiSplitViewController(bool debugMode) {
+    return MultiSplitViewController(areas: [
+      Area(
+        size: 200,
+        minimalSize: 200,
+        key: const ValueKey('viewSwitcher'),
+      ),
+      Area(
+        weight: debugMode ? 1 / 3 : 1 / 2,
+        minimalSize: 200,
+        key: const ValueKey('list'),
+        flex: true,
+      ),
+      Area(
+        weight: debugMode ? 1 / 3 : 1 / 2,
+        minimalSize: 200,
+        key: const ValueKey('detail'),
+        flex: true,
+      ),
+      if (debugMode)
+        Area(
+          weight: 1 / 3,
+          minimalSize: 200,
+          key: const ValueKey('debug'),
+          flex: true,
+        )
+    ]);
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -315,6 +322,21 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         isInitted = true;
       });
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    Future.delayed(Duration.zero, () {
+      if (ref.read(debugProvider)) {
+        this.setState(() {
+          this._multiSplitViewController =
+              this._getMultiSplitViewController(true);
+          this._isDebug = true;
+        });
+      }
+    });
   }
 
   @override
@@ -517,14 +539,19 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final worldContext = ref.watch(worldContextProvider);
     final selectedGoals = ref.watch(selectedGoalsProvider);
     final isEditingText = ref.watch(isEditingTextProvider);
-    final debugMode = ref.watch(debugProvider);
     ref.listen(focusedGoalProvider, _handleFocusedGoalChange);
+    ref.listen(debugProvider, (_, isDebug) {
+      setState(() {
+        _isDebug = isDebug;
+        _multiSplitViewController = _getMultiSplitViewController(isDebug);
+      });
+    });
 
     final children = <Widget>[];
 
     final isNarrow = MediaQuery.of(context).size.width < 600;
     if (!isNarrow) {
-      children.add(_viewSwitcher(false, worldContext, debugMode));
+      children.add(_viewSwitcher(false, worldContext, this._isDebug));
     }
 
     var appBarTitle = 'Glass Goals';
@@ -542,7 +569,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       }
     }
 
-    if (!isNarrow && debugMode)
+    if (!isNarrow && this._isDebug)
       children.add(
         Container(
           key: const ValueKey('debug'),
@@ -646,7 +673,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             ),
             drawer: isNarrow && focusedGoalId == null
                 ? Drawer(
-                    child: _viewSwitcher(true, worldContext, debugMode),
+                    child: _viewSwitcher(true, worldContext, this._isDebug),
                   )
                 : null,
             body: Stack(
