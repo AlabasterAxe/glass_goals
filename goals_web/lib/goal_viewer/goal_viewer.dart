@@ -470,9 +470,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               priority: newPriority)));
     }
 
-    print("Focused?: ${this._focusNode.hasFocus}");
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    print("Focused?: ${this._focusNode.hasFocus}");
   }
 
   _handleDropOnGoal(Set<String> goalIds, List<String> targetGoalPath) {
@@ -496,7 +494,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     List<String>? prevDropPath,
     List<String>? nextDropPath,
   }) {
-    print("Focused?: ${this._focusNode.hasFocus}");
     final selectedGoals = ref.read(selectedGoalsProvider);
     final goalsToUpdate =
         selectedGoals.contains(droppedGoalId) ? selectedGoals : {droppedGoalId};
@@ -512,7 +509,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     } else if (dropPath != null) {
       this._handleDropOnGoal(goalsToUpdate, dropPath);
     }
-    print("Focused?: ${this._focusNode.hasFocus}");
   }
 
   @override
@@ -772,7 +768,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             List<String>? prevDropPath,
             List<String>? nextDropPath,
           }) {
-            print("Focused?: ${this._focusNode.hasFocus}");
             this._onDropGoal(
               droppedGoalId,
               dropPath: dropPath,
