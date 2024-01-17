@@ -142,16 +142,18 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   _onAddGoal(String? parentId, String text, [TimeSlice? timeSlice]) {
     final id = const Uuid().v4();
-    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-        id: id,
-        text: text,
-        logEntry: SetParentLogEntry(
-            id: Uuid().v4(),
-            parentId: parentId,
-            creationTime: DateTime.now())));
+    final goalDeltas = <GoalDelta>[
+      GoalDelta(
+          id: id,
+          text: text,
+          logEntry: SetParentLogEntry(
+              id: Uuid().v4(),
+              parentId: parentId,
+              creationTime: DateTime.now())),
+    ];
 
     if (timeSlice != null) {
-      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+      goalDeltas.add(GoalDelta(
           id: id,
           logEntry: StatusLogEntry(
               id: const Uuid().v4(),
@@ -166,6 +168,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               startTime: timeSlice.startTime(DateTime.now()),
               endTime: timeSlice.endTime(DateTime.now()))));
     }
+    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
   }
 
   _onSetStatus(String? goalId, GoalStatus? status,
@@ -413,8 +416,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     );
   }
 
-  _handleDropOnSeparator(Set<String> goalIds, List<String> prevGoalPath,
-      List<String> nextGoalPath) {
+  List<GoalDelta> _computeDropOnSeparatorEffects(Set<String> goalIds,
+      List<String> prevGoalPath, List<String> nextGoalPath) {
     final List<GoalDelta> goalDeltas = [];
 
     final prevGoalId = prevGoalPath.lastOrNull;
@@ -492,11 +495,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               priority: newPriority)));
     }
 
-    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
+    return goalDeltas;
   }
 
-  _handleDropOnGoal(Set<String> goalIds, List<String> targetGoalPath) {
-    print(targetGoalPath);
+  List<GoalDelta> _computeDropOnGoalEffects(
+      Set<String> goalIds, List<String> targetGoalPath) {
     final List<GoalDelta> goalDeltas = [];
     for (final goalId in goalIds) {
       goalDeltas.add(GoalDelta(
@@ -506,11 +509,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               parentId: targetGoalPath.lastOrNull,
               creationTime: DateTime.now())));
     }
-    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    ref.read(selectedGoalsProvider.notifier).clear();
+    return goalDeltas;
   }
 
-  _onDropGoal(
+  List<GoalDelta> _computeDropGoalEffects(
     String droppedGoalId, {
     List<String>? dropPath,
     List<String>? prevDropPath,
@@ -527,10 +529,27 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     if (prevDropPath != null && nextDropPath != null) {
-      this._handleDropOnSeparator(goalsToUpdate, prevDropPath, nextDropPath);
-    } else if (dropPath != null) {
-      this._handleDropOnGoal(goalsToUpdate, dropPath);
+      return this._computeDropOnSeparatorEffects(
+          goalsToUpdate, prevDropPath, nextDropPath);
+    } else {
+      return this._computeDropOnGoalEffects(goalsToUpdate, dropPath!);
     }
+  }
+
+  _onDropGoal(
+    String droppedGoalId, {
+    List<String>? dropPath,
+    List<String>? prevDropPath,
+    List<String>? nextDropPath,
+  }) {
+    final goalDeltas = _computeDropGoalEffects(
+      droppedGoalId,
+      dropPath: dropPath,
+      prevDropPath: prevDropPath,
+      nextDropPath: nextDropPath,
+    );
+    AppContext.of(context).syncClient.modifyGoals(goalDeltas);
+    ref.read(selectedGoalsProvider.notifier).clear();
   }
 
   @override
@@ -795,7 +814,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             List<String>? prevDropPath,
             List<String>? nextDropPath,
           }) {
-            this._onDropGoal(
+            final goalDeltas = this._computeDropGoalEffects(
               droppedGoalId,
               dropPath: dropPath,
               prevDropPath: prevDropPath,
@@ -810,7 +829,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                 goalsToUpdate.every((goalId) => !goalMap.containsKey(goalId));
             for (final goalId in goalsToUpdate) {
               if (addStatus) {
-                AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
+                goalDeltas.add(GoalDelta(
                     id: goalId,
                     logEntry: StatusLogEntry(
                       id: const Uuid().v4(),
@@ -824,7 +843,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               if (setNullParent &&
                   (prevDropPath?.length == 0 || prevDropPath?.length == 1) &&
                   (nextDropPath?.length == 0 || nextDropPath?.length == 1)) {
-                AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
+                goalDeltas.add(GoalDelta(
                     id: goalId,
                     logEntry: SetParentLogEntry(
                         id: const Uuid().v4(),
@@ -832,6 +851,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         creationTime: DateTime.now())));
               }
             }
+
+            ref.read(selectedGoalsProvider.notifier).clear();
+            AppContext.of(context).syncClient.modifyGoals(goalDeltas);
           },
           child: FlattenedGoalTree(
             section: slice.name,

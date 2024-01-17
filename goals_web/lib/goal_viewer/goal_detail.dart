@@ -152,95 +152,98 @@ class _NoteCardState extends State<NoteCard> {
 
   @override
   Widget build(BuildContext context) {
-    return CallbackShortcuts(
-      bindings: <ShortcutActivator, Function()>{
-        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter):
-            _saveNote,
-        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
-            _saveNote,
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Text(formatDate(widget.entry.creationTime)),
-                  ...(widget.childNote
-                      ? [const Text(' - '), Breadcrumb(goal: widget.goal)]
-                      : [Container()])
-                ],
-              ),
-              !widget.childNote
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        IconButton(
-                            onPressed: () {
-                              AppContext.of(context).syncClient.modifyGoal(
-                                  GoalDelta(
-                                      id: widget.goal.id,
-                                      logEntry: ArchiveNoteLogEntry(
-                                          id: widget.entry.id,
-                                          creationTime: DateTime.now())));
-                              widget.onRefresh();
-                            },
-                            icon: const Icon(Icons.delete)),
-                      ],
-                    )
-                  : Container(),
-            ],
-          ),
-          Padding(
-            padding: EdgeInsets.only(left: uiUnit(4), bottom: uiUnit(4)),
-            child: _editing
-                ? IntrinsicHeight(
-                    child: TextField(
-                      autocorrect: false,
-                      controller: _textController,
-                      decoration: null,
-                      maxLines: null,
-                      style: mainTextStyle,
-                      onTapOutside: (_) {
-                        if (_textController.text != widget.entry.text) {
-                          _saveNote();
-                        }
-                        setState(() {
-                          _editing = false;
-                        });
-                      },
-                      focusNode: _focusNode,
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Text(formatDate(widget.entry.creationTime)),
+                ...(widget.childNote
+                    ? [const Text(' - '), Breadcrumb(goal: widget.goal)]
+                    : [Container()])
+              ],
+            ),
+            !widget.childNote
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      IconButton(
+                          onPressed: () {
+                            AppContext.of(context).syncClient.modifyGoal(
+                                GoalDelta(
+                                    id: widget.goal.id,
+                                    logEntry: ArchiveNoteLogEntry(
+                                        id: widget.entry.id,
+                                        creationTime: DateTime.now())));
+                            widget.onRefresh();
+                          },
+                          icon: const Icon(Icons.delete)),
+                    ],
                   )
-                : MarkdownBody(
-                    data: _textController.text,
-                    selectable: true,
-                    onTapText: () {
-                      if (!widget.childNote) {
-                        setState(() {
-                          _editing = true;
-                          _focusNode.requestFocus();
-                        });
-                      }
-                    },
-                    onTapLink: (text, href, title) async {
-                      if (href == null) {
-                        return;
-                      }
+                : Container(),
+          ],
+        ),
+        Padding(
+          padding: EdgeInsets.only(left: uiUnit(4), bottom: uiUnit(4)),
+          child: _editing
+              ? IntrinsicHeight(
+                  child: FocusScope(
+                    parentNode: FocusManager.instance.rootScope,
+                    child: CallbackShortcuts(
+                      bindings: <ShortcutActivator, Function()>{
+                        LogicalKeySet(LogicalKeyboardKey.meta,
+                            LogicalKeyboardKey.enter): _saveNote,
+                        LogicalKeySet(LogicalKeyboardKey.control,
+                            LogicalKeyboardKey.enter): _saveNote,
+                      },
+                      child: TextField(
+                        autocorrect: false,
+                        controller: _textController,
+                        decoration: null,
+                        maxLines: null,
+                        style: mainTextStyle,
+                        onTapOutside: (_) {
+                          if (_textController.text != widget.entry.text) {
+                            _saveNote();
+                          }
+                          setState(() {
+                            _editing = false;
+                          });
+                        },
+                        focusNode: _focusNode,
+                      ),
+                    ),
+                  ),
+                )
+              : MarkdownBody(
+                  data: _textController.text,
+                  selectable: true,
+                  onTapText: () {
+                    if (!widget.childNote) {
+                      setState(() {
+                        _editing = true;
+                        _focusNode.requestFocus();
+                      });
+                    }
+                  },
+                  onTapLink: (text, href, title) async {
+                    if (href == null) {
+                      return;
+                    }
 
-                      final url = Uri.parse(href);
-                      if (await canLaunchUrl(url)) {
-                        await launchUrl(url);
-                      }
-                    },
-                    styleSheet: MarkdownStyleSheet(
-                      textScaleFactor: 1.4,
-                    )),
-          ),
-        ],
-      ),
+                    final url = Uri.parse(href);
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url);
+                    }
+                  },
+                  styleSheet: MarkdownStyleSheet(
+                    textScaleFactor: 1.4,
+                  )),
+        ),
+      ],
     );
   }
 }
