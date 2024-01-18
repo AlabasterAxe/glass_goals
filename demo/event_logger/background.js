@@ -1,4 +1,11 @@
 function injectLogger() {
+  if (window.injected) {
+    console.log("already injected");
+    return;
+  }
+
+  window.injected = true;
+  console.log("injected");
   chrome.storage.local.set({ log: [], status: "stop" });
   let startTime = Date.now();
   let log = [];
@@ -53,6 +60,17 @@ function injectLogger() {
     }
   };
 
+  document.onclick = function (e) {
+    if (recording) {
+      log.push({
+        x: e.clientX,
+        y: e.clientY,
+        time: Date.now() - startTime,
+        type: "click",
+      });
+    }
+  };
+
   document.onkeydown = function (e) {
     if (recording) {
       log.push({
@@ -84,13 +102,18 @@ function injectLogger() {
   };
 }
 
+let injected = false;
+
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+  console.log('running');
+  console.log(changeInfo);
   if (changeInfo.status == "complete") {
-    if (tab.url.startsWith("http://localhost")) {
+    if (tab.url.startsWith("http://localhost:52222") && !injected) {
       chrome.scripting.executeScript({
         target: { tabId },
         function: injectLogger,
       });
+      injected = true;
     }
   }
 });

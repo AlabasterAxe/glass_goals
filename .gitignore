@@ -12,3 +12,5 @@ flutter_sdk
 *.log
 
 .DS_Store
+
+frames/
