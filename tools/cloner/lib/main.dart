@@ -9,8 +9,7 @@ import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart'
 import 'package:flutter/material.dart';
 
 import 'package:hive_flutter/hive_flutter.dart' show Hive, HiveX;
-import 'package:goals_core/sync.dart'
-    show FirestorePersistenceService, GoogleSheetsPersistenceService;
+import 'package:goals_core/sync.dart' show FirestorePersistenceService;
 
 import 'firebase_options.dart';
 
@@ -77,7 +76,8 @@ class _GoalsHomeState extends State<GoalsHome> {
                 _syncState = _SyncState.inProgress;
                 log = ["Constructing Persistence Services"];
               });
-              final source = GoogleSheetsPersistenceService();
+
+              final source = FirestorePersistenceService();
               final dest = FirestorePersistenceService();
               try {
                 setState(() {

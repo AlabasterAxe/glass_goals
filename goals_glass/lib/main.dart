@@ -25,7 +25,7 @@ import 'package:goals_core/model.dart'
         getTransitiveSubGoals;
 import 'stt_service.dart' show SttService;
 import 'package:goals_core/sync.dart'
-    show SyncClient, GoogleSheetsPersistenceService;
+    show SyncClient, FirestorePersistenceService;
 
 void main() {
   runApp(const GlassGoals());
@@ -42,7 +42,7 @@ class _GlassGoalsState extends State<GlassGoals>
     with SingleTickerProviderStateMixin {
   SttService sttService = SttService();
   SyncClient syncClient =
-      SyncClient(persistenceService: GoogleSheetsPersistenceService());
+      SyncClient(persistenceService: FirestorePersistenceService());
   RestartableTimer screenOffTimer =
       RestartableTimer(const Duration(seconds: 10), () {
     ScreenBrightness().setScreenBrightness(0.0);

@@ -20,7 +20,7 @@ void main() {
     final client = SyncClient();
     final Map<String, Goal> goals = testGoals();
     client.applyDeltaOps(goals, [
-      Op(
+      DeltaOp(
           hlcTimestamp: '0',
           delta: GoalDelta(
               id: '0',
@@ -47,7 +47,7 @@ void main() {
     final Map<String, Goal> goals = testGoals();
     var hlc = HLC.now("test");
     client.applyDeltaOps(goals, [
-      Op(
+      DeltaOp(
           hlcTimestamp: hlc.pack(),
           delta: GoalDelta(
               id: '0',
@@ -57,7 +57,7 @@ void main() {
                   creationTime: DateTime(2020, 1, 1, 12),
                   startTime: DateTime(2020, 1, 1, 12),
                   endTime: DateTime(2020, 1, 2, 12)))),
-      Op(
+      DeltaOp(
           hlcTimestamp: hlc.increment().pack(),
           delta: GoalDelta(
               id: '0',
@@ -82,7 +82,7 @@ void main() {
     final Map<String, Goal> goals = testGoals();
     var hlc = HLC.now("test");
     client.applyDeltaOps(goals, [
-      Op(
+      DeltaOp(
           hlcTimestamp: hlc.pack(),
           delta: GoalDelta(
               id: '0',
@@ -114,7 +114,7 @@ void main() {
     }
 
     client.applyDeltaOps(goals, [
-      Op(
+      DeltaOp(
           hlcTimestamp: tick(),
           delta: GoalDelta(
               id: '0',
@@ -124,7 +124,7 @@ void main() {
                   creationTime: DateTime(2020, 1, 1, 12),
                   startTime: DateTime(2020, 1, 1, 12),
                   endTime: DateTime(2020, 1, 2, 12)))),
-      Op(
+      DeltaOp(
           hlcTimestamp: tick(),
           delta: GoalDelta(
               id: '0',
@@ -133,7 +133,7 @@ void main() {
                   creationTime: DateTime(2020, 1, 1, 13),
                   startTime: DateTime(2020, 1, 1, 13),
                   endTime: DateTime(2020, 1, 1, 14)))),
-      Op(
+      DeltaOp(
           hlcTimestamp: tick(),
           delta: GoalDelta(
               id: '0',
@@ -142,7 +142,7 @@ void main() {
                   creationTime: DateTime(2020, 1, 1, 15),
                   startTime: DateTime(2020, 1, 1, 15),
                   endTime: DateTime(2020, 1, 1, 16)))),
-      Op(
+      DeltaOp(
           hlcTimestamp: tick(),
           delta: GoalDelta(
               id: '0',
@@ -191,18 +191,18 @@ void main() {
     }
 
     client.applyDeltaOps(goals, [
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(id: '0'),
       ),
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: '1',
             logEntry: SetParentLogEntry(
                 id: '3', creationTime: DateTime.now(), parentId: '0')),
       ),
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: '2',
@@ -234,14 +234,14 @@ void main() {
     }
 
     client.applyDeltaOps(goals, [
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'root',
             logEntry: StatusLogEntry(
                 id: '1', creationTime: DateTime(2020, 1, 1, 12))),
       ),
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'child',
@@ -250,7 +250,7 @@ void main() {
                 parentId: 'root',
                 creationTime: DateTime(2020, 1, 1, 12))),
       ),
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'child',
@@ -259,7 +259,7 @@ void main() {
                 status: GoalStatus.active,
                 creationTime: DateTime(2020, 1, 1, 12))),
       ),
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'sub-child-1',
@@ -268,7 +268,7 @@ void main() {
                 parentId: 'child',
                 creationTime: DateTime(2020, 1, 1, 12))),
       ),
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'sub-child-1',
@@ -277,7 +277,7 @@ void main() {
                 status: GoalStatus.active,
                 creationTime: DateTime(2020, 1, 1, 12))),
       ),
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'sub-child-2',
@@ -286,7 +286,7 @@ void main() {
                 parentId: 'child',
                 creationTime: DateTime(2020, 1, 1, 12))),
       ),
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'sub-child-2',
@@ -322,47 +322,47 @@ void main() {
     final now = DateTime(2020, 1, 1, 12);
 
     client.applyDeltaOps(goals, [
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'root', logEntry: StatusLogEntry(id: '1', creationTime: now)),
       ),
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'child',
             logEntry: SetParentLogEntry(
                 id: '2', parentId: 'root', creationTime: now)),
       ),
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'child',
             logEntry: StatusLogEntry(
                 id: '3', status: GoalStatus.active, creationTime: now)),
       ),
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'sub-child-1',
             logEntry: SetParentLogEntry(
                 id: '4', parentId: 'child', creationTime: now)),
       ),
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'sub-child-1',
             logEntry: StatusLogEntry(
                 id: '5', status: GoalStatus.active, creationTime: now)),
       ),
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'sub-child-2',
             logEntry: SetParentLogEntry(
                 id: '6', parentId: 'child', creationTime: now)),
       ),
-      Op(
+      DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
             id: 'sub-child-2',

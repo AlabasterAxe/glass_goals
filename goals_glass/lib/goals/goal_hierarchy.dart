@@ -14,7 +14,8 @@ import 'package:flutter/widgets.dart'
         ValueKey,
         Widget;
 import 'package:goals_core/model.dart' show Goal, WorldContext, getGoalStatus;
-import 'package:goals_core/sync.dart' show GoalDelta, GoalStatus;
+import 'package:goals_core/sync.dart'
+    show GoalDelta, GoalStatus, SetParentLogEntry;
 import 'package:uuid/uuid.dart';
 
 import '../util/app_context.dart';
@@ -54,16 +55,17 @@ class _GoalHierarchyState extends State<GoalHierarchy> {
       });
       return;
     }
-    if (activeGoal.parentId != null) {
-      final parentGoal = widget.goalState[activeGoal.parentId];
+    if (activeGoal.superGoals.isNotEmpty) {
+      final parentGoal = widget.goalState[activeGoal.superGoals.first];
       int? childPage;
-      if (parentGoal != null) {
-        childPage = parentGoal.subGoals
-            .indexWhere((subGoal) => subGoal.id == activeGoal.id);
+      if (parentGoal == null) {
+        return;
       }
+      childPage = parentGoal.subGoals
+          .indexWhere((subGoal) => subGoal.id == activeGoal.id);
 
       setState(() {
-        _activeGoalId = activeGoal.parentId!;
+        _activeGoalId = parentGoal.id;
         if (childPage != null) {
           _pageController.jumpToPage(childPage);
         }
@@ -121,7 +123,10 @@ class _GoalHierarchyState extends State<GoalHierarchy> {
                   AppContext.of(context).syncClient.modifyGoal(GoalDelta(
                       id: const Uuid().v4(),
                       text: text,
-                      parentId: activeGoal.id));
+                      logEntry: SetParentLogEntry(
+                          creationTime: DateTime.now(),
+                          id: const Uuid().v4(),
+                          parentId: activeGoal.id)));
                 });
               }, onError: (e) {
                 log(e.toString());

@@ -4,7 +4,7 @@ import events from "./mouse-events-take-6.json";
 import {writeFileSync} from "fs";
 
 const FRAMERATE = 30;
-const RECORD = false;
+const RENDER = false;
 
 function getKey(key: string): any {
   switch (key) {
@@ -104,13 +104,13 @@ async function processEvents(
       await performEvent(driver, currentEvent);
       currentEvent = events[eventIndex++];
     }
-    if (RECORD) {
+    if (RENDER) {
       writeFileSync(`./frames/${zeroPad(frameIndex++, 5)}.png`, await driver.takeScreenshot(), 'base64');
     }
     
     const timeStep = 1/FRAMERATE * 1000;
     currentTime += timeStep;
-    if (!RECORD) {
+    if (!RENDER) {
       await sleep(timeStep);
     }
   }
@@ -127,7 +127,7 @@ const ZOOM_500_PERCENT = 8.827469119589406;
 
 (async function test() {
   const opts = new Options();
-  if (RECORD) {
+  if (RENDER) {
     opts.addArguments('--headless=new');
   }
   opts.windowSize({

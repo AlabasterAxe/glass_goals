@@ -1,11 +1,12 @@
 import 'package:test/test.dart';
 import 'package:goals_types/goals_types.dart'
-    show GoalDelta, GoalStatus, Op, StatusLogEntry;
-import 'package:goals_types_03/goals_types.dart' as prev_goal_types;
+    show DeltaOp, GoalDelta, GoalStatus, Op, StatusLogEntry;
+import 'package:goals_types_04/goals_types.dart' as prev_goal_types;
+import 'package:uuid/uuid.dart';
 
 void main() {
   test('op to json works', () {
-    final op = Op(
+    final op = DeltaOp(
       hlcTimestamp: '0',
       delta: GoalDelta(
           id: '1',
@@ -30,10 +31,17 @@ void main() {
   test('prev op to json works', () {
     final op = prev_goal_types.Op(
       hlcTimestamp: '0',
-      delta: prev_goal_types.GoalDelta(id: '1', text: 'foo', parentId: '0'),
+      delta: prev_goal_types.GoalDelta(
+          id: '1',
+          text: 'foo',
+          logEntry: prev_goal_types.SetParentLogEntry(
+            id: const Uuid().v4(),
+            creationTime: DateTime.now(),
+            parentId: '0',
+          )),
     );
 
-    final newOp = Op(
+    final newOp = DeltaOp(
         delta: GoalDelta.fromPrevious(op.delta), hlcTimestamp: op.hlcTimestamp);
 
     final json = Op.toJson(newOp);
