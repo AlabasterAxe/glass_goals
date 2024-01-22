@@ -1,11 +1,4 @@
 function injectLogger() {
-  if (window.injected) {
-    console.log("already injected");
-    return;
-  }
-
-  window.injected = true;
-  console.log("injected");
   chrome.storage.local.set({ log: [], status: "stop" });
   let startTime = Date.now();
   let log = [];

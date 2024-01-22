@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script>
+      let eventLog;
+      // run once the document is loaded
+      window.addEventListener("load", () => {
+        const input = document.getElementById("event-log");
+        const button = document.getElementById("run-button");
+
+        input.addEventListener("change", () => {
+          const files = input.files;
+          const file = files[0]; // Get the zeroth file from the list
+
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const fileData = event.target.result;
+            // Use the fileData here
+            eventLog = JSON.parse(fileData);
+            document.getElementById("event-log-text").innerText =
+              JSON.stringify(eventLog);
+          };
+
+          reader.readAsText(file, "utf-8");
+        });
+
+        button.addEventListener("click", () => {
+          // Read the file as text
+          fetch("http://localhost:20001/run", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ events: eventLog, render: false }),
+          });
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <!-- file selector input  -->
+    <input type="file" id="event-log" />
+    <button type="button" id="run-button">Run</button>
+    <p id="event-log-text"></p>
+  </body>
+</html>
