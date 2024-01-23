@@ -1,3 +1,4 @@
+import 'dart:js' as js;
 import 'package:firebase_core/firebase_core.dart' show Firebase;
 import 'package:flutter/material.dart';
 import 'package:goals_core/sync.dart' show InMemoryPersistenceService;
@@ -10,9 +11,7 @@ import 'app.dart';
 
 class FalseCursor extends StatefulWidget {
   final Widget child;
-  final enabled;
-  const FalseCursor({Key? key, required this.child, this.enabled = true})
-      : super(key: key);
+  const FalseCursor({Key? key, required this.child}) : super(key: key);
 
   @override
   State<FalseCursor> createState() => _FalseCursorState();
@@ -21,6 +20,19 @@ class FalseCursor extends StatefulWidget {
 class _FalseCursorState extends State<FalseCursor> {
   double x = 0;
   double y = 0;
+  bool _enabled = false;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    js.context['enableSimulatedCursor'] = () {
+      this.setState(() {
+        this._enabled = true;
+      });
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +49,7 @@ class _FalseCursorState extends State<FalseCursor> {
             Positioned.fill(
               child: this.widget.child,
             ),
-            if (this.widget.enabled)
+            if (this._enabled)
               Positioned(
                   left: x,
                   top: y,
@@ -60,7 +72,6 @@ void main() async {
 
   usePathUrlStrategy();
   runApp(FalseCursor(
-      // enabled: false,
       child: ProviderScope(
           child: WebGoals(
               shouldAuthenticate: false,
