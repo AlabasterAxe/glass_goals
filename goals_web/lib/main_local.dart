@@ -1,7 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:firebase_core/firebase_core.dart' show Firebase;
 import 'package:cloud_firestore/cloud_firestore.dart' show FirebaseFirestore;
-import 'package:firebase_ui_auth/firebase_ui_auth.dart' show FirebaseUIAuth;
+import 'package:firebase_ui_auth/firebase_ui_auth.dart'
+    show EmailAuthProvider, FirebaseUIAuth;
 import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart'
     show GoogleProvider;
 import 'package:flutter/material.dart';
@@ -23,6 +24,7 @@ void main() async {
     GoogleProvider(
         clientId:
             '114797465949-keupvd032s4to34t1bkftge1baoguld5.apps.googleusercontent.com'),
+    EmailAuthProvider(),
   ]);
   await Hive.initFlutter();
 

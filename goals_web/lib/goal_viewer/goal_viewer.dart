@@ -658,6 +658,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             appBar: GlassGoalsAppBar(
               appBarTitle: appBarTitle,
               isNarrow: isNarrow,
+              signedIn: true,
               onBack: () {
                 ref.read(focusedGoalProvider.notifier).set(null);
               },
@@ -671,6 +672,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             body: Stack(
               children: [
                 Positioned.fill(
+                  top: uiUnit(2),
                   child: children.length == 1
                       ? children[0]
                       : MultiSplitViewTheme(

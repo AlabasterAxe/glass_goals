@@ -1,13 +1,16 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 import 'styles.dart';
+import 'widgets/gg_button.dart';
 
 GlassGoalsAppBar({
   String appBarTitle = "Glass Goals",
   bool isNarrow = false,
   String? focusedGoalId,
   VoidCallback? onBack,
+  required bool signedIn,
 }) {
   return AppBar(
     automaticallyImplyLeading: false,
@@ -18,7 +21,8 @@ GlassGoalsAppBar({
           width: uiUnit(12),
           height: uiUnit(12),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(0, uiUnit(2), uiUnit(2), uiUnit(2)),
+            padding: EdgeInsets.only(
+                top: uiUnit(2), right: uiUnit(2), bottom: uiUnit(2)),
             child: SvgPicture.asset(
               'assets/logo.svg',
             ),
@@ -28,6 +32,15 @@ GlassGoalsAppBar({
       ],
     ),
     centerTitle: false,
+    bottom: PreferredSize(
+        preferredSize: Size.fromHeight(uiUnit(2)),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: uiUnit(2)),
+          child: Container(
+            color: darkBlueColor,
+            height: uiUnit(2),
+          ),
+        )),
     leading: isNarrow
         ? focusedGoalId != null
             ? IconButton(
@@ -42,5 +55,21 @@ GlassGoalsAppBar({
                     });
               })
         : null,
+    actions: [
+      Builder(builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(right: uiUnit(2)),
+          child: signedIn
+              ? GlassGoalsButton(
+                  child: Text("SIGN OUT"),
+                  onPressed: () {
+                    FirebaseAuth.instance.signOut();
+                  })
+              : GlassGoalsButton(
+                  child: Text("SIGN IN"),
+                  onPressed: () => Navigator.pushNamed(context, '/sign-in')),
+        );
+      }),
+    ],
   );
 }

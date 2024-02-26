@@ -126,19 +126,13 @@ class LandingPage extends StatelessWidget {
     return Scaffold(
       appBar: GlassGoalsAppBar(
         isNarrow: isNarrow,
+        signedIn: false,
       ),
       body: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Container(
-                height: uiUnit(2),
-                color: darkBlueColor,
-              ),
-            ),
             Text(
               'ACCOMPLISH YOUR GOALS.',
               style: enormousTitleTextStyle,
@@ -220,7 +214,7 @@ class LandingPage extends StatelessWidget {
                 child: Center(
                     child: GlassGoalsButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, '/sign-in');
+                    Navigator.pushReplacementNamed(context, '/register');
                   },
                   child: Padding(
                     padding: EdgeInsets.symmetric(

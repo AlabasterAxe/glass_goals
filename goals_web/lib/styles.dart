@@ -76,4 +76,4 @@ final enormousTitleTextStyle = TextStyle(
 final multiSplitViewThemeData = MultiSplitViewThemeData(
     dividerThickness: uiUnit(2),
     dividerPainter: DividerPainters.dashed(
-        size: 1000000000000, thickness: 2, color: darkElementColor));
+        size: 1000000000000, thickness: 3, color: darkElementColor));
