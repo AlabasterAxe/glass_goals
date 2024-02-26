@@ -56,12 +56,14 @@ class _WebGoalsState extends ConsumerState<WebGoals>
   late Timer refreshTimer;
 
   late StreamSubscription stateSubscription;
+  late StreamSubscription userSubscription;
 
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   void initState() {
     super.initState();
-    FirebaseAuth.instance.authStateChanges().listen((User? user) {
+    this.userSubscription =
+        FirebaseAuth.instance.authStateChanges().listen((User? user) {
       if (user == null && this.widget.shouldAuthenticate) {
         this.navigatorKey.currentState?.pushReplacementNamed('/');
       } else if (user != null) {
@@ -89,6 +91,7 @@ class _WebGoalsState extends ConsumerState<WebGoals>
   void dispose() {
     this.refreshTimer.cancel();
     this.stateSubscription.cancel();
+    this.userSubscription.cancel();
     super.dispose();
   }
 
