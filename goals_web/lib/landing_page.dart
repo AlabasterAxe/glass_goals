@@ -55,6 +55,7 @@ class LandingPage extends StatelessWidget {
     required int sectionNumber,
     required String title,
     required String body,
+    required bool isNarrow,
   }) {
     final (textColor, backgroundColor) = switch (sectionNumber) {
       1 => (darkPurpleColor, palePurpleColor),
@@ -81,7 +82,7 @@ class LandingPage extends StatelessWidget {
                 children: [
                   Text("$sectionNumber.",
                       style: enormousTitleTextStyle.copyWith(
-                        fontSize: uiUnit(20),
+                        fontSize: uiUnit(isNarrow ? 15 : 20),
                         color: textColor.withOpacity(.2),
                         height: 0.725,
                       )),
@@ -94,7 +95,7 @@ class LandingPage extends StatelessWidget {
                         title,
                         style: mainTextStyle.copyWith(
                           color: textColor,
-                          fontSize: uiUnit(10),
+                          fontSize: uiUnit(isNarrow ? 7.5 : 10),
                         ),
                       ),
                     ),
@@ -135,7 +136,11 @@ class LandingPage extends StatelessWidget {
           children: <Widget>[
             Text(
               'ACCOMPLISH YOUR GOALS.',
-              style: enormousTitleTextStyle,
+              style: isNarrow
+                  ? enormousTitleTextStyle.copyWith(
+                      fontSize: uiUnit(10),
+                    )
+                  : enormousTitleTextStyle,
               textAlign: TextAlign.center,
             ),
             Padding(
@@ -152,40 +157,69 @@ class LandingPage extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: IntrinsicHeight(
-                  child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Container(
-                            width: uiUnit(1),
-                            color: darkBlueColor,
-                          ),
-                        ),
-                        Expanded(
-                          child: _paragraph(
-                            TEXT_COLUMN_1,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Container(
-                            width: uiUnit(0.5),
-                            color: darkBlueColor,
-                          ),
-                        ),
-                        Expanded(
-                            child: _paragraph(
-                          TEXT_COLUMN_2,
-                        )),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Container(
-                            width: uiUnit(1),
-                            color: darkBlueColor,
-                          ),
-                        ),
-                      ]),
+                  child: isNarrow
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8.0),
+                                child: Container(
+                                  width: uiUnit(1),
+                                  color: darkBlueColor,
+                                ),
+                              ),
+                              Expanded(
+                                child: _paragraph(
+                                  "$TEXT_COLUMN_1\n$TEXT_COLUMN_2",
+                                ),
+                              ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8.0),
+                                child: Container(
+                                  width: uiUnit(1),
+                                  color: darkBlueColor,
+                                ),
+                              ),
+                            ])
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8.0),
+                                child: Container(
+                                  width: uiUnit(1),
+                                  color: darkBlueColor,
+                                ),
+                              ),
+                              Expanded(
+                                child: _paragraph(
+                                  TEXT_COLUMN_1,
+                                ),
+                              ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8.0),
+                                child: Container(
+                                  width: uiUnit(0.5),
+                                  color: darkBlueColor,
+                                ),
+                              ),
+                              Expanded(
+                                  child: _paragraph(
+                                TEXT_COLUMN_2,
+                              )),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8.0),
+                                child: Container(
+                                  width: uiUnit(1),
+                                  color: darkBlueColor,
+                                ),
+                              ),
+                            ]),
                 ),
               ),
             ),
@@ -193,21 +227,25 @@ class LandingPage extends StatelessWidget {
               sectionNumber: 1,
               title: 'Express your intentions.',
               body: TEXT_EXPRESS_INTENTIONS,
+              isNarrow: isNarrow,
             ),
             _section(
               sectionNumber: 2,
               title: 'Recommit to your goals.',
               body: TEXT_RECOMMIT_TO_GOALS,
+              isNarrow: isNarrow,
             ),
             _section(
               sectionNumber: 3,
               title: 'Do the thing.',
               body: TEXT_DO_THE_THING,
+              isNarrow: isNarrow,
             ),
             _section(
               sectionNumber: 4,
               title: 'Reflect on your efforts.',
               body: TEXT_REFLECT,
+              isNarrow: isNarrow,
             ),
             Container(
                 height: uiUnit(50),
