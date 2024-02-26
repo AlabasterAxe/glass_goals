@@ -27,6 +27,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'app_context.dart';
 import 'goal_viewer/goal_viewer.dart';
+import 'landing_page.dart';
 import 'styles.dart';
 
 class WebGoals extends ConsumerStatefulWidget {
@@ -90,10 +91,12 @@ class _WebGoalsState extends ConsumerState<WebGoals>
             Locale('en', 'US'),
             Locale('en', 'GB'),
           ],
-          initialRoute: '/home',
+          initialRoute: '/',
           theme: theme,
           onGenerateRoute: (settings) {
-            if (settings.name != null &&
+            if (settings.name != null && settings.name == '/') {
+              return MaterialPageRoute(builder: (context) => LandingPage());
+            } else if (settings.name != null &&
                 settings.name!.startsWith('/sign-in')) {
               return MaterialPageRoute(
                   builder: (context) => SignInScreen(

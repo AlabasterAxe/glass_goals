@@ -10,16 +10,16 @@ uiUnit([double numUnits = 1]) => 4.0 * (numUnits);
 const lightBackground = Color(0xFFFEFBF1);
 const emphasizedLightBackground = Color.fromARGB(10, 0, 0, 0);
 
-const paleGreenColor = Color.fromARGB(255, 208, 231, 197);
-const darkGreenColor = Color.fromARGB(255, 23, 48, 11);
-const paleBlueColor = Color.fromARGB(255, 204, 214, 234);
-const darkBlueColor = Color.fromARGB(255, 12, 28, 96);
-const palePurpleColor = Color.fromARGB(255, 213, 207, 234);
-const darkPurpleColor = Color.fromARGB(255, 24, 6, 90);
+const paleGreenColor = Color(0xFFD0E7C5);
+const darkGreenColor = Color(0xFF17300B);
+const paleBlueColor = Color(0xFFCCD6EA);
+const darkBlueColor = Color(0xFF0C1C60);
+const palePurpleColor = Color(0xFFD5CFEA);
+const darkPurpleColor = Color(0xFF18065A);
 const palePinkColor = Color.fromARGB(255, 227, 205, 220);
 const deepRedColor = Color.fromARGB(255, 51, 2, 34);
-const yellowColor = Color.fromARGB(255, 255, 238, 196);
-const darkBrownColor = Color.fromARGB(255, 47, 38, 2);
+const yellowColor = Color(0xFFFFEEC4);
+const darkBrownColor = Color(0xFF2F2602);
 const paleGreyColor = Color.fromARGB(255, 225, 225, 225);
 const darkGreyColor = Color.fromARGB(255, 50, 50, 50);
 
@@ -65,6 +65,13 @@ final theme = ThemeData(
 final defaultFont = TextStyle(
     color: darkElementColor,
     fontFamily: GoogleFonts.getFont('Jost').fontFamily);
+
+final enormousTitleTextStyle = TextStyle(
+    fontSize: uiUnit(15),
+    fontWeight: FontWeight.bold,
+    color: darkElementColor,
+    fontFamily:
+        GoogleFonts.getFont('Jost', fontWeight: FontWeight.w500).fontFamily);
 
 final multiSplitViewThemeData = MultiSplitViewThemeData(
     dividerThickness: uiUnit(2),

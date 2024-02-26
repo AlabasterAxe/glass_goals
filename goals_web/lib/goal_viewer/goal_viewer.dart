@@ -33,6 +33,7 @@ import 'package:goals_core/sync.dart'
         PriorityLogEntry,
         SetParentLogEntry,
         StatusLogEntry;
+import 'package:goals_web/app_bar.dart';
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
@@ -654,41 +655,13 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         },
         child: FocusScope(
           child: Scaffold(
-            appBar: AppBar(
-              automaticallyImplyLeading: false,
-              surfaceTintColor: Colors.transparent,
-              title: Row(
-                children: [
-                  SizedBox(
-                    width: uiUnit(12),
-                    height: uiUnit(12),
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                          0, uiUnit(2), uiUnit(2), uiUnit(2)),
-                      child: SvgPicture.asset(
-                        'assets/logo.svg',
-                      ),
-                    ),
-                  ),
-                  Text(appBarTitle),
-                ],
-              ),
-              centerTitle: false,
-              leading: isNarrow
-                  ? focusedGoalId != null
-                      ? IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: () {
-                            ref.read(focusedGoalProvider.notifier).set(null);
-                          })
-                      : Builder(builder: (context) {
-                          return IconButton(
-                              icon: const Icon(Icons.menu),
-                              onPressed: () {
-                                Scaffold.of(context).openDrawer();
-                              });
-                        })
-                  : null,
+            appBar: GlassGoalsAppBar(
+              appBarTitle: appBarTitle,
+              isNarrow: isNarrow,
+              onBack: () {
+                ref.read(focusedGoalProvider.notifier).set(null);
+              },
+              focusedGoalId: focusedGoalId,
             ),
             drawer: isNarrow && focusedGoalId == null
                 ? Drawer(
