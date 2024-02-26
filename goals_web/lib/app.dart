@@ -4,15 +4,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart'
-    show CircularProgressIndicator, MaterialApp, MaterialPageRoute, Scaffold;
+    show CircularProgressIndicator, MaterialApp, Scaffold;
 import 'package:flutter/widgets.dart'
     show
         BuildContext,
         Center,
         ConnectionState,
         FutureBuilder,
+        GlobalKey,
         Locale,
-        Navigator,
+        NavigatorState,
         SingleTickerProviderStateMixin,
         SizedBox,
         StatelessWidget,
@@ -23,10 +24,12 @@ import 'package:flutter_localizations/flutter_localizations.dart'
 import 'package:goals_core/model.dart';
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
+import 'package:goals_web/widgets/unanimated_route.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'app_context.dart';
 import 'goal_viewer/goal_viewer.dart';
+import 'landing_page.dart';
 import 'styles.dart';
 
 class WebGoals extends ConsumerStatefulWidget {
@@ -53,6 +56,21 @@ class _WebGoalsState extends ConsumerState<WebGoals>
   late Timer refreshTimer;
 
   late StreamSubscription stateSubscription;
+  late StreamSubscription userSubscription;
+
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+  void initState() {
+    super.initState();
+    this.userSubscription =
+        FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      if (user == null && this.widget.shouldAuthenticate) {
+        this.navigatorKey.currentState?.pushReplacementNamed('/');
+      } else if (user != null) {
+        this.navigatorKey.currentState?.pushReplacementNamed('/home');
+      }
+    });
+  }
 
   Future<void> appInit(context) async {
     await this.syncClient.init();
@@ -66,10 +84,6 @@ class _WebGoalsState extends ConsumerState<WebGoals>
         .listen((Map<String, Goal> goalMap) {
       this.ref.read(worldContextProvider.notifier).poke();
     });
-    if (FirebaseAuth.instance.currentUser == null &&
-        this.widget.shouldAuthenticate) {
-      Navigator.pushReplacementNamed(context, '/sign-in');
-    }
     this.ref.read(debugProvider.notifier).set(this.widget.debug);
   }
 
@@ -77,6 +91,7 @@ class _WebGoalsState extends ConsumerState<WebGoals>
   void dispose() {
     this.refreshTimer.cancel();
     this.stateSubscription.cancel();
+    this.userSubscription.cancel();
     super.dispose();
   }
 
@@ -85,27 +100,30 @@ class _WebGoalsState extends ConsumerState<WebGoals>
     return AppContext(
       syncClient: syncClient,
       child: MaterialApp(
+          navigatorKey: this.navigatorKey,
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
           supportedLocales: const [
             Locale('en', 'US'),
             Locale('en', 'GB'),
           ],
-          initialRoute: '/home',
+          initialRoute:
+              FirebaseAuth.instance.currentUser == null ? '/' : '/home',
           theme: theme,
           onGenerateRoute: (settings) {
-            if (settings.name != null &&
+            if (settings.name != null && settings.name == '/') {
+              return UnanimatedPageRoute(
+                  builder: (context) => LandingPage(), settings: settings);
+            } else if (settings.name != null &&
+                settings.name!.startsWith('/register')) {
+              return UnanimatedPageRoute(
+                  builder: (context) => RegisterScreen(), settings: settings);
+            } else if (settings.name != null &&
                 settings.name!.startsWith('/sign-in')) {
-              return MaterialPageRoute(
-                  builder: (context) => SignInScreen(
-                        actions: [
-                          AuthStateChangeAction<SignedIn>((context, state) {
-                            Navigator.pushReplacementNamed(context, '/home');
-                          })
-                        ],
-                      ));
+              return UnanimatedPageRoute(
+                  builder: (context) => SignInScreen(), settings: settings);
             } else if (settings.name != null &&
                 settings.name!.startsWith('/home')) {
-              return MaterialPageRoute(
+              return UnanimatedPageRoute(
                   builder: (context) => FutureBuilder<void>(
                       future: appInit(context),
                       builder: (context, snapshot) {
@@ -117,7 +135,8 @@ class _WebGoalsState extends ConsumerState<WebGoals>
                                   child: CircularProgressIndicator()));
                         }
                         return GoalsHome();
-                      }));
+                      }),
+                  settings: settings);
             }
           }),
     );

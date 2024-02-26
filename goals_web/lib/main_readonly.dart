@@ -19,6 +19,7 @@ void main() async {
     GoogleProvider(
         clientId:
             '114797465949-keupvd032s4to34t1bkftge1baoguld5.apps.googleusercontent.com'),
+    EmailAuthProvider(),
   ]);
 
   usePathUrlStrategy();
