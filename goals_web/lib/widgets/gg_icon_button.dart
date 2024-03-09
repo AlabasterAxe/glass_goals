@@ -12,11 +12,11 @@ class GlassGoalsIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: uiUnit(8),
-      height: 32,
+      height: uiUnit(8),
       child: IconButton(
         padding: EdgeInsets.zero,
         icon: icon != null
-            ? Icon(icon, color: darkElementColor, size: 24)
+            ? Icon(icon, color: darkElementColor, size: uiUnit(6))
             : iconWidget!,
         onPressed: onPressed,
       ),

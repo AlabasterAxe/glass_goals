@@ -22,12 +22,13 @@ import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
 import 'package:goals_web/styles.dart'
-    show lightBackground, mainTextStyle, uiUnit;
+    show darkElementColor, lightBackground, mainTextStyle, uiUnit;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
 import 'package:url_launcher/url_launcher.dart' show canLaunchUrl, launchUrl;
 import 'package:uuid/uuid.dart';
 
+import '../widgets/gg_icon_button.dart';
 import 'flattened_goal_tree.dart' show FlattenedGoalTree;
 
 class Breadcrumb extends ConsumerWidget {
@@ -116,34 +117,31 @@ class StatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(formatTime(this.entry.creationTime)),
-                ...(this.childEntry
-                    ? [
-                        const Text(' - '),
-                        Breadcrumb(goal: this.goal),
-                        const Text(':')
-                      ]
-                    : [const Text(':')])
-              ],
-            ),
-            SizedBox(width: uiUnit(2)),
-            this.archived ? Text('Cleared') : Text('Set'),
-            SizedBox(width: uiUnit(2)),
-            StatusChip(
-                entry: this.entry,
-                goalId: this.goal.id,
-                showArchiveButton: false,
-                verbose: true),
-          ],
+        SizedBox(
+          width: uiUnit(10),
+          height: uiUnit(8),
+          child: const Center(child: Icon(Icons.remove, size: 18)),
         ),
+        if (this.childEntry)
+          Row(
+            children: [
+              Breadcrumb(goal: this.goal),
+              const Text(':'),
+              SizedBox(width: uiUnit(2)),
+            ],
+          ),
+        this.archived ? Text('Cleared') : Text('Set'),
+        SizedBox(width: uiUnit(2)),
+        StatusChip(
+            entry: this.entry,
+            goalId: this.goal.id,
+            showArchiveButton: false,
+            verbose: true),
+        Text(" - "),
+        Text(formatTime(this.entry.creationTime)),
       ],
     );
   }
@@ -210,17 +208,20 @@ class _NoteCardState extends State<NoteCard> {
           children: [
             Row(
               children: [
+                SizedBox(
+                  width: uiUnit(10),
+                  height: uiUnit(8),
+                  child: const Center(child: Icon(Icons.remove, size: 18)),
+                ),
                 Text(formatTime(widget.entry.creationTime)),
-                ...(widget.childNote
-                    ? [const Text(' - '), Breadcrumb(goal: widget.goal)]
-                    : [Container()])
+                if (widget.childNote) Breadcrumb(goal: widget.goal)
               ],
             ),
             !widget.childNote
                 ? Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      IconButton(
+                      GlassGoalsIconButton(
                           onPressed: () {
                             AppContext.of(context).syncClient.modifyGoal(
                                 GoalDelta(
@@ -230,7 +231,7 @@ class _NoteCardState extends State<NoteCard> {
                                         creationTime: DateTime.now())));
                             widget.onRefresh();
                           },
-                          icon: const Icon(Icons.delete)),
+                          icon: Icons.delete),
                     ],
                   )
                 : Container(),
@@ -356,25 +357,58 @@ class DetailViewLogEntryDateWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(children: [
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.all(uiUnit(2)),
+              child: Container(
+                height: uiUnit(.5),
+                color: darkElementColor,
+              ),
+            ),
+          ),
+          ConstrainedBox(
+              constraints: BoxConstraints(minHeight: uiUnit(8)),
+              child: Center(
+                  child: Text(
+                this.item.dateString,
+              ))),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.all(uiUnit(2)),
+              child: Container(
+                height: uiUnit(.5),
+                color: darkElementColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+      if (this.item.dateString == formatDate(DateTime.now()))
+        AddNoteCard(goalId: this.goalId),
       for (final item in this.item.logItems)
-        switch (item.entry) {
-          NoteLogEntry() => NoteCard(
-              key: ValueKey((item.entry as NoteLogEntry).id),
-              goal: item.goal,
-              entry: item.entry as NoteLogEntry,
-              childNote: item.goal.id != this.goalId,
-              onRefresh: this.onRefresh,
-            ),
-          StatusLogEntry() => StatusCard(
-              key: ValueKey(
-                  "${item.entry.id}${item.archived ? '-archive' : ''}"),
-              goal: item.goal,
-              entry: item.entry as StatusLogEntry,
-              childEntry: item.goal.id != this.goalId,
-              archived: item.archived,
-            ),
-          _ => throw UnimplementedError()
-        }
+        ConstrainedBox(
+            constraints: BoxConstraints(minHeight: uiUnit(8)),
+            child: switch (item.entry) {
+              NoteLogEntry() => NoteCard(
+                  key: ValueKey((item.entry as NoteLogEntry).id),
+                  goal: item.goal,
+                  entry: item.entry as NoteLogEntry,
+                  childNote: item.goal.id != this.goalId,
+                  onRefresh: this.onRefresh,
+                ),
+              StatusLogEntry() => StatusCard(
+                  key: ValueKey(
+                      "${item.entry.id}${item.archived ? '-archive' : ''}"),
+                  goal: item.goal,
+                  entry: item.entry as StatusLogEntry,
+                  childEntry: item.goal.id != this.goalId,
+                  archived: item.archived,
+                ),
+              _ => throw UnimplementedError()
+            })
     ]);
   }
 }
@@ -566,13 +600,6 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         SizedBox(height: uiUnit(2)),
         Text('History', style: textTheme.headlineSmall),
         SizedBox(height: uiUnit(1)),
-        historyLog.firstOrNull == null ||
-                formatDate(
-                        historyLog.first.logItems.first.entry.creationTime) !=
-                    formatDate(DateTime.now()) ||
-                historyLog.first.logItems.first.goal.id != widget.goal.id
-            ? AddNoteCard(goalId: widget.goal.id)
-            : Container(),
         for (final item in historyLog)
           DetailViewLogEntryDateWidget(
               item: item,

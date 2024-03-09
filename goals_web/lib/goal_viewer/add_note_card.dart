@@ -115,36 +115,38 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            height: uiUnit(10),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(formatDate(DateTime.now())),
-            ),
-          ),
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: Padding(
-              padding: EdgeInsets.only(left: uiUnit(4), bottom: uiUnit(4)),
-              child: _editing
-                  ? IntrinsicHeight(
-                      child: TextField(
-                        autocorrect: false,
-                        controller: _textController,
-                        decoration: null,
-                        maxLines: null,
-                        style: mainTextStyle,
-                        onTapOutside:
-                            isNarrow ? null : (_) => _potentiallyDiscardNote(),
-                        focusNode: _focusNode,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: uiUnit(10),
+                height: uiUnit(8),
+                child: const Center(child: Icon(Icons.add, size: 18)),
+              ),
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: _editing
+                    ? IntrinsicWidth(
+                        child: TextField(
+                          autocorrect: false,
+                          controller: _textController,
+                          decoration: null,
+                          maxLines: null,
+                          style: mainTextStyle,
+                          onTapOutside: isNarrow
+                              ? null
+                              : (_) => _potentiallyDiscardNote(),
+                          focusNode: _focusNode,
+                        ),
+                      )
+                    : GestureDetector(
+                        onTap: _startEditing,
+                        child: Text(_textController!.text,
+                            style:
+                                mainTextStyle.copyWith(color: Colors.black54)),
                       ),
-                    )
-                  : GestureDetector(
-                      onTap: _startEditing,
-                      child: Text(_textController!.text,
-                          style: mainTextStyle.copyWith(color: Colors.black54)),
-                    ),
-            ),
+              ),
+            ],
           ),
         ],
       ),

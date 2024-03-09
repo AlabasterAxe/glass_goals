@@ -54,7 +54,7 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
     _textController.selection =
         TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
 
-    GoalActionsContext.of(context).onAddGoal?.call(
+    GoalActionsContext.of(context).onAddGoal.call(
         widget.path.length >= 3 ? widget.path[widget.path.length - 2] : null,
         newText);
   }

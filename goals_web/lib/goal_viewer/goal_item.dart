@@ -148,7 +148,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         onTap: _editing
             ? null
             : () {
-                onFocused?.call(widget.goal.id);
+                onFocused.call(widget.goal.id);
               },
         child: StreamBuilder<List<String>?>(
             stream: hoverEventStream.stream,

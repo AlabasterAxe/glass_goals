@@ -127,7 +127,8 @@ class FlattenedGoalTree extends ConsumerWidget {
           }));
       goalItems.add(Padding(
         padding: EdgeInsets.only(
-            left: uiUnit(4) * (flattenedGoal.goalPath.length - 2)),
+            left: uiUnit(4) *
+                (flattenedGoal.goalPath.length - (2 + this.path.length))),
         child: goalId != NEW_GOAL_PLACEHOLDER
             ? GoalItemWidget(
                 onDropGoal: (droppedGoalId) {
