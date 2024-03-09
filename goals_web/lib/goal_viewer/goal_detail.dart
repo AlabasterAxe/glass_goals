@@ -198,6 +198,13 @@ class _NoteCardState extends State<NoteCard> {
     });
   }
 
+  _discardEdit() {
+    _textController.text = widget.entry.text;
+    setState(() {
+      _editing = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -238,7 +245,7 @@ class _NoteCardState extends State<NoteCard> {
           ],
         ),
         Padding(
-          padding: EdgeInsets.only(left: uiUnit(4), bottom: uiUnit(4)),
+          padding: EdgeInsets.only(left: uiUnit(10), bottom: uiUnit(4)),
           child: _editing
               ? IntrinsicHeight(
                   child: FocusScope(
@@ -249,6 +256,7 @@ class _NoteCardState extends State<NoteCard> {
                             LogicalKeyboardKey.enter): _saveNote,
                         LogicalKeySet(LogicalKeyboardKey.control,
                             LogicalKeyboardKey.enter): _saveNote,
+                        LogicalKeySet(LogicalKeyboardKey.escape): _discardEdit,
                       },
                       child: TextField(
                         autocorrect: false,

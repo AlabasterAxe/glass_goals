@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/styles.dart';
-import 'package:goals_core/util.dart' show formatDate;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerStatefulWidget, ConsumerState;
 import 'package:uuid/uuid.dart';
@@ -22,36 +21,26 @@ class AddNoteCard extends ConsumerStatefulWidget {
 }
 
 class _AddNoteCardState extends ConsumerState<AddNoteCard> {
-  TextEditingController? _textController;
   bool _editing = false;
   late final _focusNode = FocusNode();
   StreamSubscription? _editingSubscription;
 
   final _defaultText = "[New Note]";
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    if (_textController == null) {
-      _textController = TextEditingController(text: _defaultText);
-    } else {
-      _textController!.text = _defaultText;
-    }
-  }
+  late TextEditingController _textController =
+      TextEditingController(text: this._defaultText);
 
   @override
   void dispose() {
-    _textController!.dispose();
+    _textController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
 
   _createNote() {
-    final newText = _textController!.text;
-    _textController!.text = _defaultText;
-    _textController!.selection = TextSelection(
-        baseOffset: 0, extentOffset: _textController!.text.length);
+    final newText = _textController.text;
+    _textController.text = _defaultText;
+    _textController.selection =
+        TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
     AppContext.of(context).syncClient.modifyGoal(GoalDelta(
         id: widget.goalId,
         logEntry: NoteLogEntry(
@@ -62,12 +51,17 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
   }
 
   _potentiallyDiscardNote() {
-    if (_textController!.text == _defaultText) {
-      _textController!.text = _defaultText;
+    if (_textController.text == _defaultText) {
+      _textController.text = _defaultText;
       _stopEditing();
     } else {
       _createNote();
     }
+  }
+
+  _discardNote() {
+    _textController.text = _defaultText;
+    _stopEditing();
   }
 
   _startEditing() {
@@ -88,8 +82,8 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
       });
       _editing = true;
       _focusNode.requestFocus();
-      _textController!.selection = TextSelection(
-          baseOffset: 0, extentOffset: _textController!.text.length);
+      _textController.selection = TextSelection(
+          baseOffset: 0, extentOffset: _textController.text.length);
     });
   }
 
@@ -111,6 +105,7 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
             _createNote,
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
             _createNote,
+        LogicalKeySet(LogicalKeyboardKey.escape): _discardNote,
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -123,28 +118,30 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
                 height: uiUnit(8),
                 child: const Center(child: Icon(Icons.add, size: 18)),
               ),
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: _editing
-                    ? IntrinsicWidth(
-                        child: TextField(
-                          autocorrect: false,
-                          controller: _textController,
-                          decoration: null,
-                          maxLines: null,
-                          style: mainTextStyle,
-                          onTapOutside: isNarrow
-                              ? null
-                              : (_) => _potentiallyDiscardNote(),
-                          focusNode: _focusNode,
+              Flexible(
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: _editing
+                      ? IntrinsicHeight(
+                          child: TextField(
+                            autocorrect: false,
+                            controller: _textController,
+                            decoration: null,
+                            maxLines: null,
+                            style: mainTextStyle,
+                            onTapOutside: isNarrow
+                                ? null
+                                : (_) => _potentiallyDiscardNote(),
+                            focusNode: _focusNode,
+                          ),
+                        )
+                      : GestureDetector(
+                          onTap: _startEditing,
+                          child: Text(_textController.text,
+                              style: mainTextStyle.copyWith(
+                                  color: Colors.black54)),
                         ),
-                      )
-                    : GestureDetector(
-                        onTap: _startEditing,
-                        child: Text(_textController!.text,
-                            style:
-                                mainTextStyle.copyWith(color: Colors.black54)),
-                      ),
+                ),
               ),
             ],
           ),
