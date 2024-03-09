@@ -43,7 +43,7 @@ class LandingPage extends StatelessWidget {
   _paragraph(String text) {
     return Padding(
       padding: EdgeInsets.all(uiUnit(4)),
-      child: Text(
+      child: SelectableText(
         text,
         textAlign: TextAlign.justify,
         style: mainTextStyle,
@@ -91,7 +91,7 @@ class LandingPage extends StatelessWidget {
                     child: Padding(
                       padding: EdgeInsets.symmetric(
                           vertical: uiUnit(1), horizontal: uiUnit(4)),
-                      child: Text(
+                      child: SelectableText(
                         title,
                         style: mainTextStyle.copyWith(
                           color: textColor,
@@ -111,7 +111,7 @@ class LandingPage extends StatelessWidget {
                   color: darkBlueColor,
                 ),
               ),
-              Text(
+              SelectableText(
                 body,
                 style: mainTextStyle,
               ),
@@ -134,7 +134,7 @@ class LandingPage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
+            SelectableText(
               'ACCOMPLISH YOUR GOALS.',
               style: isNarrow
                   ? enormousTitleTextStyle.copyWith(
