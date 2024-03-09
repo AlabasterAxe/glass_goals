@@ -1,20 +1,9 @@
 import 'dart:html';
 
 import 'package:flutter/material.dart'
-    show
-        AppBar,
-        Colors,
-        Dialog,
-        Drawer,
-        IconButton,
-        Icons,
-        ListTile,
-        Scaffold,
-        Theme,
-        showDialog;
+    show Colors, Dialog, Drawer, ListTile, Scaffold, Theme, showDialog;
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter/widgets.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:goals_core/model.dart'
     show
         Goal,

@@ -6,11 +6,13 @@ import 'package:goals_core/model.dart'
 import 'package:goals_core/sync.dart'
     show
         ArchiveNoteLogEntry,
+        ArchiveStatusLogEntry,
         GoalDelta,
         GoalLogEntry,
         GoalStatus,
         NoteLogEntry,
-        SetParentLogEntry;
+        SetParentLogEntry,
+        StatusLogEntry;
 import 'package:goals_core/util.dart' show formatDate;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
@@ -95,6 +97,54 @@ class _AddParentBreadcrumbState extends State<AddParentBreadcrumb> {
               }),
         ],
       ),
+    );
+  }
+}
+
+class StatusCard extends StatelessWidget {
+  final Goal goal;
+  final StatusLogEntry entry;
+  final bool childEntry;
+  final bool archived;
+  const StatusCard({
+    super.key,
+    required this.goal,
+    required this.entry,
+    required this.childEntry,
+    this.archived = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(formatDate(this.entry.creationTime)),
+                ...(this.childEntry
+                    ? [
+                        const Text(' - '),
+                        Breadcrumb(goal: this.goal),
+                        const Text(':')
+                      ]
+                    : [const Text(':')])
+              ],
+            ),
+            SizedBox(width: uiUnit(2)),
+            this.archived ? Text('Cleared') : Text('Set'),
+            SizedBox(width: uiUnit(2)),
+            StatusChip(
+                entry: this.entry,
+                goalId: this.goal.id,
+                showArchiveButton: false,
+                verbose: true),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -278,10 +328,55 @@ class GoalDetail extends ConsumerStatefulWidget {
   ConsumerState<GoalDetail> createState() => _GoalDetailState();
 }
 
+class DetailViewLogEntryDateItem {
+  final String dateString;
+  final List<DetailViewLogEntryItem> logItems;
+  const DetailViewLogEntryDateItem(
+      {required this.dateString, required this.logItems});
+}
+
 class DetailViewLogEntryItem {
   final Goal goal;
   final GoalLogEntry entry;
-  const DetailViewLogEntryItem({required this.goal, required this.entry});
+  final bool archived;
+  const DetailViewLogEntryItem(
+      {required this.goal, required this.entry, this.archived = false});
+}
+
+class DetailViewLogEntryDateWidget extends StatelessWidget {
+  final DetailViewLogEntryDateItem item;
+  final String goalId;
+  final VoidCallback onRefresh;
+  const DetailViewLogEntryDateWidget(
+      {super.key,
+      required this.item,
+      required this.goalId,
+      required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      for (final item in this.item.logItems)
+        switch (item.entry) {
+          NoteLogEntry() => NoteCard(
+              key: ValueKey((item.entry as NoteLogEntry).id),
+              goal: item.goal,
+              entry: item.entry as NoteLogEntry,
+              childNote: item.goal.id != this.goalId,
+              onRefresh: this.onRefresh,
+            ),
+          StatusLogEntry() => StatusCard(
+              key: ValueKey(
+                  "${item.entry.id}${item.archived ? '-archive' : ''}"),
+              goal: item.goal,
+              entry: item.entry as StatusLogEntry,
+              childEntry: item.goal.id != this.goalId,
+              archived: item.archived,
+            ),
+          _ => throw UnimplementedError()
+        }
+    ]);
+  }
 }
 
 class _GoalDetailState extends ConsumerState<GoalDetail> {
@@ -298,28 +393,68 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     }
   }
 
-  List<DetailViewLogEntryItem> _computeNoteLog(
+  List<DetailViewLogEntryDateItem> _computeHistoryLog(
       List<DetailViewLogEntryItem> log) {
     Map<String, DetailViewLogEntryItem> items = {};
     log.sort((a, b) => a.entry.creationTime.compareTo(b.entry.creationTime));
     for (final item in log) {
       final entry = item.entry;
-      if (entry is NoteLogEntry) {
-        final originalNoteDate = items[entry.id]?.entry.creationTime;
-        items[entry.id] = DetailViewLogEntryItem(
-            entry: NoteLogEntry(
-              id: entry.id,
-              creationTime: originalNoteDate ?? entry.creationTime,
-              text: entry.text,
-            ),
-            goal: item.goal);
-      } else if (entry is ArchiveNoteLogEntry) {
-        items.remove(entry.id);
+      switch (entry) {
+        case NoteLogEntry():
+          final originalNoteDate = items[entry.id]?.entry.creationTime;
+          items[entry.id] = DetailViewLogEntryItem(
+              entry: NoteLogEntry(
+                id: entry.id,
+                creationTime: originalNoteDate ?? entry.creationTime,
+                text: entry.text,
+              ),
+              goal: item.goal);
+          break;
+        case ArchiveNoteLogEntry():
+          items.remove(entry.id);
+          break;
+        case ArchiveStatusLogEntry():
+          final archivedStatusEntry = items[entry.id]?.entry;
+          if (archivedStatusEntry != null &&
+              archivedStatusEntry is StatusLogEntry) {
+            // TODO: I'm not crazy about the way I'm doing this.
+            items["${entry.id}-archive"] = DetailViewLogEntryItem(
+                entry: StatusLogEntry(
+                  id: entry.id,
+                  creationTime: entry.creationTime,
+                  status: archivedStatusEntry.status,
+                  endTime: archivedStatusEntry.endTime,
+                  startTime: archivedStatusEntry.startTime,
+                ),
+                archived: true,
+                goal: item.goal);
+          }
+        case StatusLogEntry() || ArchiveStatusLogEntry():
+          items[entry.id] = DetailViewLogEntryItem(
+            entry: entry,
+            goal: item.goal,
+          );
+          break;
+        default:
+        // ignore: no-empty-block
       }
     }
 
-    return items.values.toList()
+    final sortedItems = items.values.toList()
       ..sort((a, b) => b.entry.creationTime.compareTo(a.entry.creationTime));
+
+    final List<DetailViewLogEntryDateItem> result = [];
+    for (final item in sortedItems) {
+      final dateString = formatDate(item.entry.creationTime);
+      final lastItem = result.lastOrNull;
+      if (lastItem != null && lastItem.dateString == dateString) {
+        lastItem.logItems.add(item);
+      } else {
+        result.add(DetailViewLogEntryDateItem(
+            dateString: dateString, logItems: [item]));
+      }
+    }
+    return result;
   }
 
   Widget breadcrumbs() {
@@ -349,7 +484,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
           .map((entry) => DetailViewLogEntryItem(goal: goal, entry: entry)));
     }
     final textTheme = Theme.of(context).textTheme;
-    final noteLog = _computeNoteLog(logItems);
+    final historyLog = _computeHistoryLog(logItems);
     final subgoalMap =
         getGoalsMatchingPredicate(worldContext, widget.goalMap, (goal) {
       final status = getGoalStatus(worldContext, goal);
@@ -409,7 +544,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                             ),
                           ),
                     SizedBox(width: uiUnit(2)),
-                    StatusChip(goal: widget.goal)
+                    CurrentStatusChip(goal: widget.goal)
                   ]),
               widget.hoverActionsBuilder(widget.goal.id),
             ],
@@ -429,20 +564,19 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
           section: 'detail',
         ),
         SizedBox(height: uiUnit(2)),
-        Text('Notes', style: textTheme.headlineSmall),
+        Text('History', style: textTheme.headlineSmall),
         SizedBox(height: uiUnit(1)),
-        noteLog.firstOrNull == null ||
-                formatDate(noteLog.first.entry.creationTime) !=
+        historyLog.firstOrNull == null ||
+                formatDate(
+                        historyLog.first.logItems.first.entry.creationTime) !=
                     formatDate(DateTime.now()) ||
-                noteLog.first.goal.id != widget.goal.id
+                historyLog.first.logItems.first.goal.id != widget.goal.id
             ? AddNoteCard(goalId: widget.goal.id)
             : Container(),
-        for (final entry in noteLog)
-          NoteCard(
-              key: ValueKey((entry.entry as NoteLogEntry).id),
-              goal: entry.goal,
-              entry: entry.entry as NoteLogEntry,
-              childNote: entry.goal.id != widget.goal.id,
+        for (final item in historyLog)
+          DetailViewLogEntryDateWidget(
+              item: item,
+              goalId: this.widget.goal.id,
               onRefresh: () => setState(() {})),
         if (isDebugMode) ...[
           SizedBox(height: uiUnit(2)),

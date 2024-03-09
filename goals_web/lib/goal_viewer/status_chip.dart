@@ -70,7 +70,23 @@ String getSnoozedDateString(DateTime now, StatusLogEntry status) {
   } else if (status.endTime != null) {
     return DateFormat.yMd().format(status.endTime!);
   } else {
-    return 'Ongoing';
+    // Snoozing forever doesn't really make sense, but we'll render it as forever
+    return 'Forever';
+  }
+}
+
+String getVerboseGoalStatusString(WorldContext context, StatusLogEntry status) {
+  switch (status.status) {
+    case GoalStatus.active:
+      return "Active ${getActiveDateString(context.time, status)}";
+    case GoalStatus.done:
+      return 'Done${status.endTime != null ? ' until ${getSnoozedDateString(context.time, status)}' : ''}';
+    case GoalStatus.archived:
+      return 'Archived';
+    case GoalStatus.pending:
+      return "Snoozed until ${getSnoozedDateString(context.time, status)}";
+    case null:
+      return 'To Do';
   }
 }
 
@@ -119,23 +135,28 @@ Color getGoalStatusTextColor(StatusLogEntry status) {
   }
 }
 
+/// Status Chip is a "dumb" Widget that just accepts a StatusLogEntry and displays it.
 class StatusChip extends ConsumerWidget {
-  final Goal goal;
-
+  final StatusLogEntry entry;
+  final String goalId;
+  final bool showArchiveButton;
+  final bool verbose;
   const StatusChip({
     super.key,
-    required this.goal,
+    required this.entry,
+    required this.goalId,
+    required this.showArchiveButton,
+    this.verbose = false,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final worldContext = ref.watch(worldContextProvider);
     final isDebugMode = ref.watch(debugProvider);
-    final goalStatus = getGoalStatus(worldContext, goal);
 
     return Container(
       decoration: BoxDecoration(
-        color: getGoalStatusBackgroundColor(goalStatus),
+        color: getGoalStatusBackgroundColor(this.entry),
         borderRadius: BorderRadius.circular(1),
       ),
       padding: EdgeInsets.only(
@@ -149,20 +170,24 @@ class StatusChip extends ConsumerWidget {
           isDebugMode
               ? Tooltip(
                   message:
-                      '${goalStatus.startTime != null ? DateFormat.yMd().format(goalStatus.startTime!) : 'The Big Bang'} - ${goalStatus.endTime != null ? DateFormat.yMd().format(goalStatus.endTime!) : 'The Heat Death of the Universe'}',
+                      '${this.entry.startTime != null ? DateFormat.yMd().format(this.entry.startTime!) : 'The Big Bang'} - ${this.entry.endTime != null ? DateFormat.yMd().format(this.entry.endTime!) : 'The Heat Death of the Universe'}',
                   child: Text(
-                    getGoalStatusString(worldContext, goalStatus),
+                    verbose
+                        ? getVerboseGoalStatusString(worldContext, this.entry)
+                        : getGoalStatusString(worldContext, this.entry),
                     style: smallTextStyle.copyWith(
-                        color: getGoalStatusTextColor(goalStatus)),
+                        color: getGoalStatusTextColor(this.entry)),
                   ),
                 )
               : Text(
-                  getGoalStatusString(worldContext, goalStatus),
+                  verbose
+                      ? getVerboseGoalStatusString(worldContext, this.entry)
+                      : getGoalStatusString(worldContext, this.entry),
                   style: smallTextStyle.copyWith(
-                      color: getGoalStatusTextColor(goalStatus)),
+                      color: getGoalStatusTextColor(this.entry)),
                 ),
           SizedBox(width: uiUnit() / 2),
-          if (goalStatus.status != null)
+          if (entry.status != null && this.showArchiveButton)
             SizedBox(
               width: 18.0,
               height: 18.0,
@@ -171,14 +196,34 @@ class StatusChip extends ConsumerWidget {
                 icon: const Icon(Icons.close, size: 16.0),
                 onPressed: () {
                   AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                      id: this.goal.id,
+                      id: this.goalId,
                       logEntry: ArchiveStatusLogEntry(
-                          creationTime: DateTime.now(), id: goalStatus.id)));
+                          creationTime: DateTime.now(), id: entry.id)));
                 },
               ),
             ),
         ],
       ),
     );
+  }
+}
+
+/// Current Status Chip is a "smart" Widget that accepts a goal and
+/// looks up the current status of that goal according to the World context.
+class CurrentStatusChip extends ConsumerWidget {
+  final Goal goal;
+
+  const CurrentStatusChip({
+    super.key,
+    required this.goal,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final worldContext = ref.watch(worldContextProvider);
+    final goalStatus = getGoalStatus(worldContext, goal);
+
+    return StatusChip(
+        entry: goalStatus, goalId: goal.id, showArchiveButton: true);
   }
 }

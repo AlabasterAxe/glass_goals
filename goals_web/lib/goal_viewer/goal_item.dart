@@ -225,7 +225,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                               ),
                         SizedBox(width: uiUnit(2)),
                         // chip-like container widget around text status widget:
-                        StatusChip(goal: widget.goal),
+                        CurrentStatusChip(goal: widget.goal),
                         if (this.widget.showExpansionArrow)
                           SizedBox(
                             width: 32,
