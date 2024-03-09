@@ -107,12 +107,14 @@ class StatusCard extends StatelessWidget {
   final StatusLogEntry entry;
   final bool childEntry;
   final bool archived;
+  final bool showDate;
   const StatusCard({
     super.key,
     required this.goal,
     required this.entry,
     required this.childEntry,
     this.archived = false,
+    this.showDate = false,
   });
 
   @override
@@ -141,6 +143,7 @@ class StatusCard extends StatelessWidget {
             showArchiveButton: false,
             verbose: true),
         Text(" - "),
+        if (showDate) Text('${formatDate(this.entry.creationTime)} '),
         Text(formatTime(this.entry.creationTime)),
       ],
     );
@@ -152,12 +155,14 @@ class NoteCard extends StatefulWidget {
   final NoteLogEntry entry;
   final Function() onRefresh;
   final bool childNote;
+  final bool showDate;
   const NoteCard({
     super.key,
     required this.goal,
     required this.entry,
     required this.onRefresh,
     required this.childNote,
+    this.showDate = false,
   });
 
   @override
@@ -220,8 +225,13 @@ class _NoteCardState extends State<NoteCard> {
                   height: uiUnit(8),
                   child: const Center(child: Icon(Icons.remove, size: 18)),
                 ),
+                if (widget.childNote) ...[
+                  Breadcrumb(goal: widget.goal),
+                  Text(" - ")
+                ],
+                if (this.widget.showDate)
+                  Text('${formatDate(this.widget.entry.creationTime)} '),
                 Text(formatTime(widget.entry.creationTime)),
-                if (widget.childNote) Breadcrumb(goal: widget.goal)
               ],
             ),
             !widget.childNote
