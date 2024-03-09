@@ -13,7 +13,7 @@ import 'package:goals_core/sync.dart'
         NoteLogEntry,
         SetParentLogEntry,
         StatusLogEntry;
-import 'package:goals_core/util.dart' show formatDate;
+import 'package:goals_core/util.dart' show formatDate, formatTime;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
 import 'package:goals_web/goal_viewer/goal_search_modal.dart'
@@ -124,7 +124,7 @@ class StatusCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(formatDate(this.entry.creationTime)),
+                Text(formatTime(this.entry.creationTime)),
                 ...(this.childEntry
                     ? [
                         const Text(' - '),
@@ -210,7 +210,7 @@ class _NoteCardState extends State<NoteCard> {
           children: [
             Row(
               children: [
-                Text(formatDate(widget.entry.creationTime)),
+                Text(formatTime(widget.entry.creationTime)),
                 ...(widget.childNote
                     ? [const Text(' - '), Breadcrumb(goal: widget.goal)]
                     : [Container()])

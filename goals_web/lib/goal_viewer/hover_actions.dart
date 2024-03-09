@@ -19,6 +19,7 @@ import 'package:goals_core/model.dart' show Goal, getGoalStatus;
 import 'package:goals_core/sync.dart' show GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
 import 'package:goals_web/styles.dart' show darkElementColor;
+import 'package:goals_web/widgets/gg_icon_button.dart';
 import 'package:goals_web/widgets/target_icon.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
@@ -52,22 +53,6 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
   final _snoozeMenuController = MenuController();
   final _activateMenuController = MenuController();
   final _doneMenuController = MenuController();
-
-  Widget _button(
-      {IconData? icon, required VoidCallback onPressed, Widget? iconWidget}) {
-    assert(icon != null || iconWidget != null);
-    return SizedBox(
-      width: 32,
-      height: 32,
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        icon: icon != null
-            ? Icon(icon, color: darkElementColor, size: 24)
-            : iconWidget!,
-        onPressed: onPressed,
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +134,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 onPressed: () => onActive(widget.goalId),
               ),
             ],
-            child: _button(
+            child: GlassGoalsIconButton(
                 iconWidget: TargetIcon(),
                 onPressed: () {
                   _activateMenuController.open();
@@ -210,7 +195,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                     }
                   }),
             ],
-            child: _button(
+            child: GlassGoalsIconButton(
               icon: Icons.hotel,
               onPressed: () {
                 _snoozeMenuController.open();
@@ -268,7 +253,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 onPressed: () => onDone(widget.goalId, null),
               ),
             ],
-            child: _button(
+            child: GlassGoalsIconButton(
               icon: Icons.done_outline_rounded,
               onPressed: () {
                 _doneMenuController.open();
@@ -281,7 +266,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 waitDuration: _TOOLTIP_DELAY,
                 showDuration: Duration.zero,
                 message: 'Unarchive',
-                child: _button(
+                child: GlassGoalsIconButton(
                   icon: Icons.unarchive,
                   onPressed: () => onUnarchive(widget.goalId),
                 ),
@@ -290,7 +275,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 waitDuration: _TOOLTIP_DELAY,
                 showDuration: Duration.zero,
                 message: 'Archive',
-                child: _button(
+                child: GlassGoalsIconButton(
                   icon: Icons.archive,
                   onPressed: () => onArchive(widget.goalId),
                 ),

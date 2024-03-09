@@ -6,6 +6,10 @@ formatDate(DateTime date) {
       DateFormat('EE').format(date).substring(0, 2).toUpperCase();
 }
 
+formatTime(DateTime date) {
+  return DateFormat(DateFormat.HOUR_MINUTE).format(date);
+}
+
 bool statusIsBetweenDatesInclusive(
     StatusLogEntry status, DateTime? start, DateTime? end) {
   if (end != null && start != null && end.isBefore(start)) {
