@@ -248,7 +248,7 @@ class _NoteCardState extends State<NoteCard> {
           ],
         ),
         Padding(
-          padding: EdgeInsets.only(top: uiUnit(), bottom: uiUnit(4)),
+          padding: EdgeInsets.only(bottom: uiUnit(4)),
           child: _editing
               ? IntrinsicHeight(
                   child: FocusScope(
