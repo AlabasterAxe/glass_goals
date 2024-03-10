@@ -470,18 +470,8 @@ class GoalHistoryWidget extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.zero,
-            // padding: EdgeInsets.only(
-            //     top: first ? 0 : uiUnit(0.5), bottom: last ? 0 : uiUnit(0.5)),
             child: Container(
-                // decoration: BoxDecoration(
-                //   border: Border.symmetric(
-                //       horizontal: BorderSide(
-                //     color: darkElementColor,
-                //     width: 1,
-                //   )),
-                // ),
                 width: uiUnit(10),
-                // print the month name
                 child: Column(
                   children: [
                     Text(
