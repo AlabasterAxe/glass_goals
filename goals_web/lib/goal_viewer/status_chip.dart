@@ -28,7 +28,7 @@ String getActiveDateString(DateTime now, StatusLogEntry status) {
   } else if (isWithinCalendarYear(now, status)) {
     return 'This Year';
   } else if (status.endTime != null) {
-    return 'until ${DateFormat.yMd().format(status.endTime!)}';
+    return 'Until ${DateFormat.yMd().format(status.endTime!)}';
   } else {
     return 'Ongoing';
   }
@@ -80,13 +80,13 @@ String getSnoozedDateString(DateTime now, StatusLogEntry status) {
 String getVerboseGoalStatusString(WorldContext context, StatusLogEntry status) {
   switch (status.status) {
     case GoalStatus.active:
-      return "Active ${getActiveDateString(context.time, status)}";
+      return "Active ${status.endTime != null ? '${getActiveDateString(context.time, status)}' : 'Forever'}";
     case GoalStatus.done:
-      return 'Done${status.endTime != null ? ' until ${getSnoozedDateString(context.time, status)}' : ''}';
+      return 'Done${status.endTime != null ? ' Until ${getSnoozedDateString(context.time, status)}' : ''}';
     case GoalStatus.archived:
       return 'Archived';
     case GoalStatus.pending:
-      return "Snoozed until ${getSnoozedDateString(context.time, status)}";
+      return "Snoozed Until ${getSnoozedDateString(context.time, status)}";
     case null:
       return 'To Do';
   }
