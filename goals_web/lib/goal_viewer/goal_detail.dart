@@ -493,8 +493,13 @@ class GoalHistoryWidget extends StatelessWidget {
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: uiUnit(2)),
                         child: Container(
-                          width: uiUnit(.5),
-                          color: darkElementColor,
+                          decoration: BoxDecoration(
+                            border: Border(
+                                right: BorderSide(
+                              color: darkElementColor,
+                              width: uiUnit(0.5),
+                            )),
+                          ),
                         ),
                       ),
                     )
