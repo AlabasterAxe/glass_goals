@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:goals_core/model.dart'
-    show Goal, getGoalStatus, getGoalsMatchingPredicate;
+    show Goal, WorldContext, getGoalStatus, getGoalsMatchingPredicate;
 import 'package:goals_core/sync.dart'
     show
         ArchiveNoteLogEntry,
@@ -108,14 +108,16 @@ class StatusCard extends StatelessWidget {
   final StatusLogEntry entry;
   final bool childEntry;
   final bool archived;
-  final bool showDate;
+  final bool isStatusEnd;
+  final DateTime time;
   const StatusCard({
     super.key,
     required this.goal,
     required this.entry,
     required this.childEntry,
     this.archived = false,
-    this.showDate = false,
+    this.isStatusEnd = false,
+    required this.time,
   });
 
   @override
@@ -124,8 +126,7 @@ class StatusCard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (showDate) Text('${formatDate(this.entry.creationTime)} '),
-        Text(formatTime(this.entry.creationTime)),
+        Text(formatTime(this.time)),
         Text(" - "),
         if (this.childEntry)
           Row(
@@ -135,13 +136,21 @@ class StatusCard extends StatelessWidget {
               SizedBox(width: uiUnit(2)),
             ],
           ),
-        this.archived ? Text('Cleared') : Text('Set'),
-        SizedBox(width: uiUnit(2)),
+        if (this.archived) ...[
+          Text('Cleared'),
+          SizedBox(width: uiUnit(2)),
+        ],
         StatusChip(
-            entry: this.entry,
-            goalId: this.goal.id,
-            showArchiveButton: false,
-            verbose: true),
+          entry: this.entry,
+          goalId: this.goal.id,
+          showArchiveButton: false,
+          until: !this.isStatusEnd,
+          since: this.isStatusEnd,
+        ),
+        if (this.isStatusEnd) ...[
+          SizedBox(width: uiUnit(2)),
+          Text('has ended.')
+        ],
       ],
     );
   }
@@ -212,43 +221,46 @@ class _NoteCardState extends State<NoteCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                if (this.widget.showDate)
-                  Text('${formatDate(this.widget.entry.creationTime)} '),
-                Text(formatTime(widget.entry.creationTime)),
-                if (widget.childNote) ...[
-                  Text(" - "),
-                  Breadcrumb(goal: widget.goal),
+        ConstrainedBox(
+          constraints: BoxConstraints(minHeight: uiUnit(8)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  if (this.widget.showDate)
+                    Text('${formatDate(this.widget.entry.creationTime)} '),
+                  Text(formatTime(widget.entry.creationTime)),
+                  if (widget.childNote) ...[
+                    Text(" - "),
+                    Breadcrumb(goal: widget.goal),
+                  ],
                 ],
-              ],
-            ),
-            !widget.childNote
-                ? Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      GlassGoalsIconButton(
-                          onPressed: () {
-                            AppContext.of(context).syncClient.modifyGoal(
-                                GoalDelta(
-                                    id: widget.goal.id,
-                                    logEntry: ArchiveNoteLogEntry(
-                                        id: widget.entry.id,
-                                        creationTime: DateTime.now())));
-                            widget.onRefresh();
-                          },
-                          icon: Icons.delete),
-                    ],
-                  )
-                : Container(),
-          ],
+              ),
+              !widget.childNote
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        GlassGoalsIconButton(
+                            onPressed: () {
+                              AppContext.of(context).syncClient.modifyGoal(
+                                  GoalDelta(
+                                      id: widget.goal.id,
+                                      logEntry: ArchiveNoteLogEntry(
+                                          id: widget.entry.id,
+                                          creationTime: DateTime.now())));
+                              widget.onRefresh();
+                            },
+                            icon: Icons.delete),
+                      ],
+                    )
+                  : Container(),
+            ],
+          ),
         ),
         Padding(
-          padding: EdgeInsets.only(top: uiUnit(), bottom: uiUnit(4)),
+          padding: EdgeInsets.only(bottom: uiUnit(4)),
           child: _editing
               ? IntrinsicHeight(
                   child: FocusScope(
@@ -364,10 +376,14 @@ class DetailViewLogEntryDay {
 
 class DetailViewLogEntryItem {
   final Goal goal;
+  final DateTime time;
   final GoalLogEntry entry;
   final bool archived;
   const DetailViewLogEntryItem(
-      {required this.goal, required this.entry, this.archived = false});
+      {required this.goal,
+      required this.entry,
+      this.archived = false,
+      required this.time});
 }
 
 class GoalHistoryWidget extends StatelessWidget {
@@ -380,7 +396,7 @@ class GoalHistoryWidget extends StatelessWidget {
       required this.goalId,
       required this.onRefresh});
 
-  Widget renderDay(
+  Widget _renderDay(
       DetailViewLogEntryYear yearItem,
       DetailViewLogEntryMonth monthItem,
       DetailViewLogEntryDay dayItem,
@@ -427,11 +443,14 @@ class GoalHistoryWidget extends StatelessWidget {
                         ),
                       StatusLogEntry() => StatusCard(
                           key: ValueKey(
-                              "${item.entry.id}${item.archived ? '-archive' : ''}"),
+                              "${item.entry.id}${item.archived ? '-archive' : (item.entry as StatusLogEntry).endTime == item.time ? '-end' : '-creation'}"),
                           goal: item.goal,
                           entry: item.entry as StatusLogEntry,
                           childEntry: item.goal.id != this.goalId,
                           archived: item.archived,
+                          time: item.time,
+                          isStatusEnd: (item.entry as StatusLogEntry).endTime ==
+                              item.time,
                         ),
                       _ => throw UnimplementedError()
                     })
@@ -479,7 +498,7 @@ class GoalHistoryWidget extends StatelessWidget {
           Expanded(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               for (final (i, dayItem) in monthItem.logItems.indexed)
-                renderDay(yearItem, monthItem, dayItem, i == 0,
+                _renderDay(yearItem, monthItem, dayItem, i == 0,
                     i == monthItem.logItems.length - 1),
             ]),
           ),
@@ -550,7 +569,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
   }
 
   List<DetailViewLogEntryYear> _computeHistoryLog(
-      List<DetailViewLogEntryItem> log) {
+      WorldContext worldContext, List<DetailViewLogEntryItem> log) {
     Map<String, DetailViewLogEntryItem> items = {};
     log.sort((a, b) => a.entry.creationTime.compareTo(b.entry.creationTime));
     for (final item in log) {
@@ -559,11 +578,8 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         case NoteLogEntry():
           final originalNoteDate = items[entry.id]?.entry.creationTime;
           items[entry.id] = DetailViewLogEntryItem(
-              entry: NoteLogEntry(
-                id: entry.id,
-                creationTime: originalNoteDate ?? entry.creationTime,
-                text: entry.text,
-              ),
+              entry: entry,
+              time: originalNoteDate ?? entry.creationTime,
               goal: item.goal);
           break;
         case ArchiveNoteLogEntry():
@@ -575,21 +591,31 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
               archivedStatusEntry is StatusLogEntry) {
             // TODO: I'm not crazy about the way I'm doing this.
             items["${entry.id}-archive"] = DetailViewLogEntryItem(
-                entry: StatusLogEntry(
-                  id: entry.id,
-                  creationTime: entry.creationTime,
-                  status: archivedStatusEntry.status,
-                  endTime: archivedStatusEntry.endTime,
-                  startTime: archivedStatusEntry.startTime,
-                ),
-                archived: true,
-                goal: item.goal);
+              entry: archivedStatusEntry,
+              time: entry.creationTime,
+              archived: true,
+              goal: item.goal,
+            );
           }
-        case StatusLogEntry() || ArchiveStatusLogEntry():
-          items[entry.id] = DetailViewLogEntryItem(
+        case StatusLogEntry():
+          items["${entry.id}-creation"] = DetailViewLogEntryItem(
             entry: entry,
             goal: item.goal,
+            time: entry.creationTime,
           );
+
+          // Only add an end entry for active statuses.
+          if (entry.endTime != null &&
+              entry.endTime != entry.creationTime &&
+              entry.endTime!.isBefore(worldContext.time) &&
+              entry.status == GoalStatus.active) {
+            items["${entry.id}-end"] = DetailViewLogEntryItem(
+              entry: entry,
+              goal: item.goal,
+              time: entry.endTime!,
+            );
+          }
+
           break;
         default:
         // ignore: no-empty-block
@@ -597,13 +623,13 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     }
 
     final sortedItems = items.values.toList()
-      ..sort((a, b) => b.entry.creationTime.compareTo(a.entry.creationTime));
+      ..sort((a, b) => b.time.compareTo(a.time));
 
     final List<DetailViewLogEntryYear> result = [];
     for (final item in sortedItems) {
-      final year = item.entry.creationTime.year;
-      final month = item.entry.creationTime.month;
-      final day = item.entry.creationTime.day;
+      final year = item.time.year;
+      final month = item.time.month;
+      final day = item.time.day;
       var currentYear = result.lastOrNull;
       if (currentYear == null || currentYear.year != year) {
         result.add(DetailViewLogEntryYear(year: year, logItems: []));
@@ -620,8 +646,8 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
 
       currentDay = currentMonth.logItems.lastOrNull;
       if (currentDay == null || currentDay.dayOfMonth != day) {
-        currentMonth.logItems.add(DetailViewLogEntryDay(
-            dayOfMonth: item.entry.creationTime.day, logItems: [item]));
+        currentMonth.logItems
+            .add(DetailViewLogEntryDay(dayOfMonth: day, logItems: [item]));
       } else {
         currentDay.logItems.add(item);
       }
@@ -653,11 +679,11 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     final worldContext = ref.watch(worldContextProvider);
     final List<DetailViewLogEntryItem> logItems = [];
     for (final goal in [...widget.goal.subGoals, widget.goal]) {
-      logItems.addAll(goal.log
-          .map((entry) => DetailViewLogEntryItem(goal: goal, entry: entry)));
+      logItems.addAll(goal.log.map((entry) => DetailViewLogEntryItem(
+          goal: goal, entry: entry, time: entry.creationTime)));
     }
     final textTheme = Theme.of(context).textTheme;
-    final historyLog = _computeHistoryLog(logItems);
+    final historyLog = _computeHistoryLog(worldContext, logItems);
     final subgoalMap =
         getGoalsMatchingPredicate(worldContext, widget.goalMap, (goal) {
       final status = getGoalStatus(worldContext, goal);

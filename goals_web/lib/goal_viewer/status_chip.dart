@@ -77,16 +77,31 @@ String getSnoozedDateString(DateTime now, StatusLogEntry status) {
   }
 }
 
-String getVerboseGoalStatusString(WorldContext context, StatusLogEntry status) {
+String getGoalStatusStringSince(WorldContext context, StatusLogEntry status) {
   switch (status.status) {
     case GoalStatus.active:
-      return "Active ${status.endTime != null ? '${getActiveDateString(context.time, status)}' : 'Forever'}";
+      return "Active since ${status.endTime != null ? DateFormat.yMd().format(status.endTime!) : 'the beginning of time'}";
     case GoalStatus.done:
-      return 'Done${status.endTime != null ? ' Until ${getSnoozedDateString(context.time, status)}' : ''}';
+      return 'Done since ${status.endTime != null ? DateFormat.yMd().format(status.endTime!) : 'the beginning of time'}}';
     case GoalStatus.archived:
       return 'Archived';
     case GoalStatus.pending:
-      return "Snoozed Until ${getSnoozedDateString(context.time, status)}";
+      return "Snoozed since ${status.endTime != null ? DateFormat.yMd().format(status.endTime!) : 'the beginning of time'}";
+    case null:
+      return 'To Do';
+  }
+}
+
+String getVerboseGoalStatusString(WorldContext context, StatusLogEntry status) {
+  switch (status.status) {
+    case GoalStatus.active:
+      return "Active ${status.endTime != null ? 'until ${DateFormat.yMd().format(status.endTime!)}' : 'forever'}";
+    case GoalStatus.done:
+      return 'Done${status.endTime != null ? ' until ${getSnoozedDateString(context.time, status)}' : ''}';
+    case GoalStatus.archived:
+      return 'Archived';
+    case GoalStatus.pending:
+      return "Snoozed until ${DateFormat.yMd().format(status.endTime!)}";
     case null:
       return 'To Do';
   }
@@ -142,13 +157,15 @@ class StatusChip extends ConsumerWidget {
   final StatusLogEntry entry;
   final String goalId;
   final bool showArchiveButton;
-  final bool verbose;
+  final bool until;
+  final bool since;
   const StatusChip({
     super.key,
     required this.entry,
     required this.goalId,
     required this.showArchiveButton,
-    this.verbose = false,
+    this.until = false,
+    this.since = false,
   });
 
   @override
@@ -174,17 +191,21 @@ class StatusChip extends ConsumerWidget {
                   message:
                       '${this.entry.startTime != null ? DateFormat.yMd().format(this.entry.startTime!) : 'The Big Bang'} - ${this.entry.endTime != null ? DateFormat.yMd().format(this.entry.endTime!) : 'The Heat Death of the Universe'}',
                   child: Text(
-                    verbose
+                    until
                         ? getVerboseGoalStatusString(worldContext, this.entry)
-                        : getGoalStatusString(worldContext, this.entry),
+                        : since
+                            ? getGoalStatusStringSince(worldContext, this.entry)
+                            : getGoalStatusString(worldContext, this.entry),
                     style: smallTextStyle.copyWith(
                         color: getGoalStatusTextColor(this.entry)),
                   ),
                 )
               : Text(
-                  verbose
+                  until
                       ? getVerboseGoalStatusString(worldContext, this.entry)
-                      : getGoalStatusString(worldContext, this.entry),
+                      : since
+                          ? getGoalStatusStringSince(worldContext, this.entry)
+                          : getGoalStatusString(worldContext, this.entry),
                   style: smallTextStyle.copyWith(
                       color: getGoalStatusTextColor(this.entry)),
                 ),
