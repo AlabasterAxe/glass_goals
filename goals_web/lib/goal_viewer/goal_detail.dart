@@ -22,7 +22,12 @@ import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
 import 'package:goals_web/styles.dart'
-    show lightBackground, mainTextStyle, paleBlueColor, uiUnit;
+    show
+        darkElementColor,
+        lightBackground,
+        mainTextStyle,
+        paleBlueColor,
+        uiUnit;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
 import 'package:intl/intl.dart';
@@ -122,6 +127,7 @@ class StatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (showDate) Text('${formatDate(this.entry.creationTime)} '),
         Text(formatTime(this.entry.creationTime)),
@@ -213,6 +219,7 @@ class _NoteCardState extends State<NoteCard> {
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
@@ -246,7 +253,8 @@ class _NoteCardState extends State<NoteCard> {
           ],
         ),
         Padding(
-          padding: EdgeInsets.only(left: uiUnit(10), bottom: uiUnit(4)),
+          padding: EdgeInsets.only(
+              left: uiUnit(4), top: uiUnit(), bottom: uiUnit(4)),
           child: _editing
               ? IntrinsicHeight(
                   child: FocusScope(
@@ -378,136 +386,180 @@ class GoalHistoryWidget extends StatelessWidget {
       required this.goalId,
       required this.onRefresh});
 
+  Widget renderDay(
+      DetailViewLogEntryYear yearItem,
+      DetailViewLogEntryMonth monthItem,
+      DetailViewLogEntryDay dayItem,
+      bool first,
+      bool last) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            // padding: EdgeInsets.only(
+            //     top: first ? 0 : uiUnit(0.5), bottom: last ? 0 : uiUnit(0.5)),
+            padding: EdgeInsets.only(right: uiUnit(2)),
+            child: Container(
+                // decoration: BoxDecoration(
+                //   border: Border.symmetric(
+                //     horizontal: BorderSide(
+                //       color: darkElementColor,
+                //       width: 1,
+                //     ),
+                //   ),
+                // ),
+                width: uiUnit(6),
+                child: Column(
+                  children: [
+                    Text(
+                      "${dayItem.dayOfMonth}".padLeft(2, "0"),
+                      textAlign: TextAlign.center,
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: uiUnit(2)),
+                        child: Container(
+                          width: 0,
+                          color: darkElementColor,
+                        ),
+                      ),
+                    )
+                  ],
+                )),
+          ),
+          Expanded(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              if (yearItem.year == DateTime.now().year &&
+                  monthItem.monthOfYear == DateTime.now().month &&
+                  dayItem.dayOfMonth == DateTime.now().day)
+                AddNoteCard(goalId: this.goalId),
+              for (final item in dayItem.logItems)
+                ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: uiUnit(8)),
+                    child: switch (item.entry) {
+                      NoteLogEntry() => NoteCard(
+                          key: ValueKey((item.entry as NoteLogEntry).id),
+                          goal: item.goal,
+                          entry: item.entry as NoteLogEntry,
+                          childNote: item.goal.id != this.goalId,
+                          onRefresh: this.onRefresh,
+                        ),
+                      StatusLogEntry() => StatusCard(
+                          key: ValueKey(
+                              "${item.entry.id}${item.archived ? '-archive' : ''}"),
+                          goal: item.goal,
+                          entry: item.entry as StatusLogEntry,
+                          childEntry: item.goal.id != this.goalId,
+                          archived: item.archived,
+                        ),
+                      _ => throw UnimplementedError()
+                    })
+            ]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget renderMonth(DetailViewLogEntryYear yearItem,
+      DetailViewLogEntryMonth monthItem, bool first, bool last) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: EdgeInsets.zero,
+            // padding: EdgeInsets.only(
+            //     top: first ? 0 : uiUnit(0.5), bottom: last ? 0 : uiUnit(0.5)),
+            child: Container(
+                // decoration: BoxDecoration(
+                //   border: Border.symmetric(
+                //       horizontal: BorderSide(
+                //     color: darkElementColor,
+                //     width: 1,
+                //   )),
+                // ),
+                width: uiUnit(10),
+                // print the month name
+                child: Column(
+                  children: [
+                    Text(
+                      DateFormat('MMM')
+                          .format(DateTime(2022, monthItem.monthOfYear)),
+                      textAlign: TextAlign.center,
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: uiUnit(2)),
+                        child: Container(
+                          width: uiUnit(.5),
+                          color: darkElementColor,
+                        ),
+                      ),
+                    )
+                  ],
+                )),
+          ),
+          Expanded(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              for (final (i, dayItem) in monthItem.logItems.indexed)
+                renderDay(yearItem, monthItem, dayItem, i == 0,
+                    i == monthItem.logItems.length - 1),
+            ]),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        for (final yearItem in this.yearItems)
+        for (final (i, yearItem) in this.yearItems.indexed)
           IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
-                  padding: EdgeInsets.all(uiUnit()),
+                  padding: EdgeInsets.zero,
+                  // padding: EdgeInsets.only(
+                  //     top: i == 0 ? 0 : uiUnit(0.5),
+                  //     bottom: i == yearItems.length - 1 ? 0 : uiUnit(0.5)),
                   child: Container(
-                      color: paleBlueColor,
+                      // decoration: BoxDecoration(
+                      //   border: Border.symmetric(
+                      //       horizontal: BorderSide(
+                      //     color: darkElementColor,
+                      //     width: 1,
+                      //   )),
+                      // ),
                       width: uiUnit(10),
-                      child: Text(
-                        "${yearItem.year}",
-                        textAlign: TextAlign.center,
+                      child: Column(
+                        children: [
+                          Text(
+                            "${yearItem.year}",
+                            textAlign: TextAlign.center,
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding:
+                                  EdgeInsets.symmetric(vertical: uiUnit(2)),
+                              child: Container(
+                                width: uiUnit(.5),
+                                color: darkElementColor,
+                              ),
+                            ),
+                          )
+                        ],
                       )),
                 ),
                 Expanded(
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    for (final monthItem in yearItem.logItems)
-                      IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.all(uiUnit()),
-                              child: Container(
-                                  color: paleBlueColor,
-                                  width: uiUnit(10),
-                                  // print the month name
-                                  child: Text(
-                                    DateFormat('MMM').format(
-                                        DateTime(2022, monthItem.monthOfYear)),
-                                    textAlign: TextAlign.center,
-                                  )),
-                            ),
-                            Expanded(
-                              child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    for (final dayItem in monthItem.logItems)
-                                      IntrinsicHeight(
-                                        child: Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
-                                          children: [
-                                            Padding(
-                                              padding: EdgeInsets.all(uiUnit()),
-                                              child: Container(
-                                                  color: paleBlueColor,
-                                                  width: uiUnit(6),
-                                                  child: Text(
-                                                    "${dayItem.dayOfMonth}"
-                                                        .padLeft(2, "0"),
-                                                    textAlign: TextAlign.center,
-                                                  )),
-                                            ),
-                                            Expanded(
-                                              child: Column(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    if (yearItem.year ==
-                                                            DateTime.now()
-                                                                .year &&
-                                                        monthItem.monthOfYear ==
-                                                            DateTime.now()
-                                                                .month &&
-                                                        dayItem.dayOfMonth ==
-                                                            formatDate(
-                                                                DateTime.now()))
-                                                      AddNoteCard(
-                                                          goalId: this.goalId),
-                                                    for (final item
-                                                        in dayItem.logItems)
-                                                      ConstrainedBox(
-                                                          constraints:
-                                                              BoxConstraints(
-                                                                  minHeight:
-                                                                      uiUnit(
-                                                                          8)),
-                                                          child: switch (
-                                                              item.entry) {
-                                                            NoteLogEntry() =>
-                                                              NoteCard(
-                                                                key: ValueKey(
-                                                                    (item.entry
-                                                                            as NoteLogEntry)
-                                                                        .id),
-                                                                goal: item.goal,
-                                                                entry: item
-                                                                        .entry
-                                                                    as NoteLogEntry,
-                                                                childNote: item
-                                                                        .goal
-                                                                        .id !=
-                                                                    this.goalId,
-                                                                onRefresh: this
-                                                                    .onRefresh,
-                                                              ),
-                                                            StatusLogEntry() =>
-                                                              StatusCard(
-                                                                key: ValueKey(
-                                                                    "${item.entry.id}${item.archived ? '-archive' : ''}"),
-                                                                goal: item.goal,
-                                                                entry: item
-                                                                        .entry
-                                                                    as StatusLogEntry,
-                                                                childEntry: item
-                                                                        .goal
-                                                                        .id !=
-                                                                    this.goalId,
-                                                                archived: item
-                                                                    .archived,
-                                                              ),
-                                                            _ =>
-                                                              throw UnimplementedError()
-                                                          })
-                                                  ]),
-                                            ),
-                                          ],
-                                        ),
-                                      )
-                                  ]),
-                            ),
-                          ],
-                        ),
-                      )
+                    for (final (i, monthItem) in yearItem.logItems.indexed)
+                      renderMonth(yearItem, monthItem, i == 0,
+                          i == yearItem.logItems.length - 1),
                   ]),
                 ),
               ],
@@ -594,13 +646,14 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
       }
 
       var currentMonth = currentYear.logItems.lastOrNull;
-      if (currentMonth == null || currentMonth.monthOfYear != month) {
+      var currentDay = currentMonth?.logItems.lastOrNull;
+      if (currentMonth == null || currentDay?.dayOfMonth != day) {
         currentYear.logItems
             .add(DetailViewLogEntryMonth(monthOfYear: month, logItems: []));
         currentMonth = currentYear.logItems.last;
       }
 
-      var currentDay = currentMonth.logItems.lastOrNull;
+      currentDay = currentMonth.logItems.lastOrNull;
       if (currentDay == null || currentDay.dayOfMonth != day) {
         currentMonth.logItems.add(DetailViewLogEntryDay(
             dayOfMonth: item.entry.creationTime.day, logItems: [item]));
