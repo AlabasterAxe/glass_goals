@@ -211,14 +211,12 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                             })
                                           },
                                   child: Text(widget.goal.text,
-                                      style: (isFocused
+                                      style: (isSelected
                                               ? focusedFontStyle
                                                   .merge(mainTextStyle)
                                               : mainTextStyle)
                                           .copyWith(
-                                        decoration: isSelected
-                                            ? TextDecoration.underline
-                                            : null,
+                                        decoration: TextDecoration.underline,
                                         overflow: TextOverflow.ellipsis,
                                       )),
                                 ),

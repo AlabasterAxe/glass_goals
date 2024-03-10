@@ -62,6 +62,10 @@ abstract class GoalLogEntry extends Equatable {
         return SetParentLogEntry.fromJsonMap(json, version);
       case 'priority':
         return PriorityLogEntry.fromJsonMap(json, version);
+      case 'addStatusIntention':
+        return AddStatusIntentionLogEntry.fromJsonMap(json, version);
+      case 'addStatusReflection':
+        return AddStatusReflectionLogEntry.fromJsonMap(json, version);
       default:
         throw Exception('Invalid data: $json has unknown type: $type');
     }
@@ -86,7 +90,14 @@ abstract class GoalLogEntry extends Equatable {
     if (entry is PriorityLogEntry) {
       return PriorityLogEntry.toJsonMap(entry);
     }
-    throw Exception('Unknown type: ${entry.runtimeType}');
+    if (entry is AddStatusIntentionLogEntry) {
+      return AddStatusIntentionLogEntry.toJsonMap(entry);
+    }
+    if (entry is AddStatusReflectionLogEntry) {
+      return AddStatusReflectionLogEntry.toJsonMap(entry);
+    }
+    throw Exception(
+        'Failed to convert GoalLogEntry to JSON Map: Unknown type: ${entry.runtimeType}');
   }
 
   static GoalLogEntry? fromPrevious(prev_goal_types.GoalLogEntry? legacyEntry) {
@@ -434,6 +445,94 @@ class ArchiveStatusLogEntry extends GoalLogEntry {
       id: legacyEntry.id,
       creationTime: legacyEntry.creationTime,
     );
+  }
+}
+
+class AddStatusIntentionLogEntry extends GoalLogEntry {
+  static const FIRST_VERSION = 4;
+  final String intentionText;
+
+  // The id of the StatusLogEntry this is being added to.
+  final String statusId;
+  const AddStatusIntentionLogEntry({
+    required super.id,
+    required super.creationTime,
+    required this.intentionText,
+    required this.statusId,
+  });
+
+  @override
+  List<Object?> get props => [id];
+
+  static AddStatusIntentionLogEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    return AddStatusIntentionLogEntry(
+      id: json['id'],
+      intentionText: json['intentionText'],
+      creationTime: DateTime.parse(json['creationTime']).toLocal(),
+      statusId: json['statusId'],
+    );
+  }
+
+  static Map<String, dynamic> toJsonMap(AddStatusIntentionLogEntry entry) {
+    return {
+      'type': 'addStatusIntention',
+      'id': entry.id,
+      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+      'intentionText': entry.intentionText,
+      'statusId': entry.statusId,
+    };
+  }
+}
+
+class AddStatusReflectionLogEntry extends GoalLogEntry {
+  static const FIRST_VERSION = 4;
+  final String reflectionText;
+
+  // The id of the StatusLogEntry this is being added to.
+  final String statusId;
+  const AddStatusReflectionLogEntry({
+    required super.id,
+    required super.creationTime,
+    required this.reflectionText,
+    required this.statusId,
+  });
+
+  @override
+  List<Object?> get props => [id];
+
+  static AddStatusReflectionLogEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    return AddStatusReflectionLogEntry(
+      id: json['id'],
+      reflectionText: json['reflectionText'],
+      creationTime: DateTime.parse(json['creationTime']).toLocal(),
+      statusId: json['statusId'],
+    );
+  }
+
+  static Map<String, dynamic> toJsonMap(AddStatusReflectionLogEntry entry) {
+    return {
+      'type': 'addStatusReflection',
+      'id': entry.id,
+      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+      'reflectionText': entry.reflectionText,
+      'statusId': entry.statusId,
+    };
   }
 }
 
