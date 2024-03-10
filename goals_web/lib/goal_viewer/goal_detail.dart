@@ -764,7 +764,11 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
           if (entry.endTime != null &&
               entry.endTime != entry.creationTime &&
               entry.endTime!.isBefore(worldContext.time) &&
-              entry.status == GoalStatus.active) {
+              entry.status == GoalStatus.active &&
+              // If the goal is archived or done by the time the status ends, don't show the end entry.
+              ![GoalStatus.archived, GoalStatus.done].contains(
+                  getGoalStatus(WorldContext(time: entry.endTime!), item.goal)
+                      .status)) {
             items["${entry.id}-end"] = DetailViewLogEntryItem(
               entry: entry,
               goal: item.goal,
