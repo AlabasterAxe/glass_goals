@@ -80,13 +80,13 @@ String getSnoozedDateString(DateTime now, StatusLogEntry status) {
 String getGoalStatusStringSince(WorldContext context, StatusLogEntry status) {
   switch (status.status) {
     case GoalStatus.active:
-      return "Active since ${status.endTime != null ? DateFormat.yMd().format(status.endTime!) : 'the beginning of time'}";
+      return "Active since ${status.startTime != null ? DateFormat.yMd().format(status.startTime!) : 'the beginning of time'}";
     case GoalStatus.done:
-      return 'Done since ${status.endTime != null ? DateFormat.yMd().format(status.endTime!) : 'the beginning of time'}}';
+      return 'Done since ${status.startTime != null ? DateFormat.yMd().format(status.startTime!) : 'the beginning of time'}}';
     case GoalStatus.archived:
       return 'Archived';
     case GoalStatus.pending:
-      return "Snoozed since ${status.endTime != null ? DateFormat.yMd().format(status.endTime!) : 'the beginning of time'}";
+      return "Snoozed since ${status.startTime != null ? DateFormat.yMd().format(status.startTime!) : 'the beginning of time'}";
     case null:
       return 'To Do';
   }
