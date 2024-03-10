@@ -22,12 +22,7 @@ import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
 import 'package:goals_web/styles.dart'
-    show
-        darkElementColor,
-        lightBackground,
-        mainTextStyle,
-        paleBlueColor,
-        uiUnit;
+    show darkElementColor, lightBackground, mainTextStyle, uiUnit;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
 import 'package:intl/intl.dart';
@@ -253,8 +248,7 @@ class _NoteCardState extends State<NoteCard> {
           ],
         ),
         Padding(
-          padding: EdgeInsets.only(
-              left: uiUnit(4), top: uiUnit(), bottom: uiUnit(4)),
+          padding: EdgeInsets.only(top: uiUnit(), bottom: uiUnit(4)),
           child: _editing
               ? IntrinsicHeight(
                   child: FocusScope(
@@ -397,18 +391,8 @@ class GoalHistoryWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            // padding: EdgeInsets.only(
-            //     top: first ? 0 : uiUnit(0.5), bottom: last ? 0 : uiUnit(0.5)),
             padding: EdgeInsets.only(right: uiUnit(2)),
             child: Container(
-                // decoration: BoxDecoration(
-                //   border: Border.symmetric(
-                //     horizontal: BorderSide(
-                //       color: darkElementColor,
-                //       width: 1,
-                //     ),
-                //   ),
-                // ),
                 width: uiUnit(6),
                 child: Column(
                   children: [
@@ -430,10 +414,6 @@ class GoalHistoryWidget extends StatelessWidget {
           ),
           Expanded(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              if (yearItem.year == DateTime.now().year &&
-                  monthItem.monthOfYear == DateTime.now().month &&
-                  dayItem.dayOfMonth == DateTime.now().day)
-                AddNoteCard(goalId: this.goalId),
               for (final item in dayItem.logItems)
                 ConstrainedBox(
                     constraints: BoxConstraints(minHeight: uiUnit(8)),
@@ -512,24 +492,14 @@ class GoalHistoryWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        for (final (i, yearItem) in this.yearItems.indexed)
+        for (final yearItem in this.yearItems)
           IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
                   padding: EdgeInsets.zero,
-                  // padding: EdgeInsets.only(
-                  //     top: i == 0 ? 0 : uiUnit(0.5),
-                  //     bottom: i == yearItems.length - 1 ? 0 : uiUnit(0.5)),
                   child: Container(
-                      // decoration: BoxDecoration(
-                      //   border: Border.symmetric(
-                      //       horizontal: BorderSide(
-                      //     color: darkElementColor,
-                      //     width: 1,
-                      //   )),
-                      // ),
                       width: uiUnit(10),
                       child: Column(
                         children: [
@@ -769,6 +739,8 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         SizedBox(height: uiUnit(2)),
         Text('History', style: textTheme.headlineSmall),
         SizedBox(height: uiUnit(1)),
+        AddNoteCard(goalId: this.widget.goal.id),
+        SizedBox(height: uiUnit()),
         GoalHistoryWidget(
             yearItems: historyLog,
             goalId: this.widget.goal.id,
