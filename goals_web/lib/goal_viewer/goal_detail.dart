@@ -113,7 +113,7 @@ class StatusCard extends ConsumerStatefulWidget {
   final bool isStatusEnd;
   final DateTime time;
   final String? text;
-  final bool isFromChild;
+  final bool isChildGoal;
   const StatusCard({
     super.key,
     required this.goal,
@@ -122,7 +122,7 @@ class StatusCard extends ConsumerStatefulWidget {
     this.isStatusEnd = false,
     required this.time,
     this.text,
-    required this.isFromChild,
+    required this.isChildGoal,
   });
 
   @override
@@ -135,16 +135,11 @@ class _StatusCardState extends ConsumerState<StatusCard> {
   bool _editing = false;
   late final _focusNode = FocusNode();
 
-  _saveNote() {
-    final noteType =
-        this.widget.isStatusEnd || this.widget.entry.status == GoalStatus.done
-            ? "reflection"
-            : this.widget.entry.status == GoalStatus.active
-                ? "intention"
-                : null;
+  _saveNote(String? noteType) {
     if (noteType == null) {
       return;
     }
+
     _textController.selection =
         TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
     AppContext.of(context).syncClient.modifyGoal(GoalDelta(
@@ -177,12 +172,15 @@ class _StatusCardState extends ConsumerState<StatusCard> {
   @override
   Widget build(BuildContext context) {
     final worldContext = ref.watch(worldContextProvider);
-    final noteType = this.widget.isStatusEnd ||
-            this.widget.entry.status == GoalStatus.done
-        ? "reflection"
-        : this.widget.entry.id == getGoalStatus(worldContext, widget.goal).id
-            ? "intention"
-            : null;
+    final noteType =
+        this.widget.isStatusEnd || this.widget.entry.status == GoalStatus.done
+            ? "reflection"
+            : [GoalStatus.pending, GoalStatus.active]
+                        .contains(this.widget.entry.status) &&
+                    this.widget.entry.id ==
+                        getGoalStatus(worldContext, widget.goal).id
+                ? "intention"
+                : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -192,7 +190,7 @@ class _StatusCardState extends ConsumerState<StatusCard> {
           children: [
             Text(formatTime(this.widget.time)),
             Text(" - "),
-            if (this.widget.isFromChild)
+            if (this.widget.isChildGoal)
               Row(
                 children: [
                   Breadcrumb(goal: this.widget.goal),
@@ -245,9 +243,11 @@ class _StatusCardState extends ConsumerState<StatusCard> {
                       child: CallbackShortcuts(
                         bindings: <ShortcutActivator, Function()>{
                           LogicalKeySet(LogicalKeyboardKey.meta,
-                              LogicalKeyboardKey.enter): _saveNote,
+                                  LogicalKeyboardKey.enter):
+                              () => _saveNote(noteType),
                           LogicalKeySet(LogicalKeyboardKey.control,
-                              LogicalKeyboardKey.enter): _saveNote,
+                                  LogicalKeyboardKey.enter):
+                              () => _saveNote(noteType),
                           LogicalKeySet(LogicalKeyboardKey.escape):
                               _discardEdit,
                         },
@@ -263,7 +263,7 @@ class _StatusCardState extends ConsumerState<StatusCard> {
                           style: mainTextStyle,
                           onTapOutside: (_) {
                             if (_textController.text != widget.text) {
-                              _saveNote();
+                              _saveNote(noteType);
                             }
                             setState(() {
                               _editing = false;
@@ -308,14 +308,14 @@ class NoteCard extends StatefulWidget {
   final Goal goal;
   final NoteLogEntry entry;
   final Function() onRefresh;
-  final bool isFromChild;
+  final bool isChildGoal;
   final bool showDate;
   const NoteCard({
     super.key,
     required this.goal,
     required this.entry,
     required this.onRefresh,
-    required this.isFromChild,
+    required this.isChildGoal,
     this.showDate = false,
   });
 
@@ -374,13 +374,13 @@ class _NoteCardState extends State<NoteCard> {
                   if (this.widget.showDate)
                     Text('${formatDate(this.widget.entry.creationTime)} '),
                   Text(formatTime(widget.entry.creationTime)),
-                  if (widget.isFromChild) ...[
+                  if (widget.isChildGoal) ...[
                     Text(" - "),
                     Breadcrumb(goal: widget.goal),
                   ],
                 ],
               ),
-              !widget.isFromChild
+              !widget.isChildGoal
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -440,7 +440,7 @@ class _NoteCardState extends State<NoteCard> {
                   data: _textController.text,
                   selectable: true,
                   onTapText: () {
-                    if (!widget.isFromChild) {
+                    if (!widget.isChildGoal) {
                       setState(() {
                         _editing = true;
                         _focusNode.requestFocus();
@@ -586,7 +586,7 @@ class GoalHistoryWidget extends StatelessWidget {
                           key: ValueKey((item.entry as NoteLogEntry).id),
                           goal: item.goal,
                           entry: item.entry as NoteLogEntry,
-                          isFromChild: item.goal.id != this.goalId,
+                          isChildGoal: item.goal.id != this.goalId,
                           onRefresh: this.onRefresh,
                         ),
                       StatusLogEntry() => StatusCard(
@@ -594,7 +594,7 @@ class GoalHistoryWidget extends StatelessWidget {
                               "${item.entry.id}${item.archived ? '-archive' : (item.entry as StatusLogEntry).endTime == item.time ? '-end' : '-creation'}"),
                           goal: item.goal,
                           entry: item.entry as StatusLogEntry,
-                          isFromChild: item.goal.id != this.goalId,
+                          isChildGoal: item.goal.id != this.goalId,
                           archived: item.archived,
                           time: item.time,
                           isStatusEnd: (item.entry as StatusLogEntry).endTime ==
