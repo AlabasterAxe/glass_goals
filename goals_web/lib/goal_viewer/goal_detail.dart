@@ -22,9 +22,15 @@ import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
 import 'package:goals_web/styles.dart'
-    show darkElementColor, lightBackground, mainTextStyle, uiUnit;
+    show
+        darkElementColor,
+        lightBackground,
+        mainTextStyle,
+        paleBlueColor,
+        uiUnit;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart' show canLaunchUrl, launchUrl;
 import 'package:uuid/uuid.dart';
 
@@ -121,12 +127,11 @@ class StatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: uiUnit(10),
-          height: uiUnit(8),
-          child: const Center(child: Icon(Icons.remove, size: 18)),
-        ),
+        if (showDate) Text('${formatDate(this.entry.creationTime)} '),
+        Text(formatTime(this.entry.creationTime)),
+        Text(" - "),
         if (this.childEntry)
           Row(
             children: [
@@ -142,9 +147,6 @@ class StatusCard extends StatelessWidget {
             goalId: this.goal.id,
             showArchiveButton: false,
             verbose: true),
-        Text(" - "),
-        if (showDate) Text('${formatDate(this.entry.creationTime)} '),
-        Text(formatTime(this.entry.creationTime)),
       ],
     );
   }
@@ -217,21 +219,17 @@ class _NoteCardState extends State<NoteCard> {
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                SizedBox(
-                  width: uiUnit(10),
-                  height: uiUnit(8),
-                  child: const Center(child: Icon(Icons.remove, size: 18)),
-                ),
-                if (widget.childNote) ...[
-                  Breadcrumb(goal: widget.goal),
-                  Text(" - ")
-                ],
                 if (this.widget.showDate)
                   Text('${formatDate(this.widget.entry.creationTime)} '),
                 Text(formatTime(widget.entry.creationTime)),
+                if (widget.childNote) ...[
+                  Text(" - "),
+                  Breadcrumb(goal: widget.goal),
+                ],
               ],
             ),
             !widget.childNote
@@ -255,7 +253,8 @@ class _NoteCardState extends State<NoteCard> {
           ],
         ),
         Padding(
-          padding: EdgeInsets.only(left: uiUnit(10), bottom: uiUnit(4)),
+          padding: EdgeInsets.only(
+              left: uiUnit(4), top: uiUnit(), bottom: uiUnit(4)),
           child: _editing
               ? IntrinsicHeight(
                   child: FocusScope(
@@ -288,6 +287,8 @@ class _NoteCardState extends State<NoteCard> {
                   ),
                 )
               : MarkdownBody(
+                  listItemCrossAxisAlignment:
+                      MarkdownListItemCrossAxisAlignment.start,
                   data: _textController.text,
                   selectable: true,
                   onTapText: () {
@@ -347,11 +348,24 @@ class GoalDetail extends ConsumerStatefulWidget {
   ConsumerState<GoalDetail> createState() => _GoalDetailState();
 }
 
-class DetailViewLogEntryDateItem {
-  final String dateString;
+class DetailViewLogEntryYear {
+  final int year;
+  final List<DetailViewLogEntryMonth> logItems;
+  const DetailViewLogEntryYear({required this.year, required this.logItems});
+}
+
+class DetailViewLogEntryMonth {
+  final int monthOfYear;
+  final List<DetailViewLogEntryDay> logItems;
+  const DetailViewLogEntryMonth(
+      {required this.monthOfYear, required this.logItems});
+}
+
+class DetailViewLogEntryDay {
+  final int dayOfMonth;
   final List<DetailViewLogEntryItem> logItems;
-  const DetailViewLogEntryDateItem(
-      {required this.dateString, required this.logItems});
+  const DetailViewLogEntryDay(
+      {required this.dayOfMonth, required this.logItems});
 }
 
 class DetailViewLogEntryItem {
@@ -362,72 +376,197 @@ class DetailViewLogEntryItem {
       {required this.goal, required this.entry, this.archived = false});
 }
 
-class DetailViewLogEntryDateWidget extends StatelessWidget {
-  final DetailViewLogEntryDateItem item;
+class GoalHistoryWidget extends StatelessWidget {
+  final List<DetailViewLogEntryYear> yearItems;
   final String goalId;
   final VoidCallback onRefresh;
-  const DetailViewLogEntryDateWidget(
+  const GoalHistoryWidget(
       {super.key,
-      required this.item,
+      required this.yearItems,
       required this.goalId,
       required this.onRefresh});
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(children: [
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+  Widget renderDay(
+      DetailViewLogEntryYear yearItem,
+      DetailViewLogEntryMonth monthItem,
+      DetailViewLogEntryDay dayItem,
+      bool first,
+      bool last) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(uiUnit(2)),
-              child: Container(
-                height: uiUnit(.5),
-                color: darkElementColor,
-              ),
-            ),
+          Padding(
+            // padding: EdgeInsets.only(
+            //     top: first ? 0 : uiUnit(0.5), bottom: last ? 0 : uiUnit(0.5)),
+            padding: EdgeInsets.only(right: uiUnit(2)),
+            child: Container(
+                // decoration: BoxDecoration(
+                //   border: Border.symmetric(
+                //     horizontal: BorderSide(
+                //       color: darkElementColor,
+                //       width: 1,
+                //     ),
+                //   ),
+                // ),
+                width: uiUnit(6),
+                child: Column(
+                  children: [
+                    Text(
+                      "${dayItem.dayOfMonth}".padLeft(2, "0"),
+                      textAlign: TextAlign.center,
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: uiUnit(2)),
+                        child: Container(
+                          width: 0,
+                          color: darkElementColor,
+                        ),
+                      ),
+                    )
+                  ],
+                )),
           ),
-          ConstrainedBox(
-              constraints: BoxConstraints(minHeight: uiUnit(8)),
-              child: Center(
-                  child: Text(
-                this.item.dateString,
-              ))),
           Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(uiUnit(2)),
-              child: Container(
-                height: uiUnit(.5),
-                color: darkElementColor,
-              ),
-            ),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              if (yearItem.year == DateTime.now().year &&
+                  monthItem.monthOfYear == DateTime.now().month &&
+                  dayItem.dayOfMonth == DateTime.now().day)
+                AddNoteCard(goalId: this.goalId),
+              for (final item in dayItem.logItems)
+                ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: uiUnit(8)),
+                    child: switch (item.entry) {
+                      NoteLogEntry() => NoteCard(
+                          key: ValueKey((item.entry as NoteLogEntry).id),
+                          goal: item.goal,
+                          entry: item.entry as NoteLogEntry,
+                          childNote: item.goal.id != this.goalId,
+                          onRefresh: this.onRefresh,
+                        ),
+                      StatusLogEntry() => StatusCard(
+                          key: ValueKey(
+                              "${item.entry.id}${item.archived ? '-archive' : ''}"),
+                          goal: item.goal,
+                          entry: item.entry as StatusLogEntry,
+                          childEntry: item.goal.id != this.goalId,
+                          archived: item.archived,
+                        ),
+                      _ => throw UnimplementedError()
+                    })
+            ]),
           ),
         ],
       ),
-      if (this.item.dateString == formatDate(DateTime.now()))
-        AddNoteCard(goalId: this.goalId),
-      for (final item in this.item.logItems)
-        ConstrainedBox(
-            constraints: BoxConstraints(minHeight: uiUnit(8)),
-            child: switch (item.entry) {
-              NoteLogEntry() => NoteCard(
-                  key: ValueKey((item.entry as NoteLogEntry).id),
-                  goal: item.goal,
-                  entry: item.entry as NoteLogEntry,
-                  childNote: item.goal.id != this.goalId,
-                  onRefresh: this.onRefresh,
+    );
+  }
+
+  Widget renderMonth(DetailViewLogEntryYear yearItem,
+      DetailViewLogEntryMonth monthItem, bool first, bool last) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: EdgeInsets.zero,
+            // padding: EdgeInsets.only(
+            //     top: first ? 0 : uiUnit(0.5), bottom: last ? 0 : uiUnit(0.5)),
+            child: Container(
+                // decoration: BoxDecoration(
+                //   border: Border.symmetric(
+                //       horizontal: BorderSide(
+                //     color: darkElementColor,
+                //     width: 1,
+                //   )),
+                // ),
+                width: uiUnit(10),
+                // print the month name
+                child: Column(
+                  children: [
+                    Text(
+                      DateFormat('MMM')
+                          .format(DateTime(2022, monthItem.monthOfYear)),
+                      textAlign: TextAlign.center,
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: uiUnit(2)),
+                        child: Container(
+                          width: uiUnit(.5),
+                          color: darkElementColor,
+                        ),
+                      ),
+                    )
+                  ],
+                )),
+          ),
+          Expanded(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              for (final (i, dayItem) in monthItem.logItems.indexed)
+                renderDay(yearItem, monthItem, dayItem, i == 0,
+                    i == monthItem.logItems.length - 1),
+            ]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (final (i, yearItem) in this.yearItems.indexed)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: EdgeInsets.zero,
+                  // padding: EdgeInsets.only(
+                  //     top: i == 0 ? 0 : uiUnit(0.5),
+                  //     bottom: i == yearItems.length - 1 ? 0 : uiUnit(0.5)),
+                  child: Container(
+                      // decoration: BoxDecoration(
+                      //   border: Border.symmetric(
+                      //       horizontal: BorderSide(
+                      //     color: darkElementColor,
+                      //     width: 1,
+                      //   )),
+                      // ),
+                      width: uiUnit(10),
+                      child: Column(
+                        children: [
+                          Text(
+                            "${yearItem.year}",
+                            textAlign: TextAlign.center,
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding:
+                                  EdgeInsets.symmetric(vertical: uiUnit(2)),
+                              child: Container(
+                                width: uiUnit(.5),
+                                color: darkElementColor,
+                              ),
+                            ),
+                          )
+                        ],
+                      )),
                 ),
-              StatusLogEntry() => StatusCard(
-                  key: ValueKey(
-                      "${item.entry.id}${item.archived ? '-archive' : ''}"),
-                  goal: item.goal,
-                  entry: item.entry as StatusLogEntry,
-                  childEntry: item.goal.id != this.goalId,
-                  archived: item.archived,
+                Expanded(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    for (final (i, monthItem) in yearItem.logItems.indexed)
+                      renderMonth(yearItem, monthItem, i == 0,
+                          i == yearItem.logItems.length - 1),
+                  ]),
                 ),
-              _ => throw UnimplementedError()
-            })
-    ]);
+              ],
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -445,7 +584,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     }
   }
 
-  List<DetailViewLogEntryDateItem> _computeHistoryLog(
+  List<DetailViewLogEntryYear> _computeHistoryLog(
       List<DetailViewLogEntryItem> log) {
     Map<String, DetailViewLogEntryItem> items = {};
     log.sort((a, b) => a.entry.creationTime.compareTo(b.entry.creationTime));
@@ -495,17 +634,34 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     final sortedItems = items.values.toList()
       ..sort((a, b) => b.entry.creationTime.compareTo(a.entry.creationTime));
 
-    final List<DetailViewLogEntryDateItem> result = [];
+    final List<DetailViewLogEntryYear> result = [];
     for (final item in sortedItems) {
-      final dateString = formatDate(item.entry.creationTime);
-      final lastItem = result.lastOrNull;
-      if (lastItem != null && lastItem.dateString == dateString) {
-        lastItem.logItems.add(item);
+      final year = item.entry.creationTime.year;
+      final month = item.entry.creationTime.month;
+      final day = item.entry.creationTime.day;
+      var currentYear = result.lastOrNull;
+      if (currentYear == null || currentYear.year != year) {
+        result.add(DetailViewLogEntryYear(year: year, logItems: []));
+        currentYear = result.last;
+      }
+
+      var currentMonth = currentYear.logItems.lastOrNull;
+      var currentDay = currentMonth?.logItems.lastOrNull;
+      if (currentMonth == null || currentDay?.dayOfMonth != day) {
+        currentYear.logItems
+            .add(DetailViewLogEntryMonth(monthOfYear: month, logItems: []));
+        currentMonth = currentYear.logItems.last;
+      }
+
+      currentDay = currentMonth.logItems.lastOrNull;
+      if (currentDay == null || currentDay.dayOfMonth != day) {
+        currentMonth.logItems.add(DetailViewLogEntryDay(
+            dayOfMonth: item.entry.creationTime.day, logItems: [item]));
       } else {
-        result.add(DetailViewLogEntryDateItem(
-            dateString: dateString, logItems: [item]));
+        currentDay.logItems.add(item);
       }
     }
+
     return result;
   }
 
@@ -618,11 +774,10 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         SizedBox(height: uiUnit(2)),
         Text('History', style: textTheme.headlineSmall),
         SizedBox(height: uiUnit(1)),
-        for (final item in historyLog)
-          DetailViewLogEntryDateWidget(
-              item: item,
-              goalId: this.widget.goal.id,
-              onRefresh: () => setState(() {})),
+        GoalHistoryWidget(
+            yearItems: historyLog,
+            goalId: this.widget.goal.id,
+            onRefresh: () => setState(() {})),
         if (isDebugMode) ...[
           SizedBox(height: uiUnit(2)),
           Text('Debug Info', style: textTheme.headlineSmall),

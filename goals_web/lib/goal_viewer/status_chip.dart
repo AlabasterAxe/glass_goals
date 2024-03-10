@@ -28,14 +28,17 @@ String getActiveDateString(DateTime now, StatusLogEntry status) {
   } else if (isWithinCalendarYear(now, status)) {
     return 'This Year';
   } else if (status.endTime != null) {
-    return DateFormat.yMd().format(status.endTime!);
+    return 'Until ${DateFormat.yMd().format(status.endTime!)}';
   } else {
     return 'Ongoing';
   }
 }
 
 String getSnoozedDateString(DateTime now, StatusLogEntry status) {
-  if (status.endTime?.isBefore(now.endOfDay.subtract(const Duration(seconds: 1))) ==
+  if (status.endTime?.isBefore(now.startOfDay.subtract(const Duration(seconds: 1))) ==
+      true) {
+    return DateFormat.yMd().format(status.endTime!);
+  } else if (status.endTime?.isBefore(now.endOfDay.subtract(const Duration(seconds: 1))) ==
       true) {
     return 'Later Today';
   } else if (status.endTime?.isBefore(now.add(const Duration(days: 1)).endOfDay) ==
@@ -56,13 +59,12 @@ String getSnoozedDateString(DateTime now, StatusLogEntry status) {
           .subtract(const Duration(seconds: 1))) ==
       true) {
     return 'Next Month';
-  } else if (status.endTime?.isBefore(now.endOfQuarter.subtract(const Duration(seconds: 1))) ==
+  } else if (status.endTime
+          ?.isBefore(now.endOfQuarter.subtract(const Duration(seconds: 1))) ==
       true) {
     return 'Later This Quarter';
-  } else if (status.endTime?.isBefore(now.endOfQuarter
-          .add(const Duration(days: 1))
-          .endOfQuarter
-          .subtract(const Duration(seconds: 1))) ==
+  } else if (status.endTime
+          ?.isBefore(now.endOfQuarter.add(const Duration(days: 1)).endOfQuarter.subtract(const Duration(seconds: 1))) ==
       true) {
     return 'Next Quarter';
   } else if (status.endTime?.isBefore(now.endOfYear.subtract(const Duration(seconds: 1))) == true) {
@@ -78,13 +80,13 @@ String getSnoozedDateString(DateTime now, StatusLogEntry status) {
 String getVerboseGoalStatusString(WorldContext context, StatusLogEntry status) {
   switch (status.status) {
     case GoalStatus.active:
-      return "Active ${getActiveDateString(context.time, status)}";
+      return "Active ${status.endTime != null ? '${getActiveDateString(context.time, status)}' : 'Forever'}";
     case GoalStatus.done:
-      return 'Done${status.endTime != null ? ' until ${getSnoozedDateString(context.time, status)}' : ''}';
+      return 'Done${status.endTime != null ? ' Until ${getSnoozedDateString(context.time, status)}' : ''}';
     case GoalStatus.archived:
       return 'Archived';
     case GoalStatus.pending:
-      return "Snoozed until ${getSnoozedDateString(context.time, status)}";
+      return "Snoozed Until ${getSnoozedDateString(context.time, status)}";
     case null:
       return 'To Do';
   }
