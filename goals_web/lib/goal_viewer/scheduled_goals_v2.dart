@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import '../app_context.dart';
 import '../common/time_slice.dart';
 import '../styles.dart';
+import '../widgets/gg_icon_button.dart';
 import 'flattened_goal_tree.dart';
 import 'goal_actions_context.dart';
 import 'hover_actions.dart';
@@ -75,19 +76,26 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
         })
         .map((e) => e.id)
         .toList();
-    return Row(
+    return Wrap(
+      direction: Axis.horizontal,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        TextButton(
-            onPressed: () {
-              this._toggleExpansion(slice);
-            },
-            child: Text(
-              slice.displayName,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium!
-                  .copyWith(fontWeight: FontWeight.bold),
-            )),
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: uiUnit())
+              .copyWith(left: uiUnit(2)),
+          child: Text(
+            slice.displayName,
+            style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ),
+        GlassGoalsIconButton(
+          icon: Icons.arrow_right,
+          onPressed: () {
+            this._toggleExpansion(slice);
+          },
+        ),
         for (final goal in goalIds
             .map((id) => sliceGoalMap[id])
             .where((goal) => goal != null)
@@ -145,16 +153,26 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextButton(
-                  onPressed: () {
-                    this._toggleExpansion(slice);
-                  },
-                  child: Text(
-                    slice.displayName,
-                    style: Theme.of(context).textTheme.headlineSmall!.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
+                Row(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: uiUnit())
+                          .copyWith(left: uiUnit(2)),
+                      child: Text(
+                        slice.displayName,
+                        style:
+                            Theme.of(context).textTheme.headlineSmall!.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                    ),
+                    GlassGoalsIconButton(
+                      icon: Icons.arrow_drop_down,
+                      onPressed: () {
+                        this._toggleExpansion(slice);
+                      },
+                    ),
+                  ],
                 ),
                 Builder(builder: (context) {
                   final onAddGoal = GoalActionsContext.of(context).onAddGoal;

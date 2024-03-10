@@ -972,6 +972,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final isNarrow = MediaQuery.of(context).size.width < 600;
     return Column(
       key: const ValueKey('list'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (!isNarrow)
           Padding(
