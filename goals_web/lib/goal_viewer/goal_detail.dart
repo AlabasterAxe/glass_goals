@@ -22,9 +22,10 @@ import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
 import 'package:goals_web/styles.dart'
-    show darkElementColor, lightBackground, mainTextStyle, uiUnit;
+    show lightBackground, mainTextStyle, paleBlueColor, uiUnit;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart' show canLaunchUrl, launchUrl;
 import 'package:uuid/uuid.dart';
 
@@ -122,11 +123,9 @@ class StatusCard extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        SizedBox(
-          width: uiUnit(10),
-          height: uiUnit(8),
-          child: const Center(child: Icon(Icons.remove, size: 18)),
-        ),
+        if (showDate) Text('${formatDate(this.entry.creationTime)} '),
+        Text(formatTime(this.entry.creationTime)),
+        Text(" - "),
         if (this.childEntry)
           Row(
             children: [
@@ -142,9 +141,6 @@ class StatusCard extends StatelessWidget {
             goalId: this.goal.id,
             showArchiveButton: false,
             verbose: true),
-        Text(" - "),
-        if (showDate) Text('${formatDate(this.entry.creationTime)} '),
-        Text(formatTime(this.entry.creationTime)),
       ],
     );
   }
@@ -220,18 +216,13 @@ class _NoteCardState extends State<NoteCard> {
           children: [
             Row(
               children: [
-                SizedBox(
-                  width: uiUnit(10),
-                  height: uiUnit(8),
-                  child: const Center(child: Icon(Icons.remove, size: 18)),
-                ),
-                if (widget.childNote) ...[
-                  Breadcrumb(goal: widget.goal),
-                  Text(" - ")
-                ],
                 if (this.widget.showDate)
                   Text('${formatDate(this.widget.entry.creationTime)} '),
                 Text(formatTime(widget.entry.creationTime)),
+                if (widget.childNote) ...[
+                  Text(" - "),
+                  Breadcrumb(goal: widget.goal),
+                ],
               ],
             ),
             !widget.childNote
@@ -288,6 +279,8 @@ class _NoteCardState extends State<NoteCard> {
                   ),
                 )
               : MarkdownBody(
+                  listItemCrossAxisAlignment:
+                      MarkdownListItemCrossAxisAlignment.start,
                   data: _textController.text,
                   selectable: true,
                   onTapText: () {
@@ -347,11 +340,24 @@ class GoalDetail extends ConsumerStatefulWidget {
   ConsumerState<GoalDetail> createState() => _GoalDetailState();
 }
 
-class DetailViewLogEntryDateItem {
-  final String dateString;
+class DetailViewLogEntryYear {
+  final int year;
+  final List<DetailViewLogEntryMonth> logItems;
+  const DetailViewLogEntryYear({required this.year, required this.logItems});
+}
+
+class DetailViewLogEntryMonth {
+  final int monthOfYear;
+  final List<DetailViewLogEntryDay> logItems;
+  const DetailViewLogEntryMonth(
+      {required this.monthOfYear, required this.logItems});
+}
+
+class DetailViewLogEntryDay {
+  final int dayOfMonth;
   final List<DetailViewLogEntryItem> logItems;
-  const DetailViewLogEntryDateItem(
-      {required this.dateString, required this.logItems});
+  const DetailViewLogEntryDay(
+      {required this.dayOfMonth, required this.logItems});
 }
 
 class DetailViewLogEntryItem {
@@ -362,72 +368,153 @@ class DetailViewLogEntryItem {
       {required this.goal, required this.entry, this.archived = false});
 }
 
-class DetailViewLogEntryDateWidget extends StatelessWidget {
-  final DetailViewLogEntryDateItem item;
+class GoalHistoryWidget extends StatelessWidget {
+  final List<DetailViewLogEntryYear> yearItems;
   final String goalId;
   final VoidCallback onRefresh;
-  const DetailViewLogEntryDateWidget(
+  const GoalHistoryWidget(
       {super.key,
-      required this.item,
+      required this.yearItems,
       required this.goalId,
       required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(uiUnit(2)),
-              child: Container(
-                height: uiUnit(.5),
-                color: darkElementColor,
-              ),
+    return Column(
+      children: [
+        for (final yearItem in this.yearItems)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: EdgeInsets.all(uiUnit()),
+                  child: Container(
+                      color: paleBlueColor,
+                      width: uiUnit(10),
+                      child: Text(
+                        "${yearItem.year}",
+                        textAlign: TextAlign.center,
+                      )),
+                ),
+                Expanded(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    for (final monthItem in yearItem.logItems)
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.all(uiUnit()),
+                              child: Container(
+                                  color: paleBlueColor,
+                                  width: uiUnit(10),
+                                  // print the month name
+                                  child: Text(
+                                    DateFormat('MMM').format(
+                                        DateTime(2022, monthItem.monthOfYear)),
+                                    textAlign: TextAlign.center,
+                                  )),
+                            ),
+                            Expanded(
+                              child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    for (final dayItem in monthItem.logItems)
+                                      IntrinsicHeight(
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            Padding(
+                                              padding: EdgeInsets.all(uiUnit()),
+                                              child: Container(
+                                                  color: paleBlueColor,
+                                                  width: uiUnit(6),
+                                                  child: Text(
+                                                    "${dayItem.dayOfMonth}"
+                                                        .padLeft(2, "0"),
+                                                    textAlign: TextAlign.center,
+                                                  )),
+                                            ),
+                                            Expanded(
+                                              child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    if (yearItem.year ==
+                                                            DateTime.now()
+                                                                .year &&
+                                                        monthItem.monthOfYear ==
+                                                            DateTime.now()
+                                                                .month &&
+                                                        dayItem.dayOfMonth ==
+                                                            formatDate(
+                                                                DateTime.now()))
+                                                      AddNoteCard(
+                                                          goalId: this.goalId),
+                                                    for (final item
+                                                        in dayItem.logItems)
+                                                      ConstrainedBox(
+                                                          constraints:
+                                                              BoxConstraints(
+                                                                  minHeight:
+                                                                      uiUnit(
+                                                                          8)),
+                                                          child: switch (
+                                                              item.entry) {
+                                                            NoteLogEntry() =>
+                                                              NoteCard(
+                                                                key: ValueKey(
+                                                                    (item.entry
+                                                                            as NoteLogEntry)
+                                                                        .id),
+                                                                goal: item.goal,
+                                                                entry: item
+                                                                        .entry
+                                                                    as NoteLogEntry,
+                                                                childNote: item
+                                                                        .goal
+                                                                        .id !=
+                                                                    this.goalId,
+                                                                onRefresh: this
+                                                                    .onRefresh,
+                                                              ),
+                                                            StatusLogEntry() =>
+                                                              StatusCard(
+                                                                key: ValueKey(
+                                                                    "${item.entry.id}${item.archived ? '-archive' : ''}"),
+                                                                goal: item.goal,
+                                                                entry: item
+                                                                        .entry
+                                                                    as StatusLogEntry,
+                                                                childEntry: item
+                                                                        .goal
+                                                                        .id !=
+                                                                    this.goalId,
+                                                                archived: item
+                                                                    .archived,
+                                                              ),
+                                                            _ =>
+                                                              throw UnimplementedError()
+                                                          })
+                                                  ]),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                  ]),
+                            ),
+                          ],
+                        ),
+                      )
+                  ]),
+                ),
+              ],
             ),
           ),
-          ConstrainedBox(
-              constraints: BoxConstraints(minHeight: uiUnit(8)),
-              child: Center(
-                  child: Text(
-                this.item.dateString,
-              ))),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(uiUnit(2)),
-              child: Container(
-                height: uiUnit(.5),
-                color: darkElementColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-      if (this.item.dateString == formatDate(DateTime.now()))
-        AddNoteCard(goalId: this.goalId),
-      for (final item in this.item.logItems)
-        ConstrainedBox(
-            constraints: BoxConstraints(minHeight: uiUnit(8)),
-            child: switch (item.entry) {
-              NoteLogEntry() => NoteCard(
-                  key: ValueKey((item.entry as NoteLogEntry).id),
-                  goal: item.goal,
-                  entry: item.entry as NoteLogEntry,
-                  childNote: item.goal.id != this.goalId,
-                  onRefresh: this.onRefresh,
-                ),
-              StatusLogEntry() => StatusCard(
-                  key: ValueKey(
-                      "${item.entry.id}${item.archived ? '-archive' : ''}"),
-                  goal: item.goal,
-                  entry: item.entry as StatusLogEntry,
-                  childEntry: item.goal.id != this.goalId,
-                  archived: item.archived,
-                ),
-              _ => throw UnimplementedError()
-            })
-    ]);
+      ],
+    );
   }
 }
 
@@ -445,7 +532,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     }
   }
 
-  List<DetailViewLogEntryDateItem> _computeHistoryLog(
+  List<DetailViewLogEntryYear> _computeHistoryLog(
       List<DetailViewLogEntryItem> log) {
     Map<String, DetailViewLogEntryItem> items = {};
     log.sort((a, b) => a.entry.creationTime.compareTo(b.entry.creationTime));
@@ -495,17 +582,33 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     final sortedItems = items.values.toList()
       ..sort((a, b) => b.entry.creationTime.compareTo(a.entry.creationTime));
 
-    final List<DetailViewLogEntryDateItem> result = [];
+    final List<DetailViewLogEntryYear> result = [];
     for (final item in sortedItems) {
-      final dateString = formatDate(item.entry.creationTime);
-      final lastItem = result.lastOrNull;
-      if (lastItem != null && lastItem.dateString == dateString) {
-        lastItem.logItems.add(item);
+      final year = item.entry.creationTime.year;
+      final month = item.entry.creationTime.month;
+      final day = item.entry.creationTime.day;
+      var currentYear = result.lastOrNull;
+      if (currentYear == null || currentYear.year != year) {
+        result.add(DetailViewLogEntryYear(year: year, logItems: []));
+        currentYear = result.last;
+      }
+
+      var currentMonth = currentYear.logItems.lastOrNull;
+      if (currentMonth == null || currentMonth.monthOfYear != month) {
+        currentYear.logItems
+            .add(DetailViewLogEntryMonth(monthOfYear: month, logItems: []));
+        currentMonth = currentYear.logItems.last;
+      }
+
+      var currentDay = currentMonth.logItems.lastOrNull;
+      if (currentDay == null || currentDay.dayOfMonth != day) {
+        currentMonth.logItems.add(DetailViewLogEntryDay(
+            dayOfMonth: item.entry.creationTime.day, logItems: [item]));
       } else {
-        result.add(DetailViewLogEntryDateItem(
-            dateString: dateString, logItems: [item]));
+        currentDay.logItems.add(item);
       }
     }
+
     return result;
   }
 
@@ -618,11 +721,10 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         SizedBox(height: uiUnit(2)),
         Text('History', style: textTheme.headlineSmall),
         SizedBox(height: uiUnit(1)),
-        for (final item in historyLog)
-          DetailViewLogEntryDateWidget(
-              item: item,
-              goalId: this.widget.goal.id,
-              onRefresh: () => setState(() {})),
+        GoalHistoryWidget(
+            yearItems: historyLog,
+            goalId: this.widget.goal.id,
+            onRefresh: () => setState(() {})),
         if (isDebugMode) ...[
           SizedBox(height: uiUnit(2)),
           Text('Debug Info', style: textTheme.headlineSmall),
