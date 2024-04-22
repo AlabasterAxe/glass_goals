@@ -3,6 +3,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:goals_core/model.dart' show Goal;
+import 'package:goals_web/goal_viewer/status_chip.dart';
+
+import '../styles.dart';
 
 class GoalSearchModal extends StatefulWidget {
   final Map<String, Goal> goalMap;
@@ -13,16 +16,12 @@ class GoalSearchModal extends StatefulWidget {
 }
 
 class KeyboardFocusableListTile extends StatefulWidget {
-  final Function onArrowUp;
-  final Function onArrowDown;
-  final Widget title;
+  final Goal goal;
   final bool isFocused;
   final Function()? onTap;
   const KeyboardFocusableListTile({
     super.key,
-    required this.onArrowUp,
-    required this.onArrowDown,
-    required this.title,
+    required this.goal,
     required this.isFocused,
     this.onTap,
   });
@@ -33,42 +32,21 @@ class KeyboardFocusableListTile extends StatefulWidget {
 }
 
 class _KeyboardFocusableListTileState extends State<KeyboardFocusableListTile> {
-  late final _focusNode = FocusNode(onKey: (node, event) {
-    if (event.isKeyPressed(LogicalKeyboardKey.arrowUp)) {
-      this.widget.onArrowUp();
-      return KeyEventResult.handled;
-    } else if (event.isKeyPressed(LogicalKeyboardKey.arrowDown)) {
-      this.widget.onArrowDown();
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  });
-
-  @override
-  void didUpdateWidget(covariant KeyboardFocusableListTile oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (oldWidget.isFocused != widget.isFocused) {
-      if (widget.isFocused) {
-        _focusNode.requestFocus();
-      } else {
-        _focusNode.unfocus();
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      focusNode: _focusNode,
-      title: widget.title,
-      onTap: widget.onTap,
+    return Container(
+      color: this.widget.isFocused ? Colors.grey.withOpacity(.1) : null,
+      child: ListTile(
+        selected: this.widget.isFocused,
+        title: Row(
+          children: [
+            Text(this.widget.goal.text),
+            SizedBox(width: uiUnit()),
+            CurrentStatusChip(goal: this.widget.goal),
+          ],
+        ),
+        onTap: widget.onTap,
+      ),
     );
   }
 }
@@ -78,21 +56,33 @@ class _GoalSearchModalState extends State<GoalSearchModal> {
   late final FocusNode _textFocusNode = FocusNode(onKey: (node, event) {
     if (event.isKeyPressed(LogicalKeyboardKey.arrowDown)) {
       setState(() {
-        _textFocusNode.unfocus();
-        _selectedIndex = 0;
+        this._selectedIndex++;
+      });
+      return KeyEventResult.handled;
+    } else if (event.isKeyPressed(LogicalKeyboardKey.arrowUp)) {
+      setState(() {
+        this._selectedIndex--;
       });
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
   });
 
-  int? _selectedIndex = null;
+  String _lastText = '';
+  int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
 
-    _textFocusNode.requestFocus();
+    this._textFocusNode.requestFocus();
+    this._textController.addListener(() {
+      if (this._textController.text != this._lastText) {
+        setState(() {
+          this._selectedIndex = 0;
+        });
+      }
+    });
   }
 
   @override
@@ -115,6 +105,7 @@ class _GoalSearchModalState extends State<GoalSearchModal> {
                 .contains(_textController.text.toLowerCase()))
             .toList();
     final modalWidth = min(MediaQuery.of(context).size.width * .8, 600);
+    final wrappedSelectedIndex = this._selectedIndex % results.length;
     return SizedBox(
       width: modalWidth.toDouble(),
       child: Column(
@@ -136,6 +127,9 @@ class _GoalSearchModalState extends State<GoalSearchModal> {
                         )
                       : null,
                 ),
+                onSubmitted: (_) {
+                  Navigator.pop(context, results[wrappedSelectedIndex].id);
+                },
                 focusNode: this._textFocusNode,
                 controller: this._textController,
                 onChanged: (_) => setState(() {})),
@@ -143,32 +137,14 @@ class _GoalSearchModalState extends State<GoalSearchModal> {
           SizedBox(
             height: 400,
             child: ListView(primary: true, children: [
-              for (final (i, result) in results.indexed)
+              for (final (i, goal) in results.indexed)
                 KeyboardFocusableListTile(
-                    isFocused: _selectedIndex == i,
-                    title: Text(result.text),
-                    onTap: () {
-                      Navigator.pop(context, result.id);
-                    },
-                    onArrowUp: () {
-                      if (i == 0) {
-                        _textFocusNode.requestFocus();
-                        _selectedIndex = null;
-                      } else {
-                        setState(() {
-                          _selectedIndex = i - 1;
-                        });
-                      }
-                    },
-                    onArrowDown: () {
-                      if (i == results.length - 1) {
-                        _textFocusNode.requestFocus();
-                      } else {
-                        setState(() {
-                          _selectedIndex = i + 1;
-                        });
-                      }
-                    }),
+                  isFocused: wrappedSelectedIndex == i,
+                  onTap: () {
+                    Navigator.pop(context, goal.id);
+                  },
+                  goal: goal,
+                ),
             ]),
           )
         ],

@@ -14,7 +14,6 @@ import 'goal_actions_context.dart';
 import 'providers.dart'
     show
         expandedGoalsProvider,
-        focusedGoalProvider,
         hoverEventStream,
         pathsMatch,
         selectedGoalsProvider;
@@ -117,7 +116,6 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     final isExpanded =
         ref.watch(expandedGoalsProvider).contains(widget.goal.id);
     final selectedGoals = ref.watch(selectedGoalsProvider);
-    final isFocused = ref.watch(focusedGoalProvider) == widget.goal.id;
     final isSelected = selectedGoals.contains(widget.goal.id);
     final isNarrow = MediaQuery.of(context).size.width < 600;
     final onExpanded = GoalActionsContext.of(context).onExpanded;
