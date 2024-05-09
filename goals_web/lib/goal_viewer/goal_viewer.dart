@@ -1230,10 +1230,13 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   }
 
   Widget _detailView() {
-    final focusedGoalId = ref.watch(focusedGoalProvider);
+    final focusedGoalId =
+        ref.watch(focusedGoalProvider).value ?? focusedGoalStream.value;
     final focusedGoal = widget.goalMap[focusedGoalId];
     if (focusedGoal == null) {
-      return Container();
+      return Container(
+          key: const ValueKey('detail'),
+          child: const Text('No child with that id found.'));
     }
 
     return SingleChildScrollView(
