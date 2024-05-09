@@ -5,8 +5,13 @@ class GlassGoalsIconButton extends StatelessWidget {
   final IconData? icon;
   final VoidCallback onPressed;
   final Widget? iconWidget;
+  final bool? enabled;
   const GlassGoalsIconButton(
-      {super.key, this.icon, required this.onPressed, this.iconWidget});
+      {super.key,
+      this.icon,
+      required this.onPressed,
+      this.iconWidget,
+      this.enabled});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +23,7 @@ class GlassGoalsIconButton extends StatelessWidget {
         icon: icon != null
             ? Icon(icon, color: darkElementColor, size: uiUnit(6))
             : iconWidget!,
-        onPressed: onPressed,
+        onPressed: this.enabled != false ? onPressed : null,
       ),
     );
     ;

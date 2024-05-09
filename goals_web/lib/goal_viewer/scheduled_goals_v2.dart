@@ -113,7 +113,8 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
     );
   }
 
-  List<Widget> _timeSlices(WorldContext worldContext, List<TimeSlice> slices) {
+  List<Widget> _timeSlices(WorldContext worldContext, List<TimeSlice> slices,
+      [List<TimeSlice>? manualTimeSlices]) {
     final Map<String, Goal> goalsAccountedFor = {};
     final List<Widget> result = [];
     for (final slice in slices) {
@@ -146,6 +147,12 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
           })
           .map((e) => e.id)
           .toList();
+
+      if (goalIds.isEmpty &&
+          (manualTimeSlices == null || !manualTimeSlices.contains(slice))) {
+        continue;
+      }
+
       if (_expandedTimeSlices.contains(slice)) {
         result.add(Padding(
           padding: EdgeInsets.only(bottom: uiUnit(3)),
@@ -194,7 +201,7 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                         prevDropPath: prevDropPath,
                         nextDropPath: nextDropPath,
                       );
-                      final selectedGoals = ref.read(selectedGoalsProvider);
+                      final selectedGoals = selectedGoalsStream.value;
                       final goalsToUpdate =
                           selectedGoals.contains(droppedGoalId)
                               ? selectedGoals
@@ -251,23 +258,27 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
         result.add(_smallSlice(worldContext, slice, sliceGoalMap));
       }
     }
-    return result;
+    return result.reversed.toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final worldContext = ref.watch(worldContextProvider);
+    final worldContext =
+        ref.watch(worldContextProvider).value ?? worldContextStream.value;
+    final manualTimeSlices = ref.watch(manualTimeSliceProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: _timeSlices(worldContext, [
-        TimeSlice.today,
-        TimeSlice.this_week,
-        TimeSlice.this_month,
-        TimeSlice.this_quarter,
-        TimeSlice.this_year,
-        TimeSlice.long_term,
-      ]),
+      children: _timeSlices(
+          worldContext,
+          [
+            TimeSlice.today,
+            TimeSlice.this_week,
+            TimeSlice.this_month,
+            TimeSlice.this_quarter,
+            TimeSlice.this_year,
+            TimeSlice.long_term,
+          ],
+          manualTimeSlices.value),
     );
-    ;
   }
 }

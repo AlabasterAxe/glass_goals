@@ -1,8 +1,7 @@
-import 'dart:ui' show Locale, VoidCallback;
+import 'dart:ui' show Locale;
 
 import 'package:flutter/material.dart'
     show
-        IconButton,
         Icons,
         MenuAnchor,
         MenuController,
@@ -11,18 +10,16 @@ import 'package:flutter/material.dart'
         Tooltip,
         showDatePicker,
         showTimePicker;
-import 'package:flutter/rendering.dart'
-    show EdgeInsets, MainAxisAlignment, MainAxisSize;
-import 'package:flutter/widgets.dart'
-    show BuildContext, Icon, IconData, Row, SizedBox, Text, Widget;
+import 'package:flutter/rendering.dart' show MainAxisAlignment, MainAxisSize;
+import 'package:flutter/widgets.dart' show BuildContext, Row, Text, Widget;
 import 'package:goals_core/model.dart' show Goal, getGoalStatus;
 import 'package:goals_core/sync.dart' show GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
-import 'package:goals_web/styles.dart' show darkElementColor;
 import 'package:goals_web/widgets/gg_icon_button.dart';
 import 'package:goals_web/widgets/target_icon.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
+
 import 'goal_actions_context.dart';
 import 'providers.dart';
 
@@ -56,8 +53,10 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedGoals = ref.watch(selectedGoalsProvider);
-    final worldContext = ref.watch(worldContextProvider);
+    final selectedGoals =
+        ref.watch(selectedGoalsProvider).value ?? selectedGoalsStream.value;
+    final worldContext =
+        ref.watch(worldContextProvider).value ?? worldContextStream.value;
 
     final onActive = GoalActionsContext.of(context).onActive;
     final onSnooze = GoalActionsContext.of(context).onSnooze;

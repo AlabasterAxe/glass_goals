@@ -102,8 +102,10 @@ class FlattenedGoalTree extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final expandedGoalIds = ref.watch(expandedGoalsProvider);
-    final worldContext = ref.watch(worldContextProvider);
+    final expandedGoalIds =
+        ref.watch(expandedGoalsProvider).value ?? expandedGoalsStream.value;
+    final worldContext =
+        ref.watch(worldContextProvider).value ?? worldContextStream.value;
     final flattenedGoalItems =
         _getFlattenedGoalItems(worldContext, expandedGoalIds);
     final isNarrow = MediaQuery.of(context).size.width < 600;

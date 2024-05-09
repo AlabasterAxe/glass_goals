@@ -1,7 +1,19 @@
 import 'dart:html';
 
 import 'package:flutter/material.dart'
-    show Colors, Dialog, Drawer, ListTile, Scaffold, Theme, showDialog;
+    show
+        Colors,
+        Dialog,
+        Drawer,
+        Icons,
+        ListTile,
+        MenuAnchor,
+        MenuController,
+        MenuItemButton,
+        Scaffold,
+        Theme,
+        Tooltip,
+        showDialog;
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter/widgets.dart';
 import 'package:goals_core/model.dart'
@@ -44,6 +56,7 @@ import '../styles.dart'
         multiSplitViewThemeData,
         smallTextStyle,
         uiUnit;
+import '../widgets/gg_icon_button.dart';
 import 'goal_actions_context.dart';
 import 'goal_search_modal.dart';
 import 'goal_viewer_constants.dart';
@@ -89,18 +102,20 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   late MultiSplitViewController _multiSplitViewController =
       this._getMultiSplitViewController(false);
 
+  final _addTimeSliceMenuController = MenuController();
+
   _onSelected(String goalId) {
     setState(() {
-      ref.read(selectedGoalsProvider.notifier).toggle(goalId);
+      toggleId(selectedGoalsStream, goalId);
       Hive.box('goals_web.ui')
-          .put('selectedGoals', ref.read(selectedGoalsProvider).toList());
+          .put('selectedGoals', selectedGoalsStream.value.toList());
     });
   }
 
   _onSwitchFilter(GoalFilter filter) {
     setState(() {
-      ref.read(selectedGoalsProvider.notifier).clear();
-      ref.read(focusedGoalProvider.notifier).set(null);
+      selectedGoalsStream.add({});
+      focusedGoalStream.add(null);
       _filter = filter;
     });
     Hive.box('goals_web.ui').put('goalViewerFilter', filter.name);
@@ -108,24 +123,23 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   _onExpanded(String goalId, {bool? expanded}) {
     setState(() {
-      ref.read(expandedGoalsProvider.notifier).toggle(goalId);
+      toggleId(expandedGoalsStream, goalId);
       Hive.box('goals_web.ui')
-          .put('expandedGoals', ref.read(expandedGoalsProvider).toList());
+          .put('expandedGoals', expandedGoalsStream.value.toList());
     });
   }
 
   _onFocused(String? goalId) {
     setState(() {
       if (goalId != null) {
-        final selectedGoals = ref.read(selectedGoalsProvider.notifier);
-        if (!isCtrlHeld()) {
-          selectedGoals.clear();
-        }
-
+        final Set<String> selectedGoals =
+            isCtrlHeld() ? selectedGoalsStream.value : {};
         selectedGoals.add(goalId);
+
+        selectedGoalsStream.add(selectedGoals);
       }
 
-      ref.read(focusedGoalProvider.notifier).set(goalId);
+      focusedGoalStream.add(goalId);
       Hive.box('goals_web.ui').put('focusedGoal', goalId);
     });
   }
@@ -164,7 +178,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   _onSetStatus(String? goalId, GoalStatus? status,
       {DateTime? startTime, DateTime? endTime}) {
     final List<GoalDelta> goalDeltas = [];
-    final selectedGoals = ref.read(selectedGoalsProvider);
+    final selectedGoals = selectedGoalsStream.value;
     if (goalId == null || selectedGoals.contains(goalId)) {
       for (final String selectedGoalId in selectedGoals) {
         goalDeltas.add(GoalDelta(
@@ -192,7 +206,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    ref.read(selectedGoalsProvider.notifier).clear();
+    selectedGoalsStream.add({});
   }
 
   _onUnarchive(String? goalId) {
@@ -206,11 +220,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   _onDone(String? goalId, DateTime? endDate) {
     var focusedGoalId = this.ref.read(focusedGoalProvider);
     if (focusedGoalId == goalId ||
-        this
-            .ref
-            .read(selectedGoalsProvider)
-            .containsAll([focusedGoalId, goalId])) {
-      this.ref.read(focusedGoalProvider.notifier).set(null);
+        selectedGoalsStream.value.containsAll([focusedGoalId, goalId])) {
+      focusedGoalStream.add(null);
     }
     this._onSetStatus(goalId, GoalStatus.done, endTime: endDate);
   }
@@ -227,7 +238,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   _handlePopState(_) {
     final focusedGoalId = ref.read(focusedGoalProvider);
     if (_parseUrlGoalId() != focusedGoalId) {
-      ref.read(focusedGoalProvider.notifier).set(_parseUrlGoalId());
+      focusedGoalStream.add(_parseUrlGoalId());
     }
   }
 
@@ -281,17 +292,19 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
           if (mounted) {
             final focusedGoalId = _parseUrlGoalId();
             if (focusedGoalId != null) {
-              ref.read(focusedGoalProvider.notifier).set(focusedGoalId);
-              ref.read(selectedGoalsProvider.notifier).add(focusedGoalId);
+              focusedGoalStream.add(focusedGoalId);
+              addId(selectedGoalsStream, focusedGoalId);
             }
-            ref.read(selectedGoalsProvider.notifier).addAll(
-                (box.get('selectedGoals', defaultValue: <String>[])
-                        as List<dynamic>)
-                    .cast<String>());
-            ref.read(expandedGoalsProvider.notifier).addAll(
-                (box.get('expandedGoals', defaultValue: <String>[])
-                        as List<dynamic>)
-                    .cast<String>());
+            selectedGoalsStream.add({
+              ...(box.get('selectedGoals', defaultValue: <String>[])
+                      as List<dynamic>)
+                  .cast<String>()
+            });
+            expandedGoalsStream.add({
+              ...(box.get('expandedGoals', defaultValue: <String>[])
+                      as List<dynamic>)
+                  .cast<String>()
+            });
 
             final modeString = box.get('goalViewerDisplayMode',
                 defaultValue: GoalViewMode.tree.name);
@@ -338,14 +351,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     super.dispose();
   }
 
-  _handleFocusedGoalChange(prevGoalId, newGoalId) {
-    if (prevGoalId == newGoalId) {
+  _handleFocusedGoalChange(
+      AsyncValue<String?>? prevGoalId, AsyncValue<String?>? newGoalId) {
+    if (prevGoalId?.value == newGoalId?.value) {
       return;
     }
-    if (newGoalId == null) {
+    if (newGoalId?.value == null) {
       window.history.pushState(null, 'home', '/home');
-    } else if (!window.location.href.endsWith('goal/$newGoalId')) {
-      window.history.pushState(null, 'home', '/home/goal/$newGoalId');
+    } else if (!window.location.href.endsWith('goal/${newGoalId!.value}')) {
+      window.history.pushState(null, 'home', '/home/goal/${newGoalId.value}');
     }
   }
 
@@ -508,7 +522,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     List<String>? prevDropPath,
     List<String>? nextDropPath,
   }) {
-    final selectedGoals = ref.read(selectedGoalsProvider);
+    final selectedGoals = selectedGoalsStream.value;
     final goalsToUpdate =
         selectedGoals.contains(droppedGoalId) ? selectedGoals : {droppedGoalId};
 
@@ -539,14 +553,17 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       nextDropPath: nextDropPath,
     );
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    ref.read(selectedGoalsProvider.notifier).clear();
+    selectedGoalsStream.add({});
   }
 
   @override
   Widget build(BuildContext context) {
-    final focusedGoalId = ref.watch(focusedGoalProvider);
-    final worldContext = ref.watch(worldContextProvider);
-    final selectedGoals = ref.watch(selectedGoalsProvider);
+    final focusedGoalId =
+        ref.watch(focusedGoalProvider).value ?? focusedGoalStream.value;
+    final worldContext =
+        ref.watch(worldContextProvider).value ?? worldContextStream.value;
+    final selectedGoals =
+        ref.watch(selectedGoalsProvider).value ?? selectedGoalsStream.value;
     final isEditingText = ref.watch(isEditingTextProvider);
     ref.listen(focusedGoalProvider, _handleFocusedGoalChange);
     ref.listen(debugProvider, (_, isDebug) {
@@ -649,7 +666,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               isNarrow: isNarrow,
               signedIn: true,
               onBack: () {
-                ref.read(focusedGoalProvider.notifier).set(null);
+                focusedGoalStream.add(null);
               },
               focusedGoalId: focusedGoalId,
             ),
@@ -662,14 +679,16 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               children: [
                 Positioned.fill(
                   top: uiUnit(2),
-                  child: children.length == 1
-                      ? children[0]
-                      : MultiSplitViewTheme(
-                          data: multiSplitViewThemeData,
-                          child: MultiSplitView(
-                            controller: _multiSplitViewController,
-                            children: children,
-                          )),
+                  child: children.isEmpty
+                      ? Container()
+                      : children.length == 1
+                          ? children[0]
+                          : MultiSplitViewTheme(
+                              data: multiSplitViewThemeData,
+                              child: MultiSplitView(
+                                controller: _multiSplitViewController,
+                                children: children,
+                              )),
                 ),
                 if (isNarrow &&
                     (selectedGoals.isNotEmpty || focusedGoalId != null))
@@ -710,12 +729,42 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       )),
             ));
     if (focusedGoalId != null) {
-      ref.read(focusedGoalProvider.notifier).set(focusedGoalId);
+      focusedGoalStream.add(focusedGoalId);
     }
   }
 
   Widget? _timeSlice(WorldContext context, TimeSlice slice) =>
       _timeSlices(context, [slice]).firstOrNull;
+
+  List<TimeSlice> _computeCreateTimeSliceOptions(WorldContext worldContext,
+      List<TimeSlice> possibleSlices, List<TimeSlice> manualTimeSlices) {
+    final List<TimeSlice> result = [];
+    final Set<String> goalsAccountedFor = {};
+    for (final slice in possibleSlices) {
+      final goalMap = getGoalsForDateRange(
+        worldContext,
+        widget.goalMap,
+        slice.startTime(worldContext.time),
+        slice.endTime(worldContext.time),
+      );
+      for (final goalId in goalsAccountedFor) {
+        if (goalMap.containsKey(goalId)) {
+          goalMap.remove(goalId);
+        }
+      }
+
+      if (goalMap.isEmpty && !manualTimeSlices.contains(slice)) {
+        result.add(slice);
+        continue;
+      }
+
+      for (final goal in goalMap.values) {
+        goalsAccountedFor.add(goal.id);
+        goalsAccountedFor.addAll(getTransitiveSubGoals(goalMap, goal.id).keys);
+      }
+    }
+    return result;
+  }
 
   List<Widget> _timeSlices(WorldContext worldContext, List<TimeSlice> slices) {
     final Map<String, Goal> goalsAccountedFor = {};
@@ -784,10 +833,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               prevDropPath: prevDropPath,
               nextDropPath: nextDropPath,
             );
-            final selectedGoals = ref.read(selectedGoalsProvider);
-            final goalsToUpdate = selectedGoals.contains(droppedGoalId)
-                ? selectedGoals
-                : {droppedGoalId};
+            final goalsToUpdate =
+                selectedGoalsStream.value.contains(droppedGoalId)
+                    ? selectedGoalsStream.value
+                    : {droppedGoalId};
             bool setNullParent = goalsToUpdate.every(goalMap.containsKey);
             bool addStatus =
                 goalsToUpdate.every((goalId) => !goalMap.containsKey(goalId));
@@ -816,7 +865,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               }
             }
 
-            ref.read(selectedGoalsProvider.notifier).clear();
+            selectedGoalsStream.add({});
             AppContext.of(context).syncClient.modifyGoals(goalDeltas);
           },
           child: FlattenedGoalTree(
@@ -970,6 +1019,19 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   Widget _listView(WorldContext worldContext) {
     final theme = Theme.of(context).textTheme;
     final isNarrow = MediaQuery.of(context).size.width < 600;
+    final manualTimeSlices = ref.watch(manualTimeSliceProvider);
+    final createTimeSliceOptions = this._computeCreateTimeSliceOptions(
+        worldContext,
+        [
+          TimeSlice.today,
+          TimeSlice.this_week,
+          TimeSlice.this_month,
+          TimeSlice.this_quarter,
+          TimeSlice.this_year,
+          TimeSlice.long_term,
+        ],
+        manualTimeSlices.value ?? []);
+
     return Column(
       key: const ValueKey('list'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -985,6 +1047,27 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                   _filter.displayName,
                   style: theme.headlineMedium,
                 ),
+                if (_filter == GoalFilter.schedule_v2)
+                  Tooltip(
+                    waitDuration: Duration(milliseconds: 200),
+                    showDuration: Duration.zero,
+                    message: 'Add a Time Slice',
+                    child: MenuAnchor(
+                      controller: this._addTimeSliceMenuController,
+                      menuChildren: [
+                        ...createTimeSliceOptions.map((slice) => MenuItemButton(
+                              child: Text(slice.displayName),
+                              onPressed: () => createManualTimeSlice(slice),
+                            )),
+                      ],
+                      child: GlassGoalsIconButton(
+                          enabled: createTimeSliceOptions.isNotEmpty,
+                          iconWidget: const Icon(Icons.add),
+                          onPressed: () {
+                            this._addTimeSliceMenuController.open();
+                          }),
+                    ),
+                  ),
               ],
             ),
           ),

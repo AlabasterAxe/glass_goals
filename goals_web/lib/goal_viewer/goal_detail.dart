@@ -49,7 +49,7 @@ class Breadcrumb extends ConsumerWidget {
           child: Text(goal.text,
               style: TextStyle(decoration: TextDecoration.underline)),
           onTap: () {
-            ref.read(focusedGoalProvider.notifier).set(goal.id);
+            focusedGoalStream.add(goal.id);
           }),
     );
   }
@@ -171,7 +171,8 @@ class _StatusCardState extends ConsumerState<StatusCard> {
 
   @override
   Widget build(BuildContext context) {
-    final worldContext = ref.watch(worldContextProvider);
+    final worldContext =
+        ref.watch(worldContextProvider).value ?? worldContextStream.value;
     final noteType =
         this.widget.isStatusEnd || this.widget.entry.status == GoalStatus.done
             ? "reflection"
@@ -879,7 +880,8 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
   @override
   Widget build(BuildContext context) {
     final isDebugMode = ref.watch(debugProvider);
-    final worldContext = ref.watch(worldContextProvider);
+    final worldContext =
+        ref.watch(worldContextProvider).value ?? worldContextStream.value;
     final List<DetailViewLogEntryItem> logItems = [];
     for (final goal in [...widget.goal.subGoals, widget.goal]) {
       logItems.addAll(goal.log.map((entry) => DetailViewLogEntryItem(

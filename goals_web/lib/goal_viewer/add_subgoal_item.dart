@@ -30,16 +30,15 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(Duration.zero, () {
-      if (pathsMatch(ref.read(textFocusProvider), this.widget.path)) {
-        setState(() {
-          _editing = true;
-          _focusNode.requestFocus();
-          _textController.selection = TextSelection(
-              baseOffset: 0, extentOffset: _textController.text.length);
-        });
-      }
-    });
+
+    if (pathsMatch(textFocusStream.value, this.widget.path)) {
+      setState(() {
+        _editing = true;
+        _focusNode.requestFocus();
+        _textController.selection = TextSelection(
+            baseOffset: 0, extentOffset: _textController.text.length);
+      });
+    }
   }
 
   void dispose() {
@@ -62,8 +61,8 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
   @override
   Widget build(BuildContext context) {
     ref.listen(textFocusProvider, (oldValue, newValue) {
-      if (pathsMatch(this.widget.path, newValue)) {
-        if (!pathsMatch(oldValue, newValue)) {
+      if (pathsMatch(this.widget.path, newValue.value)) {
+        if (!pathsMatch(oldValue?.value, newValue.value)) {
           setState(() {
             _editing = true;
             _focusNode.requestFocus();
@@ -100,14 +99,14 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
                           _textController.text.isNotEmpty) {
                         _addGoal();
                       }
-                      ref.read(textFocusProvider.notifier).set(null);
+                      textFocusStream.add(null);
                     },
                     focusNode: _focusNode,
                   ),
                 )
               : GestureDetector(
                   onTap: () {
-                    ref.read(textFocusProvider.notifier).set(widget.path);
+                    textFocusStream.add(widget.path);
                   },
                   child: Text(_textController.text,
                       style: mainTextStyle.copyWith(color: Colors.black54)),

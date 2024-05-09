@@ -75,14 +75,14 @@ class _WebGoalsState extends ConsumerState<WebGoals>
   Future<void> appInit(context) async {
     await this.syncClient.init();
     refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      this.ref.read(worldContextProvider.notifier).poke();
+      worldContextStream.add(WorldContext.now());
     });
     stateSubscription = this
         .syncClient
         .stateSubject
         .asBroadcastStream()
         .listen((Map<String, Goal> goalMap) {
-      this.ref.read(worldContextProvider.notifier).poke();
+      worldContextStream.add(WorldContext.now());
     });
     this.ref.read(debugProvider.notifier).set(this.widget.debug);
   }

@@ -11,7 +11,7 @@ import 'package:goals_core/util.dart'
         isWithinQuarter;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/providers.dart'
-    show debugProvider, worldContextProvider;
+    show debugProvider, worldContextProvider, worldContextStream;
 import 'package:goals_web/styles.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart' show DateFormat;
@@ -170,7 +170,8 @@ class StatusChip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final worldContext = ref.watch(worldContextProvider);
+    final worldContext =
+        ref.watch(worldContextProvider).value ?? worldContextStream.value;
     final isDebugMode = ref.watch(debugProvider);
 
     return Container(
@@ -243,7 +244,8 @@ class CurrentStatusChip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final worldContext = ref.watch(worldContextProvider);
+    final worldContext =
+        ref.watch(worldContextProvider).value ?? worldContextStream.value;
     final goalStatus = getGoalStatus(worldContext, goal);
 
     return StatusChip(

@@ -14,9 +14,11 @@ import 'goal_actions_context.dart';
 import 'providers.dart'
     show
         expandedGoalsProvider,
+        expandedGoalsStream,
         hoverEventStream,
         pathsMatch,
-        selectedGoalsProvider;
+        selectedGoalsProvider,
+        selectedGoalsStream;
 
 enum GoalItemDragHandle {
   none,
@@ -113,9 +115,11 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final isExpanded =
-        ref.watch(expandedGoalsProvider).contains(widget.goal.id);
-    final selectedGoals = ref.watch(selectedGoalsProvider);
+    final expandedGoals =
+        ref.watch(expandedGoalsProvider).value ?? expandedGoalsStream.value;
+    final isExpanded = expandedGoals.contains(widget.goal.id);
+    final selectedGoals =
+        ref.watch(selectedGoalsProvider).value ?? selectedGoalsStream.value;
     final isSelected = selectedGoals.contains(widget.goal.id);
     final isNarrow = MediaQuery.of(context).size.width < 600;
     final onExpanded = GoalActionsContext.of(context).onExpanded;
