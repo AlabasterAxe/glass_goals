@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
@@ -22,7 +23,14 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
   late TextEditingController _textController =
       TextEditingController(text: _defaultText);
   bool _editing = false;
-  final _focusNode = FocusNode();
+  late final FocusNode _focusNode = FocusNode(onKeyEvent: (node, event) {
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      this._textController.text = _defaultText;
+      textFocusStream.add(null);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  });
 
   String get _defaultText =>
       widget.path.length < 3 ? "[New Goal]" : "[New Subgoal]";
