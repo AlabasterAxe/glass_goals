@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart'
@@ -54,8 +55,20 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
 class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
   final TextEditingController _textController = TextEditingController();
   bool _editing = false;
-  final FocusNode _focusNode = FocusNode();
+  late final FocusNode _focusNode = FocusNode(onKeyEvent: (node, event) {
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      hoverEventStream.add(null);
+      this._focusNode.unfocus();
+      this._textController.text = widget.goal.text;
+      this.setState(() {
+        this._editing = false;
+      });
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  });
   bool _hovering = false;
+  Timer? _doubleTapTimer;
 
   List<StreamSubscription> subscriptions = [];
 
@@ -120,10 +133,12 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     final isExpanded = expandedGoals.contains(widget.goal.id);
     final selectedGoals =
         ref.watch(selectedGoalsProvider).value ?? selectedGoalsStream.value;
+
     final isSelected = selectedGoals.contains(widget.goal.id);
     final isNarrow = MediaQuery.of(context).size.width < 600;
     final onExpanded = GoalActionsContext.of(context).onExpanded;
     final onFocused = GoalActionsContext.of(context).onFocused;
+    final onSelected = GoalActionsContext.of(context).onSelected;
     final bullet = SizedBox(
       width: uiUnit(10),
       height: uiUnit(8),
@@ -150,7 +165,28 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         onTap: _editing
             ? null
             : () {
-                onFocused.call(widget.goal.id);
+                if (this._doubleTapTimer != null) {
+                  this._doubleTapTimer!.cancel();
+                  this._doubleTapTimer = null;
+                  onFocused.call(widget.goal.id);
+                  return;
+                }
+
+                this._doubleTapTimer = Timer(
+                  Duration(milliseconds: 200),
+                  () {
+                    this._doubleTapTimer = null;
+                    setState(() {
+                      if (isSelected) {
+                        this._textController.text = widget.goal.text;
+                        _editing = true;
+                        _focusNode.requestFocus();
+                      } else {
+                        onSelected.call(widget.goal.id);
+                      }
+                    });
+                  },
+                );
               },
         child: StreamBuilder<List<String>?>(
             stream: hoverEventStream.stream,
@@ -203,25 +239,15 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                 ),
                               )
                             : Flexible(
-                                child: GestureDetector(
-                                  onDoubleTap: _editing || !isSelected
-                                      ? null
-                                      : () => {
-                                            setState(() {
-                                              _editing = true;
-                                              _focusNode.requestFocus();
-                                            })
-                                          },
-                                  child: Text(widget.goal.text,
-                                      style: (isSelected
-                                              ? focusedFontStyle
-                                                  .merge(mainTextStyle)
-                                              : mainTextStyle)
-                                          .copyWith(
-                                        decoration: TextDecoration.underline,
-                                        overflow: TextOverflow.ellipsis,
-                                      )),
-                                ),
+                                child: Text(widget.goal.text,
+                                    style: (isSelected
+                                            ? focusedFontStyle
+                                                .merge(mainTextStyle)
+                                            : mainTextStyle)
+                                        .copyWith(
+                                      decoration: TextDecoration.underline,
+                                      overflow: TextOverflow.ellipsis,
+                                    )),
                               ),
                         SizedBox(width: uiUnit(2)),
                         // chip-like container widget around text status widget:

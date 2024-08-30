@@ -106,7 +106,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   _onSelected(String goalId) {
     setState(() {
-      toggleId(selectedGoalsStream, goalId);
+      final Set<String> selectedGoals =
+          isCtrlHeld() ? selectedGoalsStream.value : {};
+      selectedGoals.add(goalId);
+
+      selectedGoalsStream.add(selectedGoals);
       Hive.box('goals_web.ui')
           .put('selectedGoals', selectedGoalsStream.value.toList());
     });
@@ -259,13 +263,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       ),
       Area(
         weight: debugMode ? 1 / 3 : 1 / 2,
-        minimalSize: 200,
+        minimalSize: 400,
         key: const ValueKey('list'),
         flex: true,
+        collapseSize: 200,
       ),
       Area(
         weight: debugMode ? 1 / 3 : 1 / 2,
-        minimalSize: 200,
+        minimalSize: 400,
         key: const ValueKey('detail'),
         flex: true,
       ),
@@ -575,27 +580,28 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
     final children = <Widget>[];
 
-    final isNarrow = MediaQuery.of(context).size.width < 600;
-    if (!isNarrow) {
+    final singleScreen = MediaQuery.of(context).size.width < 600;
+    final showHamburger = MediaQuery.of(context).size.width < 1000;
+    if (!showHamburger) {
       children.add(_viewSwitcher(false, worldContext, this._isDebug));
     }
 
     var appBarTitle = 'Glass Goals';
-    if (!isNarrow || focusedGoalId == null) {
+    if (!singleScreen || focusedGoalId == null) {
       children.add(_listView(worldContext));
-      if (isNarrow) {
+      if (singleScreen) {
         appBarTitle = _filter.displayName;
       }
     }
 
     if (focusedGoalId != null) {
       children.add(_detailView());
-      if (isNarrow) {
+      if (singleScreen) {
         appBarTitle = widget.goalMap[focusedGoalId]!.text;
       }
     }
 
-    if (!isNarrow && this._isDebug)
+    if (!singleScreen && this._isDebug)
       children.add(
         Container(
           key: const ValueKey('debug'),
@@ -663,14 +669,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
           child: Scaffold(
             appBar: GlassGoalsAppBar(
               appBarTitle: appBarTitle,
-              isNarrow: isNarrow,
+              isNarrow: showHamburger,
               signedIn: true,
               onBack: () {
                 focusedGoalStream.add(null);
               },
               focusedGoalId: focusedGoalId,
             ),
-            drawer: isNarrow && focusedGoalId == null
+            drawer: showHamburger && focusedGoalId == null
                 ? Drawer(
                     child: _viewSwitcher(true, worldContext, this._isDebug),
                   )
@@ -690,7 +696,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                                 children: children,
                               )),
                 ),
-                if (isNarrow &&
+                if (singleScreen &&
                     (selectedGoals.isNotEmpty || focusedGoalId != null))
                   Positioned(
                       bottom: 0,
