@@ -413,8 +413,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                     )
                   : null,
               onTap: () {
-                // Update the state of the app
-                _onSwitchFilter(filter);
+                this._onSwitchFilter(filter);
+
+                this._multiSplitViewController.resetSizes();
+
                 if (drawer) {
                   Navigator.pop(context);
                 }
