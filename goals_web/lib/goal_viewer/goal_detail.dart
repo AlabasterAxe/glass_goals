@@ -860,21 +860,31 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     return result;
   }
 
-  Widget breadcrumbs() {
-    final List<Widget> widgets = [];
-    Goal? curGoal = widget.goal.superGoals.firstOrNull;
-    if (curGoal == null) {
-      widgets.add(AddParentBreadcrumb(goalId: widget.goal.id));
-    } else {
-      while (curGoal != null) {
-        widgets.add(Breadcrumb(goal: curGoal));
-        widgets.add(const Icon(Icons.chevron_right));
-        curGoal = curGoal.superGoals.firstOrNull;
-      }
-      widgets.removeLast();
+  Widget parentBreadcrumbs(Goal supergoal) {
+    Goal? curGoal = supergoal;
+    final widgets = <Widget>[];
+
+    while (curGoal != null) {
+      widgets.add(Breadcrumb(goal: curGoal));
+      widgets.add(const Icon(Icons.chevron_right));
+      curGoal = curGoal.superGoals.firstOrNull;
     }
+    widgets.removeLast();
 
     return Row(children: widgets.reversed.toList());
+  }
+
+  Widget breadcrumbs() {
+    if (this.widget.goal.superGoals.isEmpty) {
+      return Row(children: [AddParentBreadcrumb(goalId: widget.goal.id)]);
+    }
+
+    final List<Widget> widgets = [];
+    for (final supergoal in this.widget.goal.superGoals) {
+      widgets.add(parentBreadcrumbs(supergoal));
+    }
+
+    return Column(children: widgets);
   }
 
   @override
