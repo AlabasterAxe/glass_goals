@@ -489,7 +489,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     for (final goalId in goalIds) {
-      if (newParentId != null) {
+      final droppedGoal = this.widget.goalMap[goalId];
+      if (newParentId != null &&
+          droppedGoal != null &&
+          !droppedGoal.hasParent(newParentId)) {
         goalDeltas.add(GoalDelta(
             id: goalId,
             logEntry: SetParentLogEntry(
@@ -513,6 +516,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       Set<String> goalIds, List<String> targetGoalPath) {
     final List<GoalDelta> goalDeltas = [];
     for (final goalId in goalIds) {
+      final droppedGoal = this.widget.goalMap[goalId];
+
+      if (droppedGoal == null || droppedGoal.hasParent(goalId)) {
+        continue;
+      }
       goalDeltas.add(GoalDelta(
           id: goalId,
           logEntry: SetParentLogEntry(

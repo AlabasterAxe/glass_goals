@@ -54,6 +54,10 @@ class Goal {
     subGoals.removeWhere((g) => g.id == id);
   }
 
+  hasParent(String id) {
+    return superGoals.any((g) => g.id == id);
+  }
+
   removeSuperGoal(String id) {
     superGoals.removeWhere((g) => g.id == id);
   }
