@@ -10,6 +10,8 @@ import 'package:uuid/uuid.dart';
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_types/goals_types.dart'
     show
+        AddParentLogEntry,
+        RemoveParentLogEntry,
         DeltaOp,
         DisableOp,
         EnableOp,
@@ -191,9 +193,35 @@ class SyncClient {
 
       goal.superGoals.clear();
       if (newSuperGoal != null) {
-        goal.superGoals.add(newSuperGoal);
+        goal.addOrReplaceSuperGoal(newSuperGoal);
         newSuperGoal.addOrReplaceSubGoal(goal);
       }
+    } else if (entry is AddParentLogEntry) {
+      final newSuperGoal =
+          entry.parentId == null ? null : goalMap[entry.parentId];
+
+      if (newSuperGoal == null) {
+        return;
+      }
+
+      if (_checkCycles(
+          goalMap, goal.id, {newSuperGoal.id}, {newSuperGoal.id})) {
+        // silently ignore deltas that would create cycles ¯\_(ツ)_/¯
+        return;
+      }
+
+      goal.addOrReplaceSuperGoal(newSuperGoal);
+      newSuperGoal.addOrReplaceSubGoal(goal);
+    } else if (entry is RemoveParentLogEntry) {
+      final newSuperGoal =
+          entry.parentId == null ? null : goalMap[entry.parentId];
+
+      if (newSuperGoal == null) {
+        return;
+      }
+
+      goal.removeSuperGoal(newSuperGoal.id);
+      newSuperGoal.removeSubGoal(goal.id);
     }
   }
 

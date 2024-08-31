@@ -66,6 +66,10 @@ abstract class GoalLogEntry extends Equatable {
         return AddStatusIntentionLogEntry.fromJsonMap(json, version);
       case 'addStatusReflection':
         return AddStatusReflectionLogEntry.fromJsonMap(json, version);
+      case 'addParent':
+        return AddParentLogEntry.fromJsonMap(json, version);
+      case 'removeParent':
+        return RemoveParentLogEntry.fromJsonMap(json, version);
       default:
         throw Exception('Invalid data: $json has unknown type: $type');
     }
@@ -95,6 +99,12 @@ abstract class GoalLogEntry extends Equatable {
     }
     if (entry is AddStatusReflectionLogEntry) {
       return AddStatusReflectionLogEntry.toJsonMap(entry);
+    }
+    if (entry is AddParentLogEntry) {
+      return AddParentLogEntry.toJsonMap(entry);
+    }
+    if (entry is RemoveParentLogEntry) {
+      return RemoveParentLogEntry.toJsonMap(entry);
     }
     throw Exception(
         'Failed to convert GoalLogEntry to JSON Map: Unknown type: ${entry.runtimeType}');
@@ -269,7 +279,7 @@ class ArchiveNoteLogEntry extends GoalLogEntry {
   }
 }
 
-/// This log entry sets the parent of a goal, clearing other parents if any.
+/// This log entry sets the parent of a goal, clearing other parents, if any.
 class SetParentLogEntry extends GoalLogEntry {
   static const FIRST_VERSION = 4;
   final String? parentId;
@@ -317,6 +327,89 @@ class SetParentLogEntry extends GoalLogEntry {
       parentId: legacyEntry.parentId,
       creationTime: legacyEntry.creationTime,
     );
+  }
+}
+
+/// This log entry adds a parent to a goal.
+class AddParentLogEntry extends GoalLogEntry {
+  static const FIRST_VERSION = 5;
+  final String? parentId;
+  const AddParentLogEntry({
+    required super.id,
+    required super.creationTime,
+    required this.parentId,
+  });
+
+  @override
+  List<Object?> get props => [id, parentId, creationTime];
+
+  static AddParentLogEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    final creationTime = json['creationTime'] != null
+        ? DateTime.parse(json['creationTime']).toLocal()
+        : DateTime(2023, 1, 1);
+    return AddParentLogEntry(
+      id: json['id'] ?? '${creationTime.millisecondsSinceEpoch}',
+      parentId: json['parentId'],
+      creationTime: creationTime,
+    );
+  }
+
+  static Map<String, dynamic> toJsonMap(AddParentLogEntry entry) {
+    return {
+      'type': 'addParent',
+      'id': entry.id,
+      'parentId': entry.parentId,
+      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+    };
+  }
+}
+
+class RemoveParentLogEntry extends GoalLogEntry {
+  static const FIRST_VERSION = 5;
+  final String? parentId;
+  const RemoveParentLogEntry({
+    required super.id,
+    required super.creationTime,
+    required this.parentId,
+  });
+
+  @override
+  List<Object?> get props => [id, parentId, creationTime];
+
+  static RemoveParentLogEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    final creationTime = json['creationTime'] != null
+        ? DateTime.parse(json['creationTime']).toLocal()
+        : DateTime(2023, 1, 1);
+    return RemoveParentLogEntry(
+      id: json['id'] ?? '${creationTime.millisecondsSinceEpoch}',
+      parentId: json['parentId'],
+      creationTime: creationTime,
+    );
+  }
+
+  static Map<String, dynamic> toJsonMap(RemoveParentLogEntry entry) {
+    return {
+      'type': 'removeParent',
+      'id': entry.id,
+      'parentId': entry.parentId,
+      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+    };
   }
 }
 

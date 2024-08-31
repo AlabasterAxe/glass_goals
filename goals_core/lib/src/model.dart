@@ -40,8 +40,22 @@ class Goal {
     }
   }
 
+  addOrReplaceSuperGoal(Goal goal) {
+    int index = superGoals.indexWhere((g) => g.id == goal.id);
+
+    if (index == -1) {
+      superGoals.add(goal);
+    } else {
+      superGoals[index] = goal;
+    }
+  }
+
   removeSubGoal(String id) {
     subGoals.removeWhere((g) => g.id == id);
+  }
+
+  removeSuperGoal(String id) {
+    superGoals.removeWhere((g) => g.id == id);
   }
 }
 

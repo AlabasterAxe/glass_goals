@@ -2,6 +2,8 @@ import 'dart:ui' show Locale;
 
 import 'package:flutter/material.dart'
     show
+        Colors,
+        Dialog,
         Icons,
         MenuAnchor,
         MenuController,
@@ -9,16 +11,24 @@ import 'package:flutter/material.dart'
         TimeOfDay,
         Tooltip,
         showDatePicker,
+        showDialog,
         showTimePicker;
+import 'package:flutter/painting.dart' show FractionalOffset;
 import 'package:flutter/rendering.dart' show MainAxisAlignment, MainAxisSize;
-import 'package:flutter/widgets.dart' show BuildContext, Row, Text, Widget;
+import 'package:flutter/widgets.dart'
+    show BuildContext, Row, StreamBuilder, Text, Widget;
 import 'package:goals_core/model.dart' show Goal, getGoalStatus;
-import 'package:goals_core/sync.dart' show GoalStatus;
+import 'package:goals_core/sync.dart'
+    show AddParentLogEntry, GoalDelta, GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
+import 'package:goals_web/app_context.dart';
+import 'package:goals_web/goal_viewer/goal_search_modal.dart';
+import 'package:goals_web/styles.dart';
 import 'package:goals_web/widgets/gg_icon_button.dart';
 import 'package:goals_web/widgets/target_icon.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
+import 'package:uuid/uuid.dart';
 
 import 'goal_actions_context.dart';
 import 'providers.dart';
@@ -77,6 +87,38 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
       mainAxisSize: widget.mainAxisSize,
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
+        Tooltip(
+          waitDuration: _TOOLTIP_DELAY,
+          showDuration: Duration.zero,
+          message: 'Add existing goal...',
+          child: GlassGoalsIconButton(
+              icon: Icons.play_for_work,
+              onPressed: () async {
+                final newChildId = await showDialog(
+                    barrierColor: Colors.black26,
+                    context: context,
+                    builder: (context) => Dialog(
+                          surfaceTintColor: Colors.transparent,
+                          backgroundColor: lightBackground,
+                          alignment: FractionalOffset.topCenter,
+                          child: StreamBuilder<Map<String, Goal>>(
+                              stream: AppContext.of(context)
+                                  .syncClient
+                                  .stateSubject,
+                              builder: (context, snapshot) => GoalSearchModal(
+                                    goalMap: snapshot.data ?? Map(),
+                                  )),
+                        ));
+                if (newChildId != null) {
+                  AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                      id: newChildId,
+                      logEntry: AddParentLogEntry(
+                          id: Uuid().v4(),
+                          creationTime: DateTime.now(),
+                          parentId: this.widget.goalId)));
+                }
+              }),
+        ),
         Tooltip(
           waitDuration: _TOOLTIP_DELAY,
           showDuration: Duration.zero,
