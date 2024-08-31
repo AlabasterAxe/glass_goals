@@ -17,7 +17,8 @@ import 'package:flutter/painting.dart' show FractionalOffset;
 import 'package:flutter/rendering.dart' show MainAxisAlignment, MainAxisSize;
 import 'package:flutter/widgets.dart'
     show BuildContext, Row, StreamBuilder, Text, Widget;
-import 'package:goals_core/model.dart' show Goal, getGoalStatus;
+import 'package:goals_core/model.dart'
+    show Goal, getGoalStatus, getTransitiveSubGoals;
 import 'package:goals_core/sync.dart'
     show AddParentLogEntry, GoalDelta, GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
@@ -105,9 +106,16 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                               stream: AppContext.of(context)
                                   .syncClient
                                   .stateSubject,
-                              builder: (context, snapshot) => GoalSearchModal(
-                                    goalMap: snapshot.data ?? Map(),
-                                  )),
+                              builder: (context, snapshot) {
+                                final modalMap = snapshot.data ?? Map();
+                                final goal = modalMap[widget.goalId];
+                                for (final subGoal in goal?.subGoals ?? []) {
+                                  modalMap.remove(subGoal.id);
+                                }
+                                return GoalSearchModal(
+                                  goalMap: snapshot.data ?? Map(),
+                                );
+                              }),
                         ));
                 if (newChildId != null) {
                   AppContext.of(context).syncClient.modifyGoal(GoalDelta(
