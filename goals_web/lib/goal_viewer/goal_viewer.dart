@@ -38,6 +38,7 @@ import 'package:goals_web/app_bar.dart';
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
+import 'package:goals_web/goal_viewer/pending_goal_viewer.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/scheduled_goals_v2.dart';
 import 'package:goals_web/intents.dart';
@@ -82,7 +83,8 @@ enum GoalFilter {
   this_year(displayName: "This Year"),
   long_term(displayName: "Long Term"),
   schedule(displayName: "Scheduled Goals"),
-  schedule_v2(displayName: "Pending Goals");
+  schedule_v2(displayName: "Scheduled Goals"),
+  pending_v2(displayName: "Pending Goals");
 
   const GoalFilter({required this.displayName});
 
@@ -101,6 +103,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   bool isInitted = false;
   late MultiSplitViewController _multiSplitViewController =
       this._getMultiSplitViewController(false);
+  PendingGoalViewMode _pendingGoalViewMode = PendingGoalViewMode.schedule;
 
   final _addTimeSliceMenuController = MenuController();
 
@@ -370,8 +373,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   _viewSwitcher(bool drawer, WorldContext worldContext, bool debug) {
     final sidebarFilters = [
-      GoalFilter.schedule_v2,
-      GoalFilter.to_review,
+      GoalFilter.pending_v2,
       GoalFilter.all,
     ];
 
@@ -1061,34 +1063,48 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
           Padding(
             padding: EdgeInsets.all(uiUnit(2)),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  _filter.displayName,
-                  style: theme.headlineMedium,
-                ),
-                if (_filter == GoalFilter.schedule_v2)
-                  Tooltip(
-                    waitDuration: Duration(milliseconds: 200),
-                    showDuration: Duration.zero,
-                    message: 'Add a Time Slice',
-                    child: MenuAnchor(
-                      controller: this._addTimeSliceMenuController,
-                      menuChildren: [
-                        ...createTimeSliceOptions.map((slice) => MenuItemButton(
-                              child: Text(slice.displayName),
-                              onPressed: () => createManualTimeSlice(slice),
-                            )),
-                      ],
-                      child: GlassGoalsIconButton(
-                          enabled: createTimeSliceOptions.isNotEmpty,
-                          iconWidget: const Icon(Icons.add),
-                          onPressed: () {
-                            this._addTimeSliceMenuController.open();
-                          }),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _filter.displayName,
+                      style: theme.headlineMedium,
                     ),
-                  ),
+                    if (_filter == GoalFilter.schedule_v2)
+                      Tooltip(
+                        waitDuration: Duration(milliseconds: 200),
+                        showDuration: Duration.zero,
+                        message: 'Add a Time Slice',
+                        child: MenuAnchor(
+                          controller: this._addTimeSliceMenuController,
+                          menuChildren: [
+                            ...createTimeSliceOptions
+                                .map((slice) => MenuItemButton(
+                                      child: Text(slice.displayName),
+                                      onPressed: () =>
+                                          createManualTimeSlice(slice),
+                                    )),
+                          ],
+                          child: GlassGoalsIconButton(
+                              enabled: createTimeSliceOptions.isNotEmpty,
+                              iconWidget: const Icon(Icons.add),
+                              onPressed: () {
+                                this._addTimeSliceMenuController.open();
+                              }),
+                        ),
+                      ),
+                  ],
+                ),
+                if (_filter == GoalFilter.pending_v2)
+                  PendingGoalViewModePicker(
+                      onModeChanged: (mode) => this.setState(() {
+                            _pendingGoalViewMode = mode;
+                          }),
+                      viewKey: "root")
               ],
             ),
           ),
@@ -1243,6 +1259,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         );
                       case GoalFilter.schedule_v2:
                         return ScheduledGoalsV2(goalMap: goalMap);
+                      case GoalFilter.pending_v2:
+                        return PendingGoalViewer(
+                          goalMap: goalMap,
+                          viewKey: 'root',
+                          mode: this._pendingGoalViewMode,
+                        );
                     }
                   })),
         ),
