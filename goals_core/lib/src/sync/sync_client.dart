@@ -47,7 +47,7 @@ class SyncClient {
     _computeState();
     sync();
     Timer.periodic(const Duration(minutes: 1), (_) async {
-      _computeState();
+      sync();
     });
   }
 
@@ -382,6 +382,8 @@ class SyncClient {
     await appBox.put('ops', ops);
     await appBox.put('lastSyncDateTime', DateTime.now().toIso8601String());
     syncCompleter.complete();
-    _computeState();
+    if (result.ops.isNotEmpty) {
+      _computeState();
+    }
   }
 }

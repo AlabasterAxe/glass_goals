@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:goals_core/model.dart' show Goal, getGoalStatus;
+import 'package:goals_core/model.dart'
+    show Goal, getGoalStatus, getGoalsMatchingPredicate;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart';
@@ -84,7 +85,11 @@ class PendingGoalViewer extends ConsumerWidget {
       // TODO: Handle this case.
       PendingGoalViewMode.schedule => ScheduledGoalsV2(goalMap: this.goalMap),
       PendingGoalViewMode.tree => FlattenedGoalTree(
-          goalMap: this.goalMap,
+          goalMap: getGoalsMatchingPredicate(
+              worldContext,
+              this.goalMap,
+              (goal) => ![GoalStatus.done, GoalStatus.archived]
+                  .contains(getGoalStatus(worldContext, goal).status)),
           rootGoalIds: this
               .goalMap
               .values
