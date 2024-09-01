@@ -101,8 +101,8 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
             .where((goal) => goal != null)
             .cast<Goal>()
             .sorted(getPriorityComparator(worldContext)))
-          if (getGoalStatus(worldContext, goal).status ==
-              GoalStatus.active) ...[
+          if ([GoalStatus.active, null]
+              .contains(getGoalStatus(worldContext, goal).status)) ...[
             Text("|"),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: uiUnit(2)),
@@ -117,13 +117,20 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
       [List<TimeSlice>? manualTimeSlices]) {
     final Map<String, Goal> goalsAccountedFor = {};
     final List<Widget> result = [];
+    Widget? unscheduledSlice;
     for (final slice in slices) {
-      final sliceGoalMap = getGoalsForDateRange(
-        worldContext,
-        widget.goalMap,
-        slice.startTime(worldContext.time),
-        slice.endTime(worldContext.time),
-      );
+      final sliceGoalMap = slice == TimeSlice.unscheduled
+          ? getGoalsMatchingPredicate(
+              worldContext,
+              widget.goalMap,
+              (goal) => [GoalStatus.active, null]
+                  .contains(getGoalStatus(worldContext, goal).status))
+          : getGoalsForDateRange(
+              worldContext,
+              widget.goalMap,
+              slice.startTime(worldContext.time),
+              slice.endTime(worldContext.time),
+            );
 
       for (final goalId in goalsAccountedFor.keys) {
         if (sliceGoalMap.containsKey(goalId)) {
@@ -149,12 +156,13 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
           .toList();
 
       if (goalIds.isEmpty &&
-          (manualTimeSlices == null || !manualTimeSlices.contains(slice))) {
+          (manualTimeSlices == null || !manualTimeSlices.contains(slice)) &&
+          slice != TimeSlice.unscheduled) {
         continue;
       }
 
       if (_expandedTimeSlices.contains(slice)) {
-        result.add(Padding(
+        final sliceWidget = Padding(
           padding: EdgeInsets.only(bottom: uiUnit(3)),
           child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,12 +261,25 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                   );
                 })
               ]),
-        ));
+        );
+        if (slice == TimeSlice.unscheduled) {
+          unscheduledSlice = sliceWidget;
+        } else {
+          result.add(sliceWidget);
+        }
       } else {
-        result.add(_smallSlice(worldContext, slice, sliceGoalMap));
+        final sliceWidget = _smallSlice(worldContext, slice, sliceGoalMap);
+        if (slice == TimeSlice.unscheduled) {
+          unscheduledSlice = sliceWidget;
+        } else {
+          result.add(sliceWidget);
+        }
       }
     }
-    return result.reversed.toList();
+    if (unscheduledSlice != null) {
+      result.insert(0, unscheduledSlice);
+    }
+    return result;
   }
 
   @override
@@ -268,17 +289,20 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
     final manualTimeSlices = ref.watch(manualTimeSliceProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: _timeSlices(
-          worldContext,
-          [
-            TimeSlice.today,
-            TimeSlice.this_week,
-            TimeSlice.this_month,
-            TimeSlice.this_quarter,
-            TimeSlice.this_year,
-            TimeSlice.long_term,
-          ],
-          manualTimeSlices.value),
+      children: [
+        ..._timeSlices(
+            worldContext,
+            [
+              TimeSlice.today,
+              TimeSlice.this_week,
+              TimeSlice.this_month,
+              TimeSlice.this_quarter,
+              TimeSlice.this_year,
+              TimeSlice.long_term,
+              TimeSlice.unscheduled,
+            ],
+            manualTimeSlices.value)
+      ],
     );
   }
 }

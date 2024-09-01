@@ -82,14 +82,14 @@ enum GoalFilter {
   this_year(displayName: "This Year"),
   long_term(displayName: "Long Term"),
   schedule(displayName: "Scheduled Goals"),
-  schedule_v2(displayName: "Scheduled Goals");
+  schedule_v2(displayName: "Pending Goals");
 
   const GoalFilter({required this.displayName});
 
   final String displayName;
 }
 
-enum GoalViewMode { tree, list }
+enum GoalViewMode { tree, list, schedule }
 
 class _GoalViewerState extends ConsumerState<GoalViewer> {
   GoalFilter _filter = GoalFilter.schedule;
@@ -160,7 +160,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               creationTime: DateTime.now())),
     ];
 
-    if (timeSlice != null) {
+    if (timeSlice != null && timeSlice != TimeSlice.unscheduled) {
       goalDeltas.add(GoalDelta(
           id: id,
           logEntry: StatusLogEntry(

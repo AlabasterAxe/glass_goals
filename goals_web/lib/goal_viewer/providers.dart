@@ -46,6 +46,8 @@ createManualTimeSlice(TimeSlice slice) async {
   _manualTimeSlices.add(previousTimeSlices);
 }
 
+/// This provider will return a list of time slices that we should show
+/// even if they don't have any active goals within them.
 final manualTimeSliceProvider = StreamProvider<List<TimeSlice>>((_) =>
     CombineLatestStream([worldContextStream, _manualTimeSlices], (values) {
       final [

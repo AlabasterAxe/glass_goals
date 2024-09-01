@@ -6,7 +6,8 @@ enum TimeSlice {
   this_month(TimeSlice.this_week, "This Month"),
   this_quarter(TimeSlice.this_month, "This Quarter"),
   this_year(TimeSlice.this_quarter, "This Year"),
-  long_term(TimeSlice.this_year, "Long Term");
+  long_term(TimeSlice.this_year, "Long Term"),
+  unscheduled(null, "Inbox");
 
   const TimeSlice(this.zoomDown, this.displayName);
 
@@ -26,6 +27,7 @@ enum TimeSlice {
       case TimeSlice.this_year:
         return now.startOfYear;
       case TimeSlice.long_term:
+      case TimeSlice.unscheduled:
         return null;
     }
   }
@@ -43,6 +45,7 @@ enum TimeSlice {
       case TimeSlice.this_year:
         return now.endOfYear;
       case TimeSlice.long_term:
+      case TimeSlice.unscheduled:
         return null;
     }
   }
