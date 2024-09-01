@@ -255,7 +255,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
         Tooltip(
           waitDuration: _TOOLTIP_DELAY,
           showDuration: Duration.zero,
-          message: 'Mark Done...',
+          message: 'Mark Done',
           child: MenuAnchor(
             controller: _doneMenuController,
             menuChildren: [
@@ -304,9 +304,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
             ],
             child: GlassGoalsIconButton(
               icon: Icons.done_outline_rounded,
-              onPressed: () {
-                _doneMenuController.open();
-              },
+              onPressed: () => onDone(widget.goalId, null),
+              onLongPressed: () => _doneMenuController.open(),
             ),
           ),
         ),

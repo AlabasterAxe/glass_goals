@@ -29,18 +29,21 @@
             "request": "launch",
             "type": "dart",
             "program": "goals_web/lib/main_readonly.dart",
+            "args": ["--web-hostname", "192.168.0.214"]
         },
         {
             "name": "goals_web (unauthed)",
             "request": "launch",
             "type": "dart",
             "program": "goals_web/lib/main_unauthed.dart",
+            "args": ["--web-hostname", "192.168.0.214"]
         },
         {
             "name": "goals_web (local server)",
             "request": "launch",
             "type": "dart",
             "program": "goals_web/lib/main_local.dart",
+            "args": ["--web-hostname", "192.168.0.214"]
         },
     ]
 }
