@@ -49,6 +49,27 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
     }
   }
 
+  @override
+  void didUpdateWidget(covariant AddSubgoalItemWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    this._textController.text = _defaultText;
+
+    if (pathsMatch(textFocusStream.value, this.widget.path)) {
+      setState(() {
+        _editing = true;
+        _focusNode.requestFocus();
+        _textController.selection = TextSelection(
+            baseOffset: 0, extentOffset: _textController.text.length);
+      });
+    } else {
+      setState(() {
+        _editing = false;
+        _focusNode.unfocus();
+      });
+    }
+  }
+
   void dispose() {
     _textController.dispose();
     _focusNode.dispose();
@@ -70,12 +91,14 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
   Widget build(BuildContext context) {
     ref.listen(textFocusProvider, (oldValue, newValue) {
       if (pathsMatch(this.widget.path, newValue.value)) {
-        if (!pathsMatch(oldValue?.value, newValue.value)) {
+        if (!pathsMatch(oldValue?.value, newValue.value) ||
+            !_editing ||
+            !_focusNode.hasFocus) {
+          _focusNode.requestFocus();
+          _textController.selection = TextSelection(
+              baseOffset: 0, extentOffset: _textController.text.length);
           setState(() {
             _editing = true;
-            _focusNode.requestFocus();
-            _textController.selection = TextSelection(
-                baseOffset: 0, extentOffset: _textController.text.length);
           });
         }
       } else {

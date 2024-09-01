@@ -230,9 +230,13 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                     });
                                   },
                                   onTapOutside: (_) {
+                                    AppContext.of(context)
+                                        .syncClient
+                                        .modifyGoal(GoalDelta(
+                                            id: widget.goal.id,
+                                            text: _textController.text));
                                     setState(() {
                                       _editing = false;
-                                      _focusNode.unfocus();
                                     });
                                   },
                                   focusNode: _focusNode,

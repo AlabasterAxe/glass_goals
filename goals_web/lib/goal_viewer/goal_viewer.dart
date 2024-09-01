@@ -579,6 +579,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         ref.watch(worldContextProvider).value ?? worldContextStream.value;
     final selectedGoals =
         ref.watch(selectedGoalsProvider).value ?? selectedGoalsStream.value;
+    final textEditingPath = ref.watch(textFocusProvider).value;
     final isEditingText = ref.watch(isEditingTextProvider);
     ref.listen(focusedGoalProvider, _handleFocusedGoalChange);
     ref.listen(debugProvider, (_, isDebug) {
@@ -622,6 +623,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               Text('UI State', style: Theme.of(context).textTheme.titleMedium),
               Text(
                 'Selected Goals: ${selectedGoals.join(', ')}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              Text(
+                'Text Focus: ${textEditingPath?.join(', ')}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               Text('Focused Thing: ${FocusManager.instance.primaryFocus}'),
