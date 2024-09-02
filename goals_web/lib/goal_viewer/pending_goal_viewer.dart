@@ -88,14 +88,20 @@ class PendingGoalViewer extends ConsumerWidget {
           goalMap: getGoalsMatchingPredicate(
               worldContext,
               this.goalMap,
-              (goal) => ![GoalStatus.done, GoalStatus.archived]
-                  .contains(getGoalStatus(worldContext, goal).status)),
+              (goal) => ![
+                    GoalStatus.done,
+                    GoalStatus.archived,
+                    GoalStatus.pending
+                  ].contains(getGoalStatus(worldContext, goal).status)),
           rootGoalIds: this
               .goalMap
               .values
               .where((goal) {
-                if ([GoalStatus.done, GoalStatus.archived]
-                    .contains(getGoalStatus(worldContext, goal).status)) {
+                if ([
+                  GoalStatus.done,
+                  GoalStatus.archived,
+                  GoalStatus.pending,
+                ].contains(getGoalStatus(worldContext, goal).status)) {
                   return false;
                 }
                 for (final superGoal in goal.superGoals) {
