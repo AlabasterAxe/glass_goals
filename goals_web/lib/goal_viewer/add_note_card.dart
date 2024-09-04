@@ -112,6 +112,7 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
                 width: uiUnit(10),
