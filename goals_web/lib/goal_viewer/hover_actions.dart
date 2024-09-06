@@ -91,7 +91,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
         Tooltip(
           waitDuration: _TOOLTIP_DELAY,
           showDuration: Duration.zero,
-          message: 'Add existing goal...',
+          message: 'Import existing goal...',
           child: GlassGoalsIconButton(
               icon: Icons.play_for_work,
               onPressed: () async {

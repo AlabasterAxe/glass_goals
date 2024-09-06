@@ -30,11 +30,154 @@ import 'package:goals_web/styles.dart'
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
 import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart' show canLaunchUrl, launchUrl;
 import 'package:uuid/uuid.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/pdf.dart' show PdfPageFormat;
 
 import '../widgets/gg_icon_button.dart';
 import 'flattened_goal_tree.dart' show FlattenedGoalTree;
+
+List<DetailViewLogEntryYear> _computeHistoryLog(
+    WorldContext worldContext, List<DetailViewLogEntryItem> log) {
+  final List<DetailViewLogEntryYear> result = [];
+  for (final item in _computeFlatHistoryLog(worldContext, log)) {
+    final year = item.time.year;
+    final month = item.time.month;
+    final day = item.time.day;
+    var currentYear = result.lastOrNull;
+    if (currentYear == null || currentYear.year != year) {
+      result.add(DetailViewLogEntryYear(year: year, logItems: []));
+      currentYear = result.last;
+    }
+
+    var currentMonth = currentYear.logItems.lastOrNull;
+    var currentDay = currentMonth?.logItems.lastOrNull;
+    if (currentMonth == null || currentDay?.dayOfMonth != day) {
+      currentYear.logItems
+          .add(DetailViewLogEntryMonth(monthOfYear: month, logItems: []));
+      currentMonth = currentYear.logItems.last;
+    }
+
+    currentDay = currentMonth.logItems.lastOrNull;
+    if (currentDay == null || currentDay.dayOfMonth != day) {
+      currentMonth.logItems
+          .add(DetailViewLogEntryDay(dayOfMonth: day, logItems: [item]));
+    } else {
+      currentDay.logItems.add(item);
+    }
+  }
+
+  return result;
+}
+
+List<DetailViewLogEntryItem> _computeFlatHistoryLog(
+    WorldContext worldContext, List<DetailViewLogEntryItem> log) {
+  Map<String, DetailViewLogEntryItem> items = {};
+  log.sort((a, b) => a.entry.creationTime.compareTo(b.entry.creationTime));
+  for (final item in log) {
+    final entry = item.entry;
+    switch (entry) {
+      case NoteLogEntry():
+        final originalNoteDate = items[entry.id]?.entry.creationTime;
+        items[entry.id] = DetailViewLogEntryItem(
+            entry: entry,
+            time: originalNoteDate ?? entry.creationTime,
+            goal: item.goal);
+        break;
+      case ArchiveNoteLogEntry():
+        items.remove(entry.id);
+        break;
+      case ArchiveStatusLogEntry():
+        final archivedStatusEntry = items[entry.id]?.entry;
+        if (archivedStatusEntry != null &&
+            archivedStatusEntry is StatusLogEntry) {
+          // TODO: I'm not crazy about the way I'm doing this.
+          items["${entry.id}-archive"] = DetailViewLogEntryItem(
+            entry: archivedStatusEntry,
+            time: entry.creationTime,
+            archived: true,
+            goal: item.goal,
+          );
+        }
+      case StatusLogEntry():
+        items["${entry.id}-creation"] = DetailViewLogEntryItem(
+          entry: entry,
+          goal: item.goal,
+          time: entry.creationTime,
+        );
+
+        // Only add an end entry for active statuses.
+        if (entry.endTime != null &&
+            entry.endTime != entry.creationTime &&
+            entry.endTime!.isBefore(worldContext.time) &&
+            entry.status == GoalStatus.active &&
+            // If the goal is archived or done by the time the status ends, don't show the end entry.
+            ![GoalStatus.archived, GoalStatus.done].contains(
+                getGoalStatus(WorldContext(time: entry.endTime!), item.goal)
+                    .status)) {
+          items["${entry.id}-end"] = DetailViewLogEntryItem(
+            entry: entry,
+            goal: item.goal,
+            time: entry.endTime!,
+          );
+        }
+
+        break;
+      case AddStatusIntentionLogEntry():
+        final existingItem = items["${entry.statusId}-creation"];
+        if (existingItem != null && existingItem.entry is StatusLogEntry) {
+          items["${entry.statusId}-creation"] = DetailViewLogEntryItem(
+            entry: existingItem.entry,
+            goal: existingItem.goal,
+            time: existingItem.time,
+            statusNote: entry,
+          );
+        }
+        break;
+
+      case AddStatusReflectionLogEntry():
+        // TODO: for done statuses, reflections are shown on the status creation
+        //   for active statuses, reflections are shown on the status end
+        var existingItem = items["${entry.statusId}-end"];
+        var itemKey = "${entry.statusId}-end";
+
+        if (existingItem?.entry is StatusLogEntry &&
+            (existingItem!.entry as StatusLogEntry).status !=
+                GoalStatus.active) {
+          break;
+        }
+
+        if (existingItem == null) {
+          existingItem = items["${entry.statusId}-creation"];
+          itemKey = "${entry.statusId}-creation";
+          if (existingItem?.entry is StatusLogEntry &&
+              (existingItem!.entry as StatusLogEntry).status !=
+                  GoalStatus.done) {
+            break;
+          }
+        }
+        if (existingItem != null && existingItem.entry is StatusLogEntry) {
+          items[itemKey] = DetailViewLogEntryItem(
+            entry: existingItem.entry,
+            goal: existingItem.goal,
+            time: existingItem.time,
+            statusNote: entry,
+          );
+        }
+        break;
+
+      default:
+      // ignore: no-empty-block
+    }
+  }
+
+  final sortedItems = items.values.toList()
+    ..sort((a, b) => b.time.compareTo(a.time));
+
+  return sortedItems;
+}
 
 class Breadcrumb extends ConsumerWidget {
   final Goal goal;
@@ -727,141 +870,6 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     }
   }
 
-  List<DetailViewLogEntryYear> _computeHistoryLog(
-      WorldContext worldContext, List<DetailViewLogEntryItem> log) {
-    Map<String, DetailViewLogEntryItem> items = {};
-    log.sort((a, b) => a.entry.creationTime.compareTo(b.entry.creationTime));
-    for (final item in log) {
-      final entry = item.entry;
-      switch (entry) {
-        case NoteLogEntry():
-          final originalNoteDate = items[entry.id]?.entry.creationTime;
-          items[entry.id] = DetailViewLogEntryItem(
-              entry: entry,
-              time: originalNoteDate ?? entry.creationTime,
-              goal: item.goal);
-          break;
-        case ArchiveNoteLogEntry():
-          items.remove(entry.id);
-          break;
-        case ArchiveStatusLogEntry():
-          final archivedStatusEntry = items[entry.id]?.entry;
-          if (archivedStatusEntry != null &&
-              archivedStatusEntry is StatusLogEntry) {
-            // TODO: I'm not crazy about the way I'm doing this.
-            items["${entry.id}-archive"] = DetailViewLogEntryItem(
-              entry: archivedStatusEntry,
-              time: entry.creationTime,
-              archived: true,
-              goal: item.goal,
-            );
-          }
-        case StatusLogEntry():
-          items["${entry.id}-creation"] = DetailViewLogEntryItem(
-            entry: entry,
-            goal: item.goal,
-            time: entry.creationTime,
-          );
-
-          // Only add an end entry for active statuses.
-          if (entry.endTime != null &&
-              entry.endTime != entry.creationTime &&
-              entry.endTime!.isBefore(worldContext.time) &&
-              entry.status == GoalStatus.active &&
-              // If the goal is archived or done by the time the status ends, don't show the end entry.
-              ![GoalStatus.archived, GoalStatus.done].contains(
-                  getGoalStatus(WorldContext(time: entry.endTime!), item.goal)
-                      .status)) {
-            items["${entry.id}-end"] = DetailViewLogEntryItem(
-              entry: entry,
-              goal: item.goal,
-              time: entry.endTime!,
-            );
-          }
-
-          break;
-        case AddStatusIntentionLogEntry():
-          final existingItem = items["${entry.statusId}-creation"];
-          if (existingItem != null && existingItem.entry is StatusLogEntry) {
-            items["${entry.statusId}-creation"] = DetailViewLogEntryItem(
-              entry: existingItem.entry,
-              goal: existingItem.goal,
-              time: existingItem.time,
-              statusNote: entry,
-            );
-          }
-          break;
-
-        case AddStatusReflectionLogEntry():
-          // TODO: for done statuses, reflections are shown on the status creation
-          //   for active statuses, reflections are shown on the status end
-          var existingItem = items["${entry.statusId}-end"];
-          var itemKey = "${entry.statusId}-end";
-
-          if (existingItem?.entry is StatusLogEntry &&
-              (existingItem!.entry as StatusLogEntry).status !=
-                  GoalStatus.active) {
-            break;
-          }
-
-          if (existingItem == null) {
-            existingItem = items["${entry.statusId}-creation"];
-            itemKey = "${entry.statusId}-creation";
-            if (existingItem?.entry is StatusLogEntry &&
-                (existingItem!.entry as StatusLogEntry).status !=
-                    GoalStatus.done) {
-              break;
-            }
-          }
-          if (existingItem != null && existingItem.entry is StatusLogEntry) {
-            items[itemKey] = DetailViewLogEntryItem(
-              entry: existingItem.entry,
-              goal: existingItem.goal,
-              time: existingItem.time,
-              statusNote: entry,
-            );
-          }
-          break;
-
-        default:
-        // ignore: no-empty-block
-      }
-    }
-
-    final sortedItems = items.values.toList()
-      ..sort((a, b) => b.time.compareTo(a.time));
-
-    final List<DetailViewLogEntryYear> result = [];
-    for (final item in sortedItems) {
-      final year = item.time.year;
-      final month = item.time.month;
-      final day = item.time.day;
-      var currentYear = result.lastOrNull;
-      if (currentYear == null || currentYear.year != year) {
-        result.add(DetailViewLogEntryYear(year: year, logItems: []));
-        currentYear = result.last;
-      }
-
-      var currentMonth = currentYear.logItems.lastOrNull;
-      var currentDay = currentMonth?.logItems.lastOrNull;
-      if (currentMonth == null || currentDay?.dayOfMonth != day) {
-        currentYear.logItems
-            .add(DetailViewLogEntryMonth(monthOfYear: month, logItems: []));
-        currentMonth = currentYear.logItems.last;
-      }
-
-      currentDay = currentMonth.logItems.lastOrNull;
-      if (currentDay == null || currentDay.dayOfMonth != day) {
-        currentMonth.logItems
-            .add(DetailViewLogEntryDay(dayOfMonth: day, logItems: [item]));
-      } else {
-        currentDay.logItems.add(item);
-      }
-    }
-
-    return result;
-  }
-
   Widget parentBreadcrumbs(Goal supergoal) {
     Goal? curGoal = supergoal;
     final widgets = <Widget>[];
@@ -969,7 +977,39 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
               GoalActionsContext.overrideWith(context,
                   child: widget.hoverActionsBuilder(widget.goal.id),
                   onPrint: (_) {
-                printGoal(widget.goal);
+                printGoal((pw.Document doc) async {
+                  final font = await PdfGoogleFonts.jostRegular();
+                  doc.addPage(pw.MultiPage(
+                    pageFormat: PdfPageFormat.letter,
+                    build: (context) => [
+                      pw.Header(
+                          level: 1,
+                          text: widget.goal.text,
+                          textStyle: pw.TextStyle(fontSize: 24, font: font)),
+                      for (final item
+                          in _computeFlatHistoryLog(worldContext, logItems))
+                        if (item.entry is NoteLogEntry) ...[
+                          if (item.goal.id != widget.goal.id)
+                            pw.Header(
+                                level: 2,
+                                margin: pw.EdgeInsets.zero,
+                                padding: pw.EdgeInsets.fromLTRB(0, 18, 0, 0),
+                                text: item.goal.text,
+                                textStyle: pw.TextStyle(
+                                    font: font,
+                                    fontWeight: pw.FontWeight.bold,
+                                    fontSize: 18)),
+                          pw.Divider(),
+                          ...(item.entry as NoteLogEntry)
+                              .text
+                              .split("\n")
+                              .map((line) => pw.Text(line,
+                                  style: pw.TextStyle(font: font)))
+                              .toList(),
+                        ]
+                    ],
+                  ));
+                });
               }),
             ],
           ),

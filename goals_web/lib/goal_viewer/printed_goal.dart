@@ -1,21 +1,13 @@
 import 'package:file_saver/file_saver.dart';
-import 'package:goals_core/model.dart' show Goal;
-import 'package:pdf/widgets.dart' show Center, Context, Document, Page, Text;
-import 'package:pdf/pdf.dart' show PdfPageFormat;
+import 'package:pdf/widgets.dart' show Document;
 
-printGoal(Goal goal) async {
+printGoal(Function(Document) builder) async {
   final doc = Document();
 
-  doc.addPage(Page(
-      pageFormat: PdfPageFormat.a4,
-      build: (Context context) {
-        return Center(
-          child: Text('Hello World'),
-        );
-      }));
+  await builder(doc);
 
   await FileSaver.instance.saveFile(
-    name: 'goal_${goal.id}.pdf',
+    name: 'notes',
     bytes: await doc.save(),
     ext: "pdf",
     mimeType: MimeType.pdf,
