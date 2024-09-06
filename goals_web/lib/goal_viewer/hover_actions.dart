@@ -17,8 +17,7 @@ import 'package:flutter/painting.dart' show FractionalOffset;
 import 'package:flutter/rendering.dart' show MainAxisAlignment, MainAxisSize;
 import 'package:flutter/widgets.dart'
     show BuildContext, Row, StreamBuilder, Text, Widget;
-import 'package:goals_core/model.dart'
-    show Goal, getGoalStatus, getTransitiveSubGoals;
+import 'package:goals_core/model.dart' show Goal, getGoalStatus;
 import 'package:goals_core/sync.dart'
     show AddParentLogEntry, GoalDelta, GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
@@ -74,6 +73,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
     final onDone = GoalActionsContext.of(context).onDone;
     final onArchive = GoalActionsContext.of(context).onArchive;
     final onUnarchive = GoalActionsContext.of(context).onUnarchive;
+    final onPrint = GoalActionsContext.of(context).onPrint;
 
     bool allArchived = selectedGoals.isNotEmpty;
     for (final selectedGoalId in selectedGoals) {
@@ -328,6 +328,16 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                   onPressed: () => onArchive(widget.goalId),
                 ),
               ),
+        if (onPrint != null)
+          Tooltip(
+            waitDuration: _TOOLTIP_DELAY,
+            showDuration: Duration.zero,
+            message: 'Print',
+            child: GlassGoalsIconButton(
+              icon: Icons.print,
+              onPressed: () => onPrint(widget.goalId),
+            ),
+          ),
       ],
     );
   }

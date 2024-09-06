@@ -106,9 +106,9 @@ class _GlassGoalsState extends State<GlassGoals>
                 theme: ThemeData(
                   primaryColor: Colors.black,
                   textTheme: const TextTheme(
-                    bodyText1: TextStyle(color: Colors.white),
-                    bodyText2: TextStyle(color: Colors.white),
-                    headline1: mainTextStyle,
+                    bodyLarge: TextStyle(color: Colors.white),
+                    bodyMedium: TextStyle(color: Colors.white),
+                    displayLarge: mainTextStyle,
                   ),
                 ),
                 home: const GoalsHome(),
@@ -175,7 +175,7 @@ class _GoalsHomeState extends State<GoalsHome> {
                 if (!snapshot.hasData) {
                   return Center(
                       child: Text("Loading Active Goal",
-                          style: Theme.of(context).textTheme.headline1));
+                          style: Theme.of(context).textTheme.displayLarge));
                 }
 
                 final unarchivedGoals =
@@ -185,7 +185,7 @@ class _GoalsHomeState extends State<GoalsHome> {
                 return activeGoal == null
                     ? Center(
                         child: Text("No Active Goal",
-                            style: Theme.of(context).textTheme.headline1))
+                            style: Theme.of(context).textTheme.displayLarge))
                     : GoalCard(
                         goal: activeGoal,
                         onBack: () {
@@ -215,7 +215,7 @@ class _GoalsHomeState extends State<GoalsHome> {
               },
               child: Center(
                   child: Text("Goals",
-                      style: Theme.of(context).textTheme.headline1))),
+                      style: Theme.of(context).textTheme.displayLarge))),
           GlassGestureDetector(
               onTap: () {
                 Navigator.push(
@@ -240,7 +240,7 @@ class _GoalsHomeState extends State<GoalsHome> {
               },
               child: Center(
                   child: Text("Review",
-                      style: Theme.of(context).textTheme.headline1))),
+                      style: Theme.of(context).textTheme.displayLarge))),
           GlassGestureDetector(
               onTap: () {
                 Navigator.push(
@@ -251,7 +251,7 @@ class _GoalsHomeState extends State<GoalsHome> {
               },
               child: Center(
                   child: Text("Settings",
-                      style: Theme.of(context).textTheme.headline1)))
+                      style: Theme.of(context).textTheme.displayLarge)))
         ],
       ),
     );

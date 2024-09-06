@@ -24,7 +24,7 @@ void main() async {
             '114797465949-keupvd032s4to34t1bkftge1baoguld5.apps.googleusercontent.com'),
   ]);
 
-  runApp(Cloner());
+  runApp(const Cloner());
 }
 
 class Cloner extends StatefulWidget {

@@ -370,34 +370,34 @@ class _NoteCardState extends State<NoteCard> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  if (this.widget.showDate)
-                    Text('${formatDate(this.widget.entry.creationTime)} '),
-                  Text(formatTime(widget.entry.creationTime)),
-                  if (widget.isChildGoal) ...[
-                    Text(" - "),
-                    Breadcrumb(goal: widget.goal),
+              Expanded(
+                child: Row(
+                  children: [
+                    if (this.widget.showDate)
+                      Text('${formatDate(this.widget.entry.creationTime)} '),
+                    Text(formatTime(widget.entry.creationTime)),
+                    if (widget.isChildGoal) ...[
+                      Text(" - "),
+                      Breadcrumb(goal: widget.goal),
+                      SizedBox(width: uiUnit(2)),
+                      Expanded(
+                          child: Container(
+                              height: uiUnit(.5), color: darkElementColor)),
+                    ],
                   ],
-                ],
+                ),
               ),
               !widget.isChildGoal
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        GlassGoalsIconButton(
-                            onPressed: () {
-                              AppContext.of(context).syncClient.modifyGoal(
-                                  GoalDelta(
-                                      id: widget.goal.id,
-                                      logEntry: ArchiveNoteLogEntry(
-                                          id: widget.entry.id,
-                                          creationTime: DateTime.now())));
-                              widget.onRefresh();
-                            },
-                            icon: Icons.delete),
-                      ],
-                    )
+                  ? GlassGoalsIconButton(
+                      onPressed: () {
+                        AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                            id: widget.goal.id,
+                            logEntry: ArchiveNoteLogEntry(
+                                id: widget.entry.id,
+                                creationTime: DateTime.now())));
+                        widget.onRefresh();
+                      },
+                      icon: Icons.delete)
                   : Container(),
             ],
           ),

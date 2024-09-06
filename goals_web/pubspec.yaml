@@ -20,7 +20,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.3.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -58,6 +58,8 @@ dependencies:
   rxdart: ^0.27.7
   url_launcher: ^6.2.1
   custom_mouse_cursor: ^1.1.0
+  printing: ^5.13.2
+  file_saver: ^0.2.14
 
 dev_dependencies:
   flutter_test:

@@ -19,6 +19,7 @@ class GoalActionsContext extends InheritedWidget {
     List<String>? nextDropPath,
   }) onDropGoal;
   final Function(String?, {DateTime startTime, DateTime? endTime}) onActive;
+  final Function(String? goalId)? onPrint;
 
   const GoalActionsContext({
     required Widget child,
@@ -32,6 +33,7 @@ class GoalActionsContext extends InheritedWidget {
     required this.onSnooze,
     required this.onActive,
     required this.onDropGoal,
+    this.onPrint,
   }) : super(child: child);
 
   @override

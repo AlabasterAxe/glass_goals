@@ -30,9 +30,9 @@ class _GoalSeparatorState extends State<GoalSeparator> {
 
   @override
   Widget build(BuildContext context) {
-    return DragTarget(
-      onAccept: (String goalId) {
-        this.widget.onDropGoal?.call(goalId);
+    return DragTarget<String>(
+      onAcceptWithDetails: (deets) {
+        this.widget.onDropGoal?.call(deets.data);
         setState(() {
           _dragHovered = false;
         });

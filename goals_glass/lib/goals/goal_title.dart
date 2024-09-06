@@ -13,7 +13,7 @@ class GoalTitle extends StatelessWidget {
     return Center(
       child: Text(
         goal.text,
-        style: Theme.of(context).textTheme.headline1,
+        style: Theme.of(context).textTheme.displayLarge,
       ),
     );
   }

@@ -288,7 +288,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
       ),
     );
     return DragTarget<String>(
-      onAccept: this.widget.onDropGoal,
+      onAcceptWithDetails: (deets) => this.widget.onDropGoal?.call(deets.data),
       onMove: (details) {
         setState(() {
           if (!_hovering) {

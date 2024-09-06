@@ -1,9 +1,9 @@
 {
-    "cSpell.words": [
-        "vsync"
-    ],
-    "dart.flutterSdkPath": ".fvm/flutter_sdk",
-    "githubPullRequests.ignoredPullRequestBranches": [
-        "master"
-    ],
+  "cSpell.words": [
+    "vsync"
+  ],
+  "dart.flutterSdkPath": ".fvm/versions/3.24.2",
+  "githubPullRequests.ignoredPullRequestBranches": [
+    "master"
+  ]
 }
