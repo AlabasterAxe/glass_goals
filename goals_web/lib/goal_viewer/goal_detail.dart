@@ -18,9 +18,11 @@ import 'package:goals_core/sync.dart'
 import 'package:goals_core/util.dart' show formatDate, formatTime;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
+import 'package:goals_web/goal_viewer/goal_actions_context.dart';
 import 'package:goals_web/goal_viewer/goal_search_modal.dart'
     show GoalSearchModal;
 import 'package:goals_web/goal_viewer/hover_actions.dart';
+import 'package:goals_web/goal_viewer/printed_goal.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
 import 'package:goals_web/styles.dart'
@@ -934,6 +936,10 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                                 });
                               },
                               onTapOutside: (_) {
+                                AppContext.of(context).syncClient.modifyGoal(
+                                    GoalDelta(
+                                        id: widget.goal.id,
+                                        text: _textController.text));
                                 setState(() {
                                   _editing = false;
                                 });
@@ -960,7 +966,11 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                     SizedBox(width: uiUnit(2)),
                     CurrentStatusChip(goal: widget.goal)
                   ]),
-              widget.hoverActionsBuilder(widget.goal.id),
+              GoalActionsContext.overrideWith(context,
+                  child: widget.hoverActionsBuilder(widget.goal.id),
+                  onPrint: (_) {
+                printGoal(widget.goal);
+              }),
             ],
           ),
         breadcrumbs(),

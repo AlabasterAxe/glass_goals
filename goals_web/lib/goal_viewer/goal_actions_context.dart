@@ -63,6 +63,7 @@ class GoalActionsContext extends InheritedWidget {
       List<String>? prevDropPath,
       List<String>? nextDropPath,
     })? onDropGoal,
+    Function(String? goalId)? onPrint,
   }) {
     return GoalActionsContext(
       child: child,
@@ -76,6 +77,7 @@ class GoalActionsContext extends InheritedWidget {
       onSnooze: onSnooze ?? GoalActionsContext.of(context).onSnooze,
       onActive: onActive ?? GoalActionsContext.of(context).onActive,
       onDropGoal: onDropGoal ?? GoalActionsContext.of(context).onDropGoal,
+      onPrint: onPrint ?? GoalActionsContext.of(context).onPrint,
     );
   }
 }

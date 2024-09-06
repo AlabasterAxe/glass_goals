@@ -31,9 +31,8 @@ final smallTextStyle =
 
 const focusedFontStyle = TextStyle(fontWeight: FontWeight.bold, inherit: true);
 
-final colorScheme = ColorScheme.fromSwatch(
-  primarySwatch: Colors.amber,
-  backgroundColor: lightBackground,
+final colorScheme = ColorScheme.fromSeed(
+  seedColor: Colors.amber,
 ).copyWith(primary: Color.fromARGB(255, 139, 104, 0));
 
 final defaultTextTheme = Typography.material2021(colorScheme: colorScheme)
@@ -53,10 +52,6 @@ final theme = ThemeData(
   useMaterial3: true,
   // navy
   colorScheme: colorScheme,
-  appBarTheme: const AppBarTheme(
-    backgroundColor: lightBackground,
-    foregroundColor: darkElementColor,
-  ),
   primaryTextTheme: defaultTextTheme,
   textTheme: defaultTextTheme,
   typography: Typography.material2021().copyWith(black: defaultTextTheme),
