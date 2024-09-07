@@ -36,6 +36,7 @@ import 'package:goals_core/sync.dart'
         StatusLogEntry;
 import 'package:goals_web/app_bar.dart';
 import 'package:goals_web/app_context.dart';
+import 'package:goals_web/goal_viewer/debug_panel.dart';
 import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
 import 'package:goals_web/goal_viewer/pending_goal_viewer.dart';
@@ -49,7 +50,6 @@ import 'package:uuid/uuid.dart' show Uuid;
 
 import '../common/keyboard_utils.dart';
 import '../common/time_slice.dart';
-import '../debug/debug_sync_info.dart' show DebugSyncInfo;
 import '../styles.dart'
     show
         darkElementColor,
@@ -62,7 +62,6 @@ import 'goal_actions_context.dart';
 import 'goal_search_modal.dart';
 import 'goal_viewer_constants.dart';
 import 'hover_actions.dart';
-import 'text_editing_controls.dart';
 
 class GoalViewer extends StatefulHookConsumerWidget {
   final Map<String, Goal> goalMap;
@@ -581,10 +580,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         ref.watch(focusedGoalProvider).value ?? focusedGoalStream.value;
     final worldContext =
         ref.watch(worldContextProvider).value ?? worldContextStream.value;
-    final selectedGoals =
-        ref.watch(selectedGoalsProvider).value ?? selectedGoalsStream.value;
-    final textEditingPath = ref.watch(textFocusProvider).value;
-    final isEditingText = ref.watch(isEditingTextProvider);
     ref.listen(focusedGoalProvider, _handleFocusedGoalChange);
     ref.listen(debugProvider, (_, isDebug) {
       setState(() {
@@ -616,37 +611,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       }
     }
 
-    if (!singleScreen && this._isDebug)
-      children.add(
-        Container(
-          key: const ValueKey('debug'),
-          color: Colors.black.withOpacity(0.3),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('UI State', style: Theme.of(context).textTheme.titleMedium),
-              Text(
-                'Selected Goals: ${selectedGoals.join(', ')}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              Text(
-                'Text Focus: ${textEditingPath?.join(', ')}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              Text('Focused Thing: ${FocusManager.instance.primaryFocus}'),
-              StreamBuilder<List<String>?>(
-                  stream: hoverEventStream.stream,
-                  builder: (context, snapshot) {
-                    return Text('Hovered Path: ${snapshot.data}',
-                        style: Theme.of(context).textTheme.bodySmall);
-                  }),
-              DebugSyncInfo(
-                syncClient: AppContext.of(context).syncClient,
-              ),
-            ],
-          ),
-        ),
-      );
+    if (!singleScreen && this._isDebug) children.add(DebugPanel());
 
     return GoalActionsContext(
       onActive: this.onActive,
@@ -715,8 +680,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                                 children: children,
                               )),
                 ),
-                if (singleScreen &&
-                    (selectedGoals.isNotEmpty || focusedGoalId != null))
+                if (singleScreen && focusedGoalId != null)
                   Positioned(
                       bottom: 0,
                       left: 0,
@@ -724,12 +688,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       height: uiUnit(16),
                       child: Container(
                         color: lightBackground,
-                        child: isEditingText
-                            ? const TextEditingControls()
-                            : HoverActionsWidget(
-                                goalMap: widget.goalMap,
-                                mainAxisSize: MainAxisSize.max,
-                              ),
+                        child: HoverActionsWidget(
+                          goalMap: widget.goalMap,
+                          mainAxisSize: MainAxisSize.max,
+                        ),
                       ))
               ],
             ),
