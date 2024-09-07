@@ -61,7 +61,6 @@ class FlattenedGoalTree extends ConsumerWidget {
         this.goalMap,
         goal.id,
         onVisit: (goalId, path) {
-          print([this.section, ...this.path, ...path, goalId]);
           flattenedGoals.add((
             goalPath: [this.section, ...this.path, ...path, goalId],
             hasRenderableChildren: this
@@ -83,10 +82,7 @@ class FlattenedGoalTree extends ConsumerWidget {
             goalId,
             NEW_GOAL_PLACEHOLDER
           ];
-          print("add goal path $addGoalPath");
-          print("text focus: $textFocus");
           if (this.showAddGoal && pathsMatch(addGoalPath, textFocus)) {
-            print('matches!');
             flattenedGoals.add((
               goalPath: addGoalPath,
               hasRenderableChildren: false,

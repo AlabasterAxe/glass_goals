@@ -78,6 +78,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
     final onArchive = GoalActionsContext.of(context).onArchive;
     final onUnarchive = GoalActionsContext.of(context).onUnarchive;
     final onPrint = GoalActionsContext.of(context).onPrint;
+    final onExpanded = GoalActionsContext.of(context).onExpanded;
 
     bool allArchived = selectedGoals.isNotEmpty;
     for (final selectedGoalId in selectedGoals) {
@@ -219,7 +220,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
             child: GlassGoalsIconButton(
                 icon: Icons.add,
                 onPressed: () {
-                  print([...widget.path!, NEW_GOAL_PLACEHOLDER]);
+                  onExpanded(widget.goalId, expanded: true);
                   textFocusStream.add([...widget.path!, NEW_GOAL_PLACEHOLDER]);
                 })),
         Tooltip(

@@ -189,10 +189,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               endTime: timeSlice.endTime(DateTime.now()))));
     }
 
-    if (parentId != null) {
-      this._onExpanded(parentId, expanded: true);
-    }
-
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
   }
 
