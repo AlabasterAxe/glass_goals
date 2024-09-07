@@ -8,6 +8,7 @@ import 'package:flutter/material.dart'
         MenuAnchor,
         MenuController,
         MenuItemButton,
+        SubmenuButton,
         TimeOfDay,
         Tooltip,
         showDatePicker,
@@ -16,7 +17,7 @@ import 'package:flutter/material.dart'
 import 'package:flutter/painting.dart' show FractionalOffset;
 import 'package:flutter/rendering.dart' show MainAxisAlignment, MainAxisSize;
 import 'package:flutter/widgets.dart'
-    show BuildContext, Row, StreamBuilder, Text, Widget;
+    show BuildContext, Icon, Row, StreamBuilder, Text, Widget;
 import 'package:goals_core/model.dart' show Goal, getGoalStatus;
 import 'package:goals_core/sync.dart'
     show AddParentLogEntry, GoalDelta, GoalStatus;
@@ -57,7 +58,7 @@ class HoverActionsWidget extends ConsumerStatefulWidget {
 const _TOOLTIP_DELAY = Duration(milliseconds: 200);
 
 class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
-  final _snoozeMenuController = MenuController();
+  final _moreActionsMenuController = MenuController();
   final _activateMenuController = MenuController();
   final _doneMenuController = MenuController();
 
@@ -88,45 +89,6 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
       mainAxisSize: widget.mainAxisSize,
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        Tooltip(
-          waitDuration: _TOOLTIP_DELAY,
-          showDuration: Duration.zero,
-          message: 'Import existing goal...',
-          child: GlassGoalsIconButton(
-              icon: Icons.play_for_work,
-              onPressed: () async {
-                final newChildId = await showDialog(
-                    barrierColor: Colors.black26,
-                    context: context,
-                    builder: (context) => Dialog(
-                          surfaceTintColor: Colors.transparent,
-                          backgroundColor: lightBackground,
-                          alignment: FractionalOffset.topCenter,
-                          child: StreamBuilder<Map<String, Goal>>(
-                              stream: AppContext.of(context)
-                                  .syncClient
-                                  .stateSubject,
-                              builder: (context, snapshot) {
-                                final modalMap = snapshot.data ?? Map();
-                                final goal = modalMap[widget.goalId];
-                                for (final subGoal in goal?.subGoals ?? []) {
-                                  modalMap.remove(subGoal.id);
-                                }
-                                return GoalSearchModal(
-                                  goalMap: snapshot.data ?? Map(),
-                                );
-                              }),
-                        ));
-                if (newChildId != null) {
-                  AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                      id: newChildId,
-                      logEntry: AddParentLogEntry(
-                          id: Uuid().v4(),
-                          creationTime: DateTime.now(),
-                          parentId: this.widget.goalId)));
-                }
-              }),
-        ),
         Tooltip(
           waitDuration: _TOOLTIP_DELAY,
           showDuration: Duration.zero,
@@ -193,68 +155,6 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
         Tooltip(
           waitDuration: _TOOLTIP_DELAY,
           showDuration: Duration.zero,
-          message: 'Snooze...',
-          child: MenuAnchor(
-            controller: _snoozeMenuController,
-            menuChildren: [
-              MenuItemButton(
-                child: const Text('An hour'),
-                onPressed: () => onSnooze(widget.goalId,
-                    DateTime.now().add(const Duration(hours: 1))),
-              ),
-              MenuItemButton(
-                  child: const Text('Later Today...'),
-                  onPressed: () async {
-                    final time = await showTimePicker(
-                      context: context,
-                      initialTime: TimeOfDay.now(),
-                    );
-                    if (time != null) {
-                      onSnooze(
-                          widget.goalId,
-                          DateTime.now().copyWith(
-                              hour: time.hour, minute: time.minute, second: 0));
-                    }
-                  }),
-              MenuItemButton(
-                child: const Text('Tomorrow'),
-                onPressed: () {
-                  onSnooze(widget.goalId,
-                      DateTime.now().add(const Duration(days: 1)).startOfDay);
-                },
-              ),
-              MenuItemButton(
-                child: const Text('Next week'),
-                onPressed: () {
-                  onSnooze(widget.goalId, DateTime.now().endOfWeek);
-                },
-              ),
-              MenuItemButton(
-                  child: const Text('Future Date...'),
-                  onPressed: () async {
-                    final day = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime(2100),
-                      locale: const Locale('en', 'GB'),
-                    );
-                    if (day != null) {
-                      onSnooze(widget.goalId, day);
-                    }
-                  }),
-            ],
-            child: GlassGoalsIconButton(
-              icon: Icons.hotel,
-              onPressed: () {
-                _snoozeMenuController.open();
-              },
-            ),
-          ),
-        ),
-        Tooltip(
-          waitDuration: _TOOLTIP_DELAY,
-          showDuration: Duration.zero,
           message: 'Mark Done',
           child: MenuAnchor(
             controller: _doneMenuController,
@@ -309,35 +209,136 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
             ),
           ),
         ),
-        allArchived
-            ? Tooltip(
-                waitDuration: _TOOLTIP_DELAY,
-                showDuration: Duration.zero,
-                message: 'Unarchive',
-                child: GlassGoalsIconButton(
-                  icon: Icons.unarchive,
-                  onPressed: () => onUnarchive(widget.goalId),
-                ),
-              )
-            : Tooltip(
-                waitDuration: _TOOLTIP_DELAY,
-                showDuration: Duration.zero,
-                message: 'Archive',
-                child: GlassGoalsIconButton(
-                  icon: Icons.archive,
-                  onPressed: () => onArchive(widget.goalId),
-                ),
+        Tooltip(
+          waitDuration: _TOOLTIP_DELAY,
+          showDuration: Duration.zero,
+          message: 'More actions...',
+          child: MenuAnchor(
+            controller: _moreActionsMenuController,
+            menuChildren: [
+              MenuItemButton(
+                leadingIcon: Icon(Icons.play_for_work),
+                child: const Text('Import goal...'),
+                onPressed: () async {
+                  final newChildId = await showDialog(
+                      barrierColor: Colors.black26,
+                      context: context,
+                      builder: (context) => Dialog(
+                            surfaceTintColor: Colors.transparent,
+                            backgroundColor: lightBackground,
+                            alignment: FractionalOffset.topCenter,
+                            child: StreamBuilder<Map<String, Goal>>(
+                                stream: AppContext.of(context)
+                                    .syncClient
+                                    .stateSubject,
+                                builder: (context, snapshot) {
+                                  final modalMap = snapshot.data ?? Map();
+                                  final goal = modalMap[widget.goalId];
+                                  for (final subGoal in goal?.subGoals ?? []) {
+                                    modalMap.remove(subGoal.id);
+                                  }
+                                  return GoalSearchModal(
+                                    goalMap: snapshot.data ?? Map(),
+                                  );
+                                }),
+                          ));
+                  if (newChildId != null) {
+                    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                        id: newChildId,
+                        logEntry: AddParentLogEntry(
+                            id: Uuid().v4(),
+                            creationTime: DateTime.now(),
+                            parentId: this.widget.goalId)));
+                  }
+                },
               ),
-        if (onPrint != null)
-          Tooltip(
-            waitDuration: _TOOLTIP_DELAY,
-            showDuration: Duration.zero,
-            message: 'Print',
+              SubmenuButton(
+                menuChildren: [
+                  MenuItemButton(
+                    child: const Text('An hour'),
+                    onPressed: () => onSnooze(widget.goalId,
+                        DateTime.now().add(const Duration(hours: 1))),
+                  ),
+                  MenuItemButton(
+                      child: const Text('Later Today...'),
+                      onPressed: () async {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.now(),
+                        );
+                        if (time != null) {
+                          onSnooze(
+                              widget.goalId,
+                              DateTime.now().copyWith(
+                                  hour: time.hour,
+                                  minute: time.minute,
+                                  second: 0));
+                        }
+                      }),
+                  MenuItemButton(
+                    child: const Text('Tomorrow'),
+                    onPressed: () {
+                      onSnooze(
+                          widget.goalId,
+                          DateTime.now()
+                              .add(const Duration(days: 1))
+                              .startOfDay);
+                    },
+                  ),
+                  MenuItemButton(
+                    child: const Text('Next week'),
+                    onPressed: () {
+                      onSnooze(widget.goalId, DateTime.now().endOfWeek);
+                    },
+                  ),
+                  MenuItemButton(
+                      child: const Text('Future Date...'),
+                      onPressed: () async {
+                        final day = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2100),
+                          locale: const Locale('en', 'GB'),
+                        );
+                        if (day != null) {
+                          onSnooze(widget.goalId, day);
+                        }
+                      }),
+                ],
+                leadingIcon: Icon(Icons.hotel),
+                child: const Text('Snooze goal...'),
+              ),
+              allArchived
+                  ? MenuItemButton(
+                      child: Text('Unarchive'),
+                      leadingIcon: Icon(Icons.unarchive),
+                      onPressed: () => onUnarchive(widget.goalId),
+                    )
+                  : MenuItemButton(
+                      child: Text('Archive'),
+                      leadingIcon: Icon(Icons.archive),
+                      onPressed: () => onArchive(widget.goalId),
+                    ),
+              if (onPrint != null)
+                MenuItemButton(
+                  child: Text('Save as PDF'),
+                  leadingIcon: Icon(Icons.picture_as_pdf),
+                  onPressed: () => onPrint(widget.goalId),
+                ),
+            ],
             child: GlassGoalsIconButton(
-              icon: Icons.print,
-              onPressed: () => onPrint(widget.goalId),
+              icon: Icons.more_horiz,
+              onPressed: () {
+                if (_moreActionsMenuController.isOpen) {
+                  _moreActionsMenuController.close();
+                } else {
+                  _moreActionsMenuController.open();
+                }
+              },
             ),
           ),
+        ),
       ],
     );
   }

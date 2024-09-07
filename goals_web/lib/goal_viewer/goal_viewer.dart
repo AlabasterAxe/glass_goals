@@ -611,7 +611,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       }
     }
 
-    if (!singleScreen && this._isDebug) children.add(DebugPanel());
+    if (!singleScreen && this._isDebug)
+      children.add(DebugPanel(
+        key: const ValueKey('debug'),
+      ));
 
     return GoalActionsContext(
       onActive: this.onActive,
