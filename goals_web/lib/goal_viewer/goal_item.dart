@@ -100,6 +100,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     return Draggable<String>(
       data: widget.goal.id,
       hitTestBehavior: HitTestBehavior.opaque,
+      dragAnchorStrategy: pointerDragAnchorStrategy,
       feedback: Container(
         decoration:
             const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
