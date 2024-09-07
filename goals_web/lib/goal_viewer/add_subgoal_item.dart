@@ -53,8 +53,6 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
   void didUpdateWidget(covariant AddSubgoalItemWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    this._textController.text = _defaultText;
-
     if (pathsMatch(textFocusStream.value, this.widget.path)) {
       setState(() {
         _editing = true;

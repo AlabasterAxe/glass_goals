@@ -1074,7 +1074,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       _filter.displayName,
                       style: theme.headlineMedium,
                     ),
-                    if (_filter == GoalFilter.schedule_v2)
+                    if (_filter == GoalFilter.schedule_v2 ||
+                        _filter == GoalFilter.pending_v2)
                       Tooltip(
                         waitDuration: Duration(milliseconds: 200),
                         showDuration: Duration.zero,

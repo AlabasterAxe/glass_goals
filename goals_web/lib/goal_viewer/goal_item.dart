@@ -86,15 +86,6 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
   }
 
   @override
-  void didUpdateWidget(oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (widget.goal.text != _textController.text) {
-      _textController.text = widget.goal.text;
-    }
-  }
-
-  @override
   void dispose() {
     for (final subscription in this.subscriptions) {
       subscription.cancel();
