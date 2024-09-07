@@ -129,7 +129,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   _onExpanded(String goalId, {bool? expanded}) {
     setState(() {
-      toggleId(expandedGoalsStream, goalId);
+      if (expanded != null) {
+        if (expanded) {
+          addId(expandedGoalsStream, goalId);
+        } else {
+          removeId(expandedGoalsStream, goalId);
+        }
+      } else {
+        toggleId(expandedGoalsStream, goalId);
+      }
       Hive.box('goals_web.ui')
           .put('expandedGoals', expandedGoalsStream.value.toList());
     });
@@ -180,6 +188,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               startTime: timeSlice.startTime(DateTime.now()),
               endTime: timeSlice.endTime(DateTime.now()))));
     }
+
+    if (parentId != null) {
+      this._onExpanded(parentId, expanded: true);
+    }
+
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
   }
 
@@ -862,8 +875,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             section: slice.name,
             goalMap: goalMap,
             rootGoalIds: goalIds,
-            hoverActionsBuilder: (goalId) => HoverActionsWidget(
-              goalId: goalId,
+            hoverActionsBuilder: (path) => HoverActionsWidget(
+              path: path,
               goalMap: widget.goalMap,
             ),
             depthLimit: _mode == GoalViewMode.list ? 1 : null,
@@ -924,8 +937,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       section: 'previous-${slice.name}',
       goalMap: goalMap,
       rootGoalIds: goalIds,
-      hoverActionsBuilder: (goalId) => HoverActionsWidget(
-        goalId: goalId,
+      hoverActionsBuilder: (path) => HoverActionsWidget(
+        path: path,
         goalMap: widget.goalMap,
       ),
       depthLimit: _mode == GoalViewMode.list ? 1 : null,
@@ -960,8 +973,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       section: 'previously-active',
       goalMap: goalMap,
       rootGoalIds: goalIds,
-      hoverActionsBuilder: (goalId) => HoverActionsWidget(
-        goalId: goalId,
+      hoverActionsBuilder: (path) => HoverActionsWidget(
+        path: path,
         goalMap: widget.goalMap,
       ),
       depthLimit: _mode == GoalViewMode.list ? 1 : null,
@@ -997,8 +1010,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       section: 'orphaned',
       goalMap: goalMap,
       rootGoalIds: goalIds,
-      hoverActionsBuilder: (goalId) => HoverActionsWidget(
-        goalId: goalId,
+      hoverActionsBuilder: (path) => HoverActionsWidget(
+        path: path,
         goalMap: widget.goalMap,
       ),
       depthLimit: _mode == GoalViewMode.list ? 1 : null,
@@ -1109,8 +1122,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           section: 'all-goals',
                           goalMap: goalMap,
                           rootGoalIds: goalIds,
-                          hoverActionsBuilder: (goalId) => HoverActionsWidget(
-                            goalId: goalId,
+                          hoverActionsBuilder: (path) => HoverActionsWidget(
+                            path: path,
                             goalMap: widget.goalMap,
                           ),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
@@ -1171,8 +1184,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                           section: 'pending',
                           goalMap: goalMap,
                           rootGoalIds: goalIds,
-                          hoverActionsBuilder: (goalId) => HoverActionsWidget(
-                              goalId: goalId, goalMap: widget.goalMap),
+                          hoverActionsBuilder: (path) => HoverActionsWidget(
+                              path: path, goalMap: widget.goalMap),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,
                         );
                       case GoalFilter.today:
@@ -1260,8 +1273,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         onSelected: this._onSelected,
         onAddGoal: this._onAddGoal,
         onDropGoal: this._onDropGoal,
-        hoverActionsBuilder: (goalId) =>
-            HoverActionsWidget(goalId: goalId, goalMap: widget.goalMap),
+        hoverActionsBuilder: (path) =>
+            HoverActionsWidget(path: path, goalMap: widget.goalMap),
       ),
     );
   }

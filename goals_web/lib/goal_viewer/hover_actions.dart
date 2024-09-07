@@ -24,6 +24,7 @@ import 'package:goals_core/sync.dart'
 import 'package:goals_core/util.dart' show DateTimeExtension;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/goal_search_modal.dart';
+import 'package:goals_web/goal_viewer/goal_viewer_constants.dart';
 import 'package:goals_web/styles.dart';
 import 'package:goals_web/widgets/gg_icon_button.dart';
 import 'package:goals_web/widgets/target_icon.dart';
@@ -34,7 +35,7 @@ import 'package:uuid/uuid.dart';
 import 'goal_actions_context.dart';
 import 'providers.dart';
 
-typedef HoverActionsBuilder = Widget Function(String? goalId);
+typedef HoverActionsBuilder = Widget Function(List<String>? goalId);
 
 class HoverActionsWidget extends ConsumerStatefulWidget {
   final Map<String, Goal> goalMap;
@@ -42,14 +43,16 @@ class HoverActionsWidget extends ConsumerStatefulWidget {
 
   /// If this HoverActionsWidget is associated with a specific goal
   /// you can supply that goal's id here.
-  final String? goalId;
+  final List<String>? path;
 
   const HoverActionsWidget({
     super.key,
     required this.goalMap,
     this.mainAxisSize = MainAxisSize.min,
-    this.goalId,
+    this.path,
   });
+
+  get goalId => path?.last;
 
   @override
   ConsumerState<HoverActionsWidget> createState() => _HoverActionsWidgetState();
@@ -209,6 +212,16 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
             ),
           ),
         ),
+        Tooltip(
+            waitDuration: _TOOLTIP_DELAY,
+            showDuration: Duration.zero,
+            message: 'Add Subgoal',
+            child: GlassGoalsIconButton(
+                icon: Icons.add,
+                onPressed: () {
+                  print([...widget.path!, NEW_GOAL_PLACEHOLDER]);
+                  textFocusStream.add([...widget.path!, NEW_GOAL_PLACEHOLDER]);
+                })),
         Tooltip(
           waitDuration: _TOOLTIP_DELAY,
           showDuration: Duration.zero,

@@ -253,8 +253,8 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                       section: slice.name,
                       goalMap: sliceGoalMap,
                       rootGoalIds: goalIds,
-                      hoverActionsBuilder: (goalId) => HoverActionsWidget(
-                        goalId: goalId,
+                      hoverActionsBuilder: (path) => HoverActionsWidget(
+                        path: path,
                         goalMap: widget.goalMap,
                       ),
                     ),

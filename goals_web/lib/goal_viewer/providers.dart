@@ -26,6 +26,13 @@ addId(BehaviorSubject<Set<String>> idSetSubject, String id) {
   idSetSubject.add(existingIdSet);
 }
 
+removeId(BehaviorSubject<Set<String>> idSetSubject, String id) {
+  if (!idSetSubject.value.contains(id)) return;
+  final existingIdSet = {...idSetSubject.value};
+  existingIdSet.remove(id);
+  idSetSubject.add(existingIdSet);
+}
+
 final expandedGoalsStream = BehaviorSubject<Set<String>>.seeded({});
 
 final expandedGoalsProvider = StreamProvider((_) => expandedGoalsStream);

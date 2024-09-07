@@ -242,7 +242,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                         SizedBox(width: uiUnit(2)),
                         // chip-like container widget around text status widget:
                         CurrentStatusChip(goal: widget.goal),
-                        if (this.widget.showExpansionArrow)
+                        if (this.widget.showExpansionArrow &&
+                            widget.hasRenderableChildren)
                           SizedBox(
                             width: 32,
                             height: 32,
@@ -253,9 +254,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                     size: 24,
                                     isExpanded
                                         ? Icons.arrow_drop_down
-                                        : widget.hasRenderableChildren
-                                            ? Icons.arrow_right
-                                            : Icons.add)),
+                                        : Icons.arrow_right)),
                           ),
                       ]),
                     ),
@@ -266,7 +265,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                             snapshot.hasData &&
                                 pathsMatch(
                                     snapshot.requireData, this.widget.path)))
-                      widget.hoverActionsBuilder(widget.goal.id)
+                      widget.hoverActionsBuilder([...this.widget.path])
                   ],
                 ),
               );

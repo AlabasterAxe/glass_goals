@@ -47,8 +47,8 @@ class FlattenedGoalTree extends ConsumerWidget {
     required this.section,
   });
 
-  List<FlattenedGoalItem> _getFlattenedGoalItems(
-      WorldContext context, Set<String> expandedGoalIds) {
+  List<FlattenedGoalItem> _getFlattenedGoalItems(WorldContext context,
+      Set<String> expandedGoalIds, List<String>? textFocus) {
     final priorityComparator = getPriorityComparator(context);
     final List<FlattenedGoalItem> flattenedGoals = [];
     for (final Goal goal in this
@@ -61,6 +61,7 @@ class FlattenedGoalTree extends ConsumerWidget {
         this.goalMap,
         goal.id,
         onVisit: (goalId, path) {
+          print([this.section, ...this.path, ...path, goalId]);
           flattenedGoals.add((
             goalPath: [this.section, ...this.path, ...path, goalId],
             hasRenderableChildren: this
@@ -75,15 +76,19 @@ class FlattenedGoalTree extends ConsumerWidget {
           }
         },
         onDepart: (String goalId, List<String> path) {
-          if (expandedGoalIds.contains(goalId) && this.showAddGoal) {
+          final addGoalPath = [
+            this.section,
+            ...this.path,
+            ...path,
+            goalId,
+            NEW_GOAL_PLACEHOLDER
+          ];
+          print("add goal path $addGoalPath");
+          print("text focus: $textFocus");
+          if (this.showAddGoal && pathsMatch(addGoalPath, textFocus)) {
+            print('matches!');
             flattenedGoals.add((
-              goalPath: [
-                this.section,
-                ...this.path,
-                ...path,
-                goalId,
-                NEW_GOAL_PLACEHOLDER
-              ],
+              goalPath: addGoalPath,
               hasRenderableChildren: false,
             ));
           }
@@ -106,8 +111,10 @@ class FlattenedGoalTree extends ConsumerWidget {
         ref.watch(expandedGoalsProvider).value ?? expandedGoalsStream.value;
     final worldContext =
         ref.watch(worldContextProvider).value ?? worldContextStream.value;
+    final textFocus =
+        ref.watch(textFocusProvider).value ?? textFocusStream.value;
     final flattenedGoalItems =
-        _getFlattenedGoalItems(worldContext, expandedGoalIds);
+        _getFlattenedGoalItems(worldContext, expandedGoalIds, textFocus);
     final isNarrow = MediaQuery.of(context).size.width < 600;
 
     final goalItems = <Widget>[];

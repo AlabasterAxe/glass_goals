@@ -120,8 +120,10 @@ bool _traverseDown(
 
   final decision = onVisit(headGoal.id, tail);
   if (decision == TraversalDecision.dontRecurse) {
+    onDepart?.call(headGoal.id, tail);
     return false;
   } else if (decision == TraversalDecision.stopTraversal) {
+    onDepart?.call(headGoal.id, tail);
     return true;
   }
   final newTail = [...tail, rootGoalId];

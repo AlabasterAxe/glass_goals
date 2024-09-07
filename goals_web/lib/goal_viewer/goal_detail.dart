@@ -975,7 +975,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                     CurrentStatusChip(goal: widget.goal)
                   ]),
               GoalActionsContext.overrideWith(context,
-                  child: widget.hoverActionsBuilder(widget.goal.id),
+                  child: widget.hoverActionsBuilder(['detail', widget.goal.id]),
                   onPrint: (_) {
                 printGoal((pw.Document doc) async {
                   final font = await PdfGoogleFonts.jostRegular();
