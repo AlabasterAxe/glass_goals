@@ -146,7 +146,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         selectedGoalsStream.add(selectedGoals);
       }
 
-      focusedGoalStream.add(goalId);
+      if (!isCtrlHeld()) {
+        focusedGoalStream.add(goalId);
+      }
       Hive.box('goals_web.ui').put('focusedGoal', goalId);
     });
   }

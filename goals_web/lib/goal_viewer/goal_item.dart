@@ -68,7 +68,6 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     return KeyEventResult.ignored;
   });
   bool _hovering = false;
-  Timer? _doubleTapTimer;
 
   List<StreamSubscription> subscriptions = [];
 
@@ -144,6 +143,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
       )),
     );
     final content = MouseRegion(
+      cursor: SystemMouseCursors.click,
       onHover: (event) {
         setState(() {
           if (!_hovering) {
@@ -156,28 +156,10 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         onTap: _editing
             ? null
             : () {
-                if (this._doubleTapTimer != null) {
-                  this._doubleTapTimer!.cancel();
-                  this._doubleTapTimer = null;
+                setState(() {
+                  onSelected.call(widget.goal.id);
                   onFocused.call(widget.goal.id);
-                  return;
-                }
-
-                this._doubleTapTimer = Timer(
-                  Duration(milliseconds: 200),
-                  () {
-                    this._doubleTapTimer = null;
-                    setState(() {
-                      if (isSelected) {
-                        this._textController.text = widget.goal.text;
-                        _editing = true;
-                        _focusNode.requestFocus();
-                      } else {
-                        onSelected.call(widget.goal.id);
-                      }
-                    });
-                  },
-                );
+                });
               },
         child: StreamBuilder<List<String>?>(
             stream: hoverEventStream.stream,
@@ -234,15 +216,28 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                 ),
                               )
                             : Flexible(
-                                child: Text(widget.goal.text,
-                                    style: (isSelected
-                                            ? focusedFontStyle
-                                                .merge(mainTextStyle)
-                                            : mainTextStyle)
-                                        .copyWith(
-                                      decoration: TextDecoration.underline,
-                                      overflow: TextOverflow.ellipsis,
-                                    )),
+                                child: MouseRegion(
+                                  cursor: SystemMouseCursors.text,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      this._textController.text =
+                                          widget.goal.text;
+                                      _focusNode.requestFocus();
+                                      setState(() {
+                                        _editing = true;
+                                      });
+                                    },
+                                    child: Text(widget.goal.text,
+                                        style: (isSelected
+                                                ? focusedFontStyle
+                                                    .merge(mainTextStyle)
+                                                : mainTextStyle)
+                                            .copyWith(
+                                          decoration: TextDecoration.underline,
+                                          overflow: TextOverflow.ellipsis,
+                                        )),
+                                  ),
+                                ),
                               ),
                         SizedBox(width: uiUnit(2)),
                         // chip-like container widget around text status widget:
