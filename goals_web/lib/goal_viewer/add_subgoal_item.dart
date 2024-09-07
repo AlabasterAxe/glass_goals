@@ -110,10 +110,15 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
       cursor: SystemMouseCursors.click,
       child: Row(
         children: [
-          SizedBox(
-            width: uiUnit(10),
-            height: uiUnit(8),
-            child: const Center(child: Icon(Icons.add, size: 18)),
+          GestureDetector(
+            onTap: () {
+              textFocusStream.add(widget.path);
+            },
+            child: SizedBox(
+              width: uiUnit(10),
+              height: uiUnit(8),
+              child: const Center(child: Icon(Icons.add, size: 18)),
+            ),
           ),
           _editing
               ? IntrinsicWidth(
