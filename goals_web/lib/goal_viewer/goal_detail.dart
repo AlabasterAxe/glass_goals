@@ -29,7 +29,9 @@ import 'package:goals_web/styles.dart'
     show darkElementColor, lightBackground, mainTextStyle, uiUnit;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
+import 'package:htmltopdfwidgets/htmltopdfwidgets.dart' show HTMLToPdf;
 import 'package:intl/intl.dart';
+import 'package:markdown/markdown.dart' show markdownToHtml;
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart' show canLaunchUrl, launchUrl;
 import 'package:uuid/uuid.dart';
@@ -581,10 +583,21 @@ class _NoteCardState extends State<NoteCard> {
                   ),
                 )
               : MarkdownBody(
-                  listItemCrossAxisAlignment:
-                      MarkdownListItemCrossAxisAlignment.start,
                   data: _textController.text,
                   selectable: true,
+                  listItemCrossAxisAlignment:
+                      MarkdownListItemCrossAxisAlignment.baseline,
+                  bulletBuilder: (params) {
+                    switch (params.style) {
+                      case BulletStyle.orderedList:
+                        return Text("${params.index + 1}.",
+                            style: TextStyle(
+                                fontSize: 20,
+                                textBaseline: TextBaseline.alphabetic));
+                      case BulletStyle.unorderedList:
+                        return Text("⬤", style: TextStyle(fontSize: 8));
+                    }
+                  },
                   onTapText: () {
                     if (!widget.isChildGoal) {
                       setState(() {
@@ -604,7 +617,7 @@ class _NoteCardState extends State<NoteCard> {
                     }
                   },
                   styleSheet: MarkdownStyleSheet(
-                    textScaleFactor: 1.4,
+                    textScaler: TextScaler.linear(1.4),
                   )),
         ),
       ],
@@ -979,35 +992,33 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                   onPrint: (_) {
                 printGoal((pw.Document doc) async {
                   final font = await PdfGoogleFonts.jostRegular();
+                  final widgets = [
+                    pw.Header(
+                        level: 1,
+                        text: widget.goal.text,
+                        textStyle: pw.TextStyle(fontSize: 24, font: font)),
+                    for (final item
+                        in _computeFlatHistoryLog(worldContext, logItems))
+                      if (item.entry is NoteLogEntry) ...[
+                        if (item.goal.id != widget.goal.id)
+                          pw.Header(
+                              level: 2,
+                              margin: pw.EdgeInsets.zero,
+                              padding: pw.EdgeInsets.fromLTRB(0, 18, 0, 0),
+                              text: item.goal.text,
+                              textStyle: pw.TextStyle(
+                                  font: font,
+                                  fontWeight: pw.FontWeight.bold,
+                                  fontSize: 18)),
+                        pw.Divider(),
+                        ...(await HTMLToPdf().convert(
+                            markdownToHtml((item.entry as NoteLogEntry).text),
+                            defaultFont: font)),
+                      ]
+                  ];
                   doc.addPage(pw.MultiPage(
                     pageFormat: PdfPageFormat.letter,
-                    build: (context) => [
-                      pw.Header(
-                          level: 1,
-                          text: widget.goal.text,
-                          textStyle: pw.TextStyle(fontSize: 24, font: font)),
-                      for (final item
-                          in _computeFlatHistoryLog(worldContext, logItems))
-                        if (item.entry is NoteLogEntry) ...[
-                          if (item.goal.id != widget.goal.id)
-                            pw.Header(
-                                level: 2,
-                                margin: pw.EdgeInsets.zero,
-                                padding: pw.EdgeInsets.fromLTRB(0, 18, 0, 0),
-                                text: item.goal.text,
-                                textStyle: pw.TextStyle(
-                                    font: font,
-                                    fontWeight: pw.FontWeight.bold,
-                                    fontSize: 18)),
-                          pw.Divider(),
-                          ...(item.entry as NoteLogEntry)
-                              .text
-                              .split("\n")
-                              .map((line) => pw.Text(line,
-                                  style: pw.TextStyle(font: font)))
-                              .toList(),
-                        ]
-                    ],
+                    build: (context) => widgets,
                   ));
                 });
               }),
