@@ -31,7 +31,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
 import 'package:htmltopdfwidgets/htmltopdfwidgets.dart' show HTMLToPdf;
 import 'package:intl/intl.dart';
-import 'package:markdown/markdown.dart' show markdownToHtml;
+import 'package:markdown/markdown.dart' show ExtensionSet, markdownToHtml;
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart' show canLaunchUrl, launchUrl;
 import 'package:uuid/uuid.dart';
@@ -1012,7 +1012,8 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                                   fontSize: 18)),
                         pw.Divider(),
                         ...(await HTMLToPdf().convert(
-                            markdownToHtml((item.entry as NoteLogEntry).text),
+                            markdownToHtml((item.entry as NoteLogEntry).text,
+                                extensionSet: ExtensionSet.gitHubWeb),
                             defaultFont: font)),
                       ]
                   ];
