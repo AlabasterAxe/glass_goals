@@ -95,13 +95,13 @@ String getGoalStatusStringSince(WorldContext context, StatusLogEntry status) {
 String getVerboseGoalStatusString(WorldContext context, StatusLogEntry status) {
   switch (status.status) {
     case GoalStatus.active:
-      return "Active ${status.endTime != null ? 'until ${DateFormat.yMd().format(status.endTime!)}' : 'forever'}";
+      return "${status.endTime != null ? 'Until ${DateFormat.yMd().format(status.endTime!)}' : 'Ongoing'}";
     case GoalStatus.done:
       return 'Done${status.endTime != null ? ' until ${getSnoozedDateString(context.time, status)}' : ''}';
     case GoalStatus.archived:
       return 'Archived';
     case GoalStatus.pending:
-      return "Snoozed until ${DateFormat.yMd().format(status.endTime!)}";
+      return "Until ${DateFormat.yMd().format(status.endTime!)}";
     case null:
       return 'To Do';
   }
@@ -249,6 +249,6 @@ class CurrentStatusChip extends ConsumerWidget {
     final goalStatus = getGoalStatus(worldContext, goal);
 
     return StatusChip(
-        entry: goalStatus, goalId: goal.id, showArchiveButton: true);
+        entry: goalStatus, until: true, goalId: goal.id, showArchiveButton: true);
   }
 }
