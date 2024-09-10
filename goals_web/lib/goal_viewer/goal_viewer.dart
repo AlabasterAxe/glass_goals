@@ -29,9 +29,11 @@ import 'package:goals_core/model.dart'
         getTransitiveSubGoals;
 import 'package:goals_core/sync.dart'
     show
+        AddParentLogEntry,
         GoalDelta,
         GoalStatus,
         PriorityLogEntry,
+        RemoveParentLogEntry,
         SetParentLogEntry,
         StatusLogEntry;
 import 'package:goals_web/app_bar.dart';
@@ -507,12 +509,37 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       if (newParentId != null &&
           droppedGoal != null &&
           !droppedGoal.hasParent(newParentId)) {
+        final pathParentId =
+            details.sourcePath != null && details.sourcePath!.length > 1
+                ? details.sourcePath![details.sourcePath!.length - 2]
+                : null;
+        final pathParent =
+            pathParentId == null ? null : this.widget.goalMap[pathParentId];
+        if (pathParent == null) {
+          // if the source path is not provided or the parent is not found, do the legacy behavior of setting the parent to the exclusion of any prior parents.
+          goalDeltas.add(GoalDelta(
+              id: details.goalId,
+              logEntry: SetParentLogEntry(
+                  id: Uuid().v4(),
+                  parentId: newParentId,
+                  creationTime: DateTime.now())));
+          continue;
+        }
+
         goalDeltas.add(GoalDelta(
             id: details.goalId,
-            logEntry: SetParentLogEntry(
-                id: Uuid().v4(),
-                parentId: newParentId,
-                creationTime: DateTime.now())));
+            logEntry: RemoveParentLogEntry(
+              id: Uuid().v4(),
+              creationTime: DateTime.now(),
+              parentId: pathParentId,
+            )));
+        goalDeltas.add(GoalDelta(
+            id: details.goalId,
+            logEntry: AddParentLogEntry(
+              id: Uuid().v4(),
+              creationTime: DateTime.now(),
+              parentId: newParentId,
+            )));
       }
 
       goalDeltas.add(GoalDelta(
@@ -535,12 +562,38 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       if (droppedGoal == null || droppedGoal.hasParent(details.goalId)) {
         continue;
       }
+
+      final pathParentId =
+          details.sourcePath != null && details.sourcePath!.length > 1
+              ? details.sourcePath![details.sourcePath!.length - 2]
+              : null;
+      final pathParent =
+          pathParentId == null ? null : this.widget.goalMap[pathParentId];
+      if (pathParent == null) {
+        // if the source path is not provided or the parent is not found, do the legacy behavior of setting the parent to the exclusion of any prior parents.
+        goalDeltas.add(GoalDelta(
+            id: details.goalId,
+            logEntry: SetParentLogEntry(
+                id: Uuid().v4(),
+                parentId: targetGoalPath.lastOrNull,
+                creationTime: DateTime.now())));
+        continue;
+      }
+
       goalDeltas.add(GoalDelta(
           id: details.goalId,
-          logEntry: SetParentLogEntry(
-              id: Uuid().v4(),
-              parentId: targetGoalPath.lastOrNull,
-              creationTime: DateTime.now())));
+          logEntry: RemoveParentLogEntry(
+            id: Uuid().v4(),
+            creationTime: DateTime.now(),
+            parentId: pathParentId,
+          )));
+      goalDeltas.add(GoalDelta(
+          id: details.goalId,
+          logEntry: AddParentLogEntry(
+            id: Uuid().v4(),
+            creationTime: DateTime.now(),
+            parentId: targetGoalPath.lastOrNull,
+          )));
     }
     return goalDeltas;
   }
@@ -590,6 +643,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   }) {
     final goalDeltas = _computeDropGoalEffects(
       droppedGoalId,
+      sourcePath: sourcePath,
       dropPath: dropPath,
       prevDropPath: prevDropPath,
       nextDropPath: nextDropPath,
