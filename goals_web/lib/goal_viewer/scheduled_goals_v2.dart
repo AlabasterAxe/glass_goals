@@ -199,12 +199,14 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                         onAddGoal(parentId, text, slice),
                     onDropGoal: (
                       droppedGoalId, {
+                      List<String>? sourcePath,
                       List<String>? dropPath,
                       List<String>? prevDropPath,
                       List<String>? nextDropPath,
                     }) {
                       onDropGoal(
                         droppedGoalId,
+                        sourcePath: sourcePath,
                         dropPath: dropPath,
                         prevDropPath: prevDropPath,
                         nextDropPath: nextDropPath,

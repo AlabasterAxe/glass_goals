@@ -34,7 +34,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
   final bool hasRenderableChildren;
   final bool showExpansionArrow;
   final GoalItemDragHandle dragHandle;
-  final Function(String goalId)? onDropGoal;
+  final Function(GoalDragDetails goalId)? onDropGoal;
   final List<String> path;
 
   const GoalItemWidget({
@@ -97,8 +97,9 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
       {required Widget child,
       required bool isSelected,
       required Set<String> selectedGoals}) {
-    return Draggable<String>(
-      data: widget.goal.id,
+    return Draggable<GoalDragDetails>(
+      data:
+          GoalDragDetails(goalId: widget.goal.id, sourcePath: this.widget.path),
       hitTestBehavior: HitTestBehavior.opaque,
       dragAnchorStrategy: pointerDragAnchorStrategy,
       feedback: Container(
@@ -273,7 +274,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
             }),
       ),
     );
-    return DragTarget<String>(
+    return DragTarget<GoalDragDetails>(
       onAcceptWithDetails: (deets) => this.widget.onDropGoal?.call(deets.data),
       onMove: (details) {
         setState(() {

@@ -125,8 +125,9 @@ class FlattenedGoalTree extends ConsumerWidget {
           prevGoalPath: prevGoal?.goalPath ?? [section, ...this.path],
           nextGoalPath: flattenedGoal.goalPath,
           goalMap: this.goalMap,
-          onDropGoal: (droppedGoalId) {
-            onDropGoal(droppedGoalId,
+          onDropGoal: (goalDragDetails) {
+            onDropGoal(goalDragDetails.goalId,
+                sourcePath: goalDragDetails.sourcePath,
                 prevDropPath: prevGoal?.goalPath ?? [section, ...this.path],
                 nextDropPath: flattenedGoal.goalPath);
           }));
@@ -136,9 +137,10 @@ class FlattenedGoalTree extends ConsumerWidget {
                 (flattenedGoal.goalPath.length - (2 + this.path.length))),
         child: goalId != NEW_GOAL_PLACEHOLDER
             ? GoalItemWidget(
-                onDropGoal: (droppedGoalId) {
+                onDropGoal: (details) {
                   onDropGoal(
-                    droppedGoalId,
+                    details.goalId,
+                    sourcePath: details.sourcePath,
                     dropPath: flattenedGoal.goalPath,
                   );
                 },

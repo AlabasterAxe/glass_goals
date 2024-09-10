@@ -3,6 +3,16 @@ import 'package:flutter/widgets.dart'
 
 import '../common/time_slice.dart';
 
+class GoalDragDetails {
+  final String goalId;
+  final List<String>? sourcePath;
+
+  const GoalDragDetails({
+    required this.goalId,
+    this.sourcePath,
+  });
+}
+
 class GoalActionsContext extends InheritedWidget {
   final Function(String goalId) onSelected;
   final Function(String goalId) onFocused;
@@ -14,6 +24,7 @@ class GoalActionsContext extends InheritedWidget {
   final Function(String?, DateTime?) onSnooze;
   final Function(
     String goalId, {
+    List<String>? sourcePath,
     List<String>? dropPath,
     List<String>? prevDropPath,
     List<String>? nextDropPath,
@@ -59,6 +70,7 @@ class GoalActionsContext extends InheritedWidget {
     Function(String?, {DateTime startTime, DateTime? endTime})? onActive,
     Function(
       String goalId, {
+      List<String>? sourcePath,
       List<String>? dropPath,
       List<String>? prevDropPath,
       List<String>? nextDropPath,

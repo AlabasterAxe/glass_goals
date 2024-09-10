@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/widgets.dart';
 import 'package:goals_core/model.dart';
+import 'package:goals_web/goal_viewer/goal_actions_context.dart';
 
 import '../styles.dart';
 import 'goal_viewer_constants.dart';
@@ -11,7 +12,7 @@ class GoalSeparator extends StatefulWidget {
   final List<String> prevGoalPath;
   final List<String> nextGoalPath;
   final bool isFirst;
-  final Function(String goalId)? onDropGoal;
+  final Function(GoalDragDetails)? onDropGoal;
   const GoalSeparator({
     super.key,
     required this.goalMap,
@@ -30,7 +31,7 @@ class _GoalSeparatorState extends State<GoalSeparator> {
 
   @override
   Widget build(BuildContext context) {
-    return DragTarget<String>(
+    return DragTarget<GoalDragDetails>(
       onAcceptWithDetails: (deets) {
         this.widget.onDropGoal?.call(deets.data);
         setState(() {
