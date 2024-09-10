@@ -95,7 +95,7 @@ enum GoalFilter {
 enum GoalViewMode { tree, list, schedule }
 
 class _GoalViewerState extends ConsumerState<GoalViewer> {
-  GoalFilter _filter = GoalFilter.schedule;
+  GoalFilter _filter = GoalFilter.pending_v2;
   GoalViewMode _mode = GoalViewMode.tree;
   final FocusNode _focusNode = FocusNode();
   bool _isDebug = false;
