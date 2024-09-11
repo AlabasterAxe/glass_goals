@@ -76,12 +76,6 @@ final manualTimeSliceProvider = StreamProvider<List<TimeSlice>>((_) =>
       return slices;
     }));
 
-final isEditingTextProvider =
-    StateNotifierProvider<_BooleanStateNotifier, bool>(
-        (ref) => _BooleanStateNotifier(false));
-
-final editingEventStream = BehaviorSubject<EditingEvent>();
-
 final debugProvider = StateNotifierProvider<_BooleanStateNotifier, bool>(
     (ref) => _BooleanStateNotifier(false));
 
