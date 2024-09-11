@@ -1,1 +1,2 @@
 const String NEW_GOAL_PLACEHOLDER = "[NEW_GOAL]";
+const String NEW_NOTE_PLACEHOLDER = "[NEW_NOTE]";

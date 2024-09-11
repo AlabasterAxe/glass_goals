@@ -1,20 +1,20 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:goals_core/sync.dart';
+import 'package:goals_web/goal_viewer/goal_viewer_constants.dart';
+import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/styles.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerStatefulWidget, ConsumerState;
 import 'package:uuid/uuid.dart';
 
 import '../app_context.dart';
-import 'providers.dart'
-    show EditingEvent, editingEventStream, isEditingTextProvider;
 
 class AddNoteCard extends ConsumerStatefulWidget {
   final String goalId;
   const AddNoteCard({super.key, required this.goalId});
+
+  get path => [goalId, NEW_NOTE_PLACEHOLDER];
 
   @override
   ConsumerState<AddNoteCard> createState() => _AddNoteCardState();
@@ -22,12 +22,20 @@ class AddNoteCard extends ConsumerStatefulWidget {
 
 class _AddNoteCardState extends ConsumerState<AddNoteCard> {
   bool _editing = false;
-  late final _focusNode = FocusNode();
-  StreamSubscription? _editingSubscription;
+  final _focusNode = FocusNode();
 
   final _defaultText = "[New Note]";
-  late TextEditingController _textController =
+  late final TextEditingController _textController =
       TextEditingController(text: this._defaultText);
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (pathsMatch(textFocusStream.value, this.widget.path)) {
+      _startEditing();
+    }
+  }
 
   @override
   void dispose() {
@@ -65,40 +73,35 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
   }
 
   _startEditing() {
-    ref.read(isEditingTextProvider.notifier).set(true);
-    setState(() {
-      if (_editingSubscription != null) {
-        _editingSubscription!.cancel();
-      }
-      _editingSubscription = editingEventStream.listen((event) {
-        switch (event) {
-          case EditingEvent.accept:
-            _createNote();
-            break;
-          case EditingEvent.discard:
-            _potentiallyDiscardNote();
-            break;
-        }
-      });
-      _editing = true;
-      _focusNode.requestFocus();
-      _textController.selection = TextSelection(
-          baseOffset: 0, extentOffset: _textController.text.length);
-    });
+    textFocusStream.add(widget.path);
   }
 
   _stopEditing() {
-    _editingSubscription!.cancel();
-    _editingSubscription = null;
-    ref.read(isEditingTextProvider.notifier).set(false);
-    setState(() {
-      _editing = false;
-    });
+    textFocusStream.add(null);
   }
 
   @override
   Widget build(BuildContext context) {
     final isNarrow = MediaQuery.of(context).size.width < 600;
+    ref.listen(textFocusProvider, (oldValue, newValue) {
+      if (pathsMatch(this.widget.path, newValue.value)) {
+        if (!pathsMatch(oldValue?.value, newValue.value) ||
+            !_editing ||
+            !_focusNode.hasFocus) {
+          _focusNode.requestFocus();
+          _textController.selection = TextSelection(
+              baseOffset: 0, extentOffset: _textController.text.length);
+          setState(() {
+            _editing = true;
+          });
+        }
+      } else {
+        setState(() {
+          _editing = false;
+          _focusNode.unfocus();
+        });
+      }
+    });
     return CallbackShortcuts(
       bindings: <ShortcutActivator, Function()>{
         LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter):
