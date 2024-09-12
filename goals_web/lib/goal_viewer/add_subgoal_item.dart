@@ -81,9 +81,9 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
           });
         }
       } else {
+        _focusNode.unfocus();
         setState(() {
           _editing = false;
-          _focusNode.unfocus();
         });
       }
     });

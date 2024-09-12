@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:goals_core/sync.dart';
+import 'package:goals_web/common/keyboard_utils.dart';
 import 'package:goals_web/goal_viewer/goal_viewer_constants.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/styles.dart';
@@ -22,7 +23,17 @@ class AddNoteCard extends ConsumerStatefulWidget {
 
 class _AddNoteCardState extends ConsumerState<AddNoteCard> {
   bool _editing = false;
-  final _focusNode = FocusNode();
+  late final FocusNode _focusNode = FocusNode(onKeyEvent: (node, event) {
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      this._textController.text = _defaultText;
+      textFocusStream.add(null);
+      return KeyEventResult.handled;
+    } else if (event.logicalKey == LogicalKeyboardKey.enter && isShiftHeld()) {
+      _createNote();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  });
 
   final _defaultText = "[New Note]";
   late final TextEditingController _textController =
@@ -60,7 +71,6 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
 
   _potentiallyDiscardNote() {
     if (_textController.text == _defaultText) {
-      _textController.text = _defaultText;
       _stopEditing();
     } else {
       _createNote();
@@ -96,61 +106,52 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
           });
         }
       } else {
+        _focusNode.unfocus();
         setState(() {
           _editing = false;
-          _focusNode.unfocus();
         });
       }
     });
-    return CallbackShortcuts(
-      bindings: <ShortcutActivator, Function()>{
-        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter):
-            _createNote,
-        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
-            _createNote,
-        LogicalKeySet(LogicalKeyboardKey.escape): _discardNote,
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: uiUnit(10),
-                height: uiUnit(8),
-                child: const Center(child: Icon(Icons.add, size: 18)),
-              ),
-              Flexible(
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: _editing
-                      ? IntrinsicHeight(
-                          child: TextField(
-                            autocorrect: false,
-                            controller: _textController,
-                            decoration: null,
-                            maxLines: null,
-                            style: mainTextStyle,
-                            onTapOutside: isNarrow
-                                ? null
-                                : (_) => _potentiallyDiscardNote(),
-                            focusNode: _focusNode,
-                          ),
-                        )
-                      : GestureDetector(
-                          onTap: _startEditing,
-                          child: Text(_textController.text,
-                              style: mainTextStyle.copyWith(
-                                  color: Colors.black54)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: uiUnit(10),
+              height: uiUnit(8),
+              child: const Center(child: Icon(Icons.add, size: 18)),
+            ),
+            Flexible(
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: _editing
+                    ? IntrinsicHeight(
+                        child: TextField(
+                          autocorrect: false,
+                          controller: _textController,
+                          decoration: null,
+                          maxLines: null,
+                          style: mainTextStyle,
+                          onTapOutside: isNarrow
+                              ? null
+                              : (_) => _potentiallyDiscardNote(),
+                          focusNode: _focusNode,
                         ),
-                ),
+                      )
+                    : GestureDetector(
+                        onTap: _startEditing,
+                        child: Text(_textController.text,
+                            style:
+                                mainTextStyle.copyWith(color: Colors.black54)),
+                      ),
               ),
-            ],
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
