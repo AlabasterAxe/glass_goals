@@ -247,6 +247,10 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                       path: path,
                       goalMap: widget.goalMap,
                     ),
+                    toggleSectionExpansion: (key) {
+                      _toggleExpansion(TimeSlice.values
+                          .firstWhere((slice) => slice.name == key));
+                    },
                   ),
                 );
               })

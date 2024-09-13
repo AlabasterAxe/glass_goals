@@ -23,7 +23,9 @@ import 'goal_viewer_constants.dart';
 import 'providers.dart';
 import 'package:collection/collection.dart';
 
-sealed class _FlattenedTreeItem {}
+sealed class _FlattenedTreeItem {
+  const _FlattenedTreeItem();
+}
 
 class _GoalItem extends _FlattenedTreeItem {
   final List<String> goalPath;
@@ -31,7 +33,7 @@ class _GoalItem extends _FlattenedTreeItem {
   final Map<String, Goal> goalMap;
   final List<String> rootPath;
 
-  _GoalItem({
+  const _GoalItem({
     required this.goalPath,
     required this.hasRenderableChildren,
     required this.goalMap,
@@ -41,8 +43,10 @@ class _GoalItem extends _FlattenedTreeItem {
 
 class _SectionTitle extends _FlattenedTreeItem {
   final String title;
+  final String key;
+  final bool expanded;
 
-  _SectionTitle(this.title);
+  const _SectionTitle(this.title, this.key, this.expanded);
 }
 
 typedef FlattenedGoalItem = ({
@@ -67,6 +71,7 @@ class FlattenedGoalTree extends ConsumerStatefulWidget {
   final HoverActionsBuilder hoverActionsBuilder;
   final List<FlattenedGoalTreeSection> sections;
   final bool showAddGoal;
+  final Function(String)? toggleSectionExpansion;
   const FlattenedGoalTree({
     super.key,
     this.depthLimit,
@@ -74,6 +79,7 @@ class FlattenedGoalTree extends ConsumerStatefulWidget {
     required this.hoverActionsBuilder,
     this.showAddGoal = true,
     required this.sections,
+    this.toggleSectionExpansion,
   });
 
   @override
@@ -92,7 +98,8 @@ class _StatefulFlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
     final priorityComparator = getPriorityComparator(context);
     final List<_FlattenedTreeItem> flattenedGoals = [];
     if (section.title != null) {
-      flattenedGoals.add(_SectionTitle(section.title!));
+      flattenedGoals
+          .add(_SectionTitle(section.title!, section.key, section.expanded));
     }
     if (!section.expanded) {
       return flattenedGoals;
@@ -245,12 +252,14 @@ class _StatefulFlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
                     ),
               ),
             ),
-            // GlassGoalsIconButton(
-            //   icon: Icons.arrow_drop_down,
-            //   onPressed: () {
-            //     this._toggleExpansion(slice);
-            //   },
-            // ),
+            GlassGoalsIconButton(
+              icon: flattenedGoal.expanded
+                  ? Icons.arrow_drop_down
+                  : Icons.arrow_right,
+              onPressed: () {
+                this.widget.toggleSectionExpansion?.call(flattenedGoal.key);
+              },
+            ),
           ],
         ));
         prevGoal = null;
