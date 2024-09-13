@@ -8,6 +8,14 @@ class UndoIntent extends Intent {
   const UndoIntent();
 }
 
+class AcceptMultiLineText extends Intent {
+  const AcceptMultiLineText();
+}
+
+class CancelIntent extends Intent {
+  const CancelIntent();
+}
+
 class RedoIntent extends Intent {
   const RedoIntent();
 }

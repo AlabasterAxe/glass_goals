@@ -38,6 +38,7 @@ import 'package:goals_core/sync.dart'
         StatusLogEntry;
 import 'package:goals_web/app_bar.dart';
 import 'package:goals_web/app_context.dart';
+import 'package:goals_web/common/os_utils.dart';
 import 'package:goals_web/goal_viewer/debug_panel.dart';
 import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
@@ -707,20 +708,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       onDropGoal: this._onDropGoal,
       child: FocusableActionDetector(
         autofocus: true,
-        shortcuts: <LogicalKeySet, Intent>{
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyK):
-              const SearchIntent(),
-          LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyK):
-              const SearchIntent(),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyZ):
-              const UndoIntent(),
-          LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyZ):
-              const UndoIntent(),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift,
-              LogicalKeyboardKey.keyZ): const RedoIntent(),
-          LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.shift,
-              LogicalKeyboardKey.keyZ): const RedoIntent(),
-        },
+        shortcuts: isMacOS() ? MAC_SHORTCUTS : SHORTCUTS,
         actions: {
           SearchIntent: CallbackAction(onInvoke: _openSearch),
           UndoIntent: CallbackAction(onInvoke: (_) {

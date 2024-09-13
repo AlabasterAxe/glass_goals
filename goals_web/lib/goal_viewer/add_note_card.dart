@@ -4,6 +4,7 @@ import 'package:goals_core/sync.dart';
 import 'package:goals_web/common/keyboard_utils.dart';
 import 'package:goals_web/goal_viewer/goal_viewer_constants.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
+import 'package:goals_web/intents.dart';
 import 'package:goals_web/styles.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerStatefulWidget, ConsumerState;
@@ -112,46 +113,55 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
         });
       }
     });
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: uiUnit(10),
-              height: uiUnit(8),
-              child: const Center(child: Icon(Icons.add, size: 18)),
-            ),
-            Flexible(
-              child: MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: _editing
-                    ? IntrinsicHeight(
-                        child: TextField(
-                          autocorrect: false,
-                          controller: _textController,
-                          decoration: null,
-                          maxLines: null,
-                          style: mainTextStyle,
-                          onTapOutside: isNarrow
-                              ? null
-                              : (_) => _potentiallyDiscardNote(),
-                          focusNode: _focusNode,
-                        ),
-                      )
-                    : GestureDetector(
-                        onTap: _startEditing,
-                        child: Text(_textController.text,
-                            style:
-                                mainTextStyle.copyWith(color: Colors.black54)),
-                      ),
-              ),
-            ),
-          ],
+    return Actions(
+      actions: {
+        AcceptMultiLineText:
+            CallbackAction<AcceptMultiLineText>(onInvoke: (_) => _createNote()),
+        CancelIntent: CallbackAction<CancelIntent>(
+          onInvoke: (_) => _discardNote(),
         ),
-      ],
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: uiUnit(10),
+                height: uiUnit(8),
+                child: const Center(child: Icon(Icons.add, size: 18)),
+              ),
+              Flexible(
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: _editing
+                      ? IntrinsicHeight(
+                          child: TextField(
+                            autocorrect: false,
+                            controller: _textController,
+                            decoration: null,
+                            maxLines: null,
+                            style: mainTextStyle,
+                            onTapOutside: isNarrow
+                                ? null
+                                : (_) => _potentiallyDiscardNote(),
+                            focusNode: _focusNode,
+                          ),
+                        )
+                      : GestureDetector(
+                          onTap: _startEditing,
+                          child: Text(_textController.text,
+                              style: mainTextStyle.copyWith(
+                                  color: Colors.black54)),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
