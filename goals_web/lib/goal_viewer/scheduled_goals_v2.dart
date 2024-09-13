@@ -67,7 +67,7 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
       Map<String, Goal> sliceGoalMap) {
     final goalIds = sliceGoalMap.values
         .where((goal) {
-          for (final superGoal in goal.superGoals) {
+          for (final superGoal in goal.superGoalIds) {
             if (sliceGoalMap.containsKey(superGoal.id)) {
               return false;
             }
@@ -145,7 +145,7 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
 
       final goalIds = sliceGoalMap.values
           .where((goal) {
-            for (final superGoal in goal.superGoals) {
+            for (final superGoal in goal.superGoalIds) {
               if (sliceGoalMap.containsKey(superGoal.id)) {
                 return false;
               }

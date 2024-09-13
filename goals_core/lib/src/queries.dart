@@ -11,14 +11,16 @@ Map<String, Goal> getTransitiveSubGoals(
     {bool Function(Goal)? predicate}) {
   // don't apply the predicate to the root goal
   final result = <String, Goal>{rootGoalId: goalMap[rootGoalId]!};
-  final queue = <Goal>[...goalMap[rootGoalId]!.subGoals];
+  final queue = <String>[...goalMap[rootGoalId]!.subGoalIds];
   while (queue.isNotEmpty) {
-    final goal = queue.removeLast();
+    final goalId = queue.removeLast();
+    final goal = goalMap[goalId]!;
+
     if (predicate != null && !predicate(goal)) {
       continue;
     }
-    result[goal.id] = goal;
-    queue.addAll(goal.subGoals);
+    result[goalId] = goal;
+    queue.addAll(goal.subGoalIds);
   }
   return result;
 }
@@ -127,10 +129,13 @@ bool _traverseDown(
     return true;
   }
   final newTail = [...tail, rootGoalId];
-  for (final subGoal in childTraversalComparator != null
-      ? headGoal.subGoals.sorted(childTraversalComparator)
-      : headGoal.subGoals) {
-    if (_traverseDown(goalMap, subGoal.id,
+  for (final subGoalIds in childTraversalComparator != null
+      ? headGoal.subGoalIds
+          .map((e) => goalMap[e]!)
+          .sorted(childTraversalComparator)
+          .map((e) => e.id)
+      : headGoal.subGoalIds) {
+    if (_traverseDown(goalMap, subGoalIds,
         onVisit: onVisit,
         onDepart: onDepart,
         tail: newTail,
@@ -177,10 +182,10 @@ _findAncestors(Map<String, Goal> goalMap, Set<String> frontierIds,
     if (parent == null) {
       throw Exception('Parent goal not found: $parentId');
     }
-    for (final superGoal in parent.superGoals) {
-      if (!seenIds.containsKey(superGoal.id)) {
-        newFrontierIds.add(superGoal.id);
-        seenIds[superGoal.id] = depth;
+    for (final superGoalId in parent.superGoalIds) {
+      if (!seenIds.containsKey(superGoalId)) {
+        newFrontierIds.add(superGoalId);
+        seenIds[superGoalId] = depth;
       }
     }
   }
@@ -264,7 +269,7 @@ Map<String, Goal> getGoalsRequiringAttention(
   final unscheduledRootGoals =
       getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
     final status = getGoalStatus(context, goal);
-    return status.status == null && goal.superGoals.isEmpty;
+    return status.status == null && goal.superGoalIds.isEmpty;
   });
 
   final transitivelyUnscheduledGoals = unscheduledRootGoals.values
@@ -355,45 +360,12 @@ Map<String, Goal> getGoalsForDateRange(
   result.addAll(activeGoalsWithinWindow);
   result.addAll(snoozedGoalsEndingWithinWindow);
 
-  final goalsToRemove = <String>{};
-  for (final goal in result.values) {
-    final goalStatus = getGoalStatus(context, goal);
-    Goal? ancestor = goal.superGoals.firstOrNull;
-    while (ancestor != null) {
-      final ancestorStatus = getGoalStatus(context, ancestor);
-      // if any of these goals have an ancestor that has an active status
-      // that is completely contained within this slice, we won't show this goal
-      if (ancestorStatus.status == GoalStatus.active &&
-          (ancestorStatus.endTime != null ||
-              ancestorStatus.startTime != null) &&
-          statusIsBetweenDatesInclusive(
-              ancestorStatus,
-              goalStatus.startTime?.add(Duration(seconds: 1)),
-              goalStatus.endTime?.subtract(Duration(seconds: 1)))) {
-        goalsToRemove.add(goal.id);
-        break;
-      }
-
-      if (ancestorStatus.status == null ||
-          ancestorStatus.status == GoalStatus.pending) {
-        goalsToRemove.add(goal.id);
-        break;
-      }
-      ancestor = ancestor.superGoals.firstOrNull;
-    }
-  }
-
-  for (final goalId in goalsToRemove) {
-    result.remove(goalId);
-  }
-
   return result;
 }
 
 // Currently, current goal status is just a function of time.
 StatusLogEntry getGoalStatus(WorldContext context, Goal goal) {
   final now = context.time;
-  goal.log;
 
   Set<String> archivedStatuses = {};
   for (final entry in (goal.log

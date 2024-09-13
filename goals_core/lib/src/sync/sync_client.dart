@@ -160,13 +160,13 @@ class SyncClient {
       if (parent == null) {
         throw Exception('Parent goal not found: $parentId');
       }
-      for (final superGoal in parent.superGoals) {
-        if (superGoal.id == goalId) {
+      for (final superGoalId in parent.superGoalIds) {
+        if (superGoalId == goalId) {
           return true;
         }
-        if (!seenIds.contains(superGoal.id)) {
-          newFrontierIds.add(superGoal.id);
-          seenIds.add(superGoal.id);
+        if (!seenIds.contains(superGoalId)) {
+          newFrontierIds.add(superGoalId);
+          seenIds.add(superGoalId);
         }
       }
     }
@@ -187,14 +187,14 @@ class SyncClient {
         return;
       }
 
-      for (final superGoal in goal.superGoals) {
-        superGoal.removeSubGoal(goal.id);
+      for (final superGoalId in goal.superGoalIds) {
+        goalMap[superGoalId]!.removeSubGoal(goal.id);
       }
 
-      goal.superGoals.clear();
+      goal.superGoalIds.clear();
       if (newSuperGoal != null) {
-        goal.addOrReplaceSuperGoal(newSuperGoal);
-        newSuperGoal.addOrReplaceSubGoal(goal);
+        goal.addSuperGoal(newSuperGoal.id);
+        newSuperGoal.addSubGoal(goal.id);
       }
     } else if (entry is AddParentLogEntry) {
       final newSuperGoal =
@@ -210,8 +210,8 @@ class SyncClient {
         return;
       }
 
-      goal.addOrReplaceSuperGoal(newSuperGoal);
-      newSuperGoal.addOrReplaceSubGoal(goal);
+      goal.addSuperGoal(newSuperGoal.id);
+      newSuperGoal.addSubGoal(goal.id);
     } else if (entry is RemoveParentLogEntry) {
       final newSuperGoal =
           entry.parentId == null ? null : goalMap[entry.parentId];

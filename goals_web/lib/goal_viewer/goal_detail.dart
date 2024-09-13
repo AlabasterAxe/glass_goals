@@ -890,7 +890,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     while (curGoal != null) {
       widgets.add(Breadcrumb(goal: curGoal));
       widgets.add(const Icon(Icons.chevron_right));
-      curGoal = curGoal.superGoals.firstOrNull;
+      curGoal = curGoal.superGoalIds.firstOrNull;
     }
     widgets.removeLast();
 
@@ -898,12 +898,12 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
   }
 
   Widget breadcrumbs() {
-    if (this.widget.goal.superGoals.isEmpty) {
+    if (this.widget.goal.superGoalIds.isEmpty) {
       return Row(children: [AddParentBreadcrumb(goalId: widget.goal.id)]);
     }
 
     final List<Widget> widgets = [];
-    for (final supergoal in this.widget.goal.superGoals) {
+    for (final supergoal in this.widget.goal.superGoalIds) {
       widgets.add(parentBreadcrumbs(supergoal));
     }
 
@@ -916,7 +916,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     final worldContext =
         ref.watch(worldContextProvider).value ?? worldContextStream.value;
     final List<DetailViewLogEntryItem> logItems = [];
-    for (final goal in [...widget.goal.subGoals, widget.goal]) {
+    for (final goal in [...widget.goal.subGoalIds, widget.goal]) {
       logItems.addAll(goal.log.map((entry) => DetailViewLogEntryItem(
           goal: goal, entry: entry, time: entry.creationTime)));
     }
@@ -1031,7 +1031,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         SizedBox(height: uiUnit(1)),
         FlattenedGoalTree(
           goalMap: subgoalMap,
-          rootGoalIds: widget.goal.subGoals
+          rootGoalIds: widget.goal.subGoalIds
               .where((g) => subgoalMap.containsKey(g.id))
               .map((g) => g.id)
               .toList(),

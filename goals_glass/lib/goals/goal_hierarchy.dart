@@ -55,13 +55,13 @@ class _GoalHierarchyState extends State<GoalHierarchy> {
       });
       return;
     }
-    if (activeGoal.superGoals.isNotEmpty) {
-      final parentGoal = widget.goalState[activeGoal.superGoals.first];
+    if (activeGoal.superGoalIds.isNotEmpty) {
+      final parentGoal = widget.goalState[activeGoal.superGoalIds.first];
       int? childPage;
       if (parentGoal == null) {
         return;
       }
-      childPage = parentGoal.subGoals
+      childPage = parentGoal.subGoalIds
           .indexWhere((subGoal) => subGoal.id == activeGoal.id);
 
       setState(() {
@@ -95,7 +95,7 @@ class _GoalHierarchyState extends State<GoalHierarchy> {
             child: GlassPageView(
           controller: _pageController,
           children: [
-            ...activeGoal.subGoals
+            ...activeGoal.subGoalIds
                 .where((subGoal) => ![GoalStatus.archived, GoalStatus.done]
                     .contains(
                         getGoalStatus(WorldContext.now(), subGoal).status))

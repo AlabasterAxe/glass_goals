@@ -5,8 +5,8 @@ class Goal {
 
   // These fields are intentionally not final to allow references to stay valid
   String text;
-  final List<Goal> subGoals = [];
-  final List<Goal> superGoals = [];
+  final List<String> subGoalIds = [];
+  final List<String> superGoalIds = [];
 
   /// A log of changes to this goal. This is guaranteed to be
   /// sorted from oldest to newest.
@@ -16,50 +16,42 @@ class Goal {
   Goal({
     required this.text,
     required this.id,
-    subGoals,
-    superGoals,
+    List<Goal>? subGoals,
+    List<Goal>? superGoals,
     required this.creationTime,
   }) {
     if (subGoals != null) {
-      this.subGoals.addAll(subGoals);
+      this.subGoalIds.addAll(subGoals.map((goal) => goal.id));
     }
     if (superGoals != null) {
-      this.superGoals.addAll(superGoals);
+      this.superGoalIds.addAll(superGoals.map((goal) => goal.id));
     }
   }
 
   /// Modifies the subgoal list of this goal to update the goal with the given id.
   /// or add it if it doesn't exist.
-  addOrReplaceSubGoal(Goal goal) {
-    int index = subGoals.indexWhere((g) => g.id == goal.id);
-
-    if (index == -1) {
-      subGoals.add(goal);
-    } else {
-      subGoals[index] = goal;
+  addSubGoal(String goalId) {
+    if (!subGoalIds.contains(goalId)) {
+      subGoalIds.add(goalId);
     }
   }
 
-  addOrReplaceSuperGoal(Goal goal) {
-    int index = superGoals.indexWhere((g) => g.id == goal.id);
-
-    if (index == -1) {
-      superGoals.add(goal);
-    } else {
-      superGoals[index] = goal;
+  addSuperGoal(String goalId) {
+    if (!superGoalIds.contains(goalId)) {
+      superGoalIds.add(goalId);
     }
   }
 
-  removeSubGoal(String id) {
-    subGoals.removeWhere((g) => g.id == id);
+  removeSubGoal(String goalId) {
+    subGoalIds.remove(goalId);
   }
 
-  hasParent(String id) {
-    return superGoals.any((g) => g.id == id);
+  hasParent(String goalId) {
+    return superGoalIds.contains(goalId);
   }
 
-  removeSuperGoal(String id) {
-    superGoals.removeWhere((g) => g.id == id);
+  removeSuperGoal(String goalId) {
+    superGoalIds.remove(goalId);
   }
 }
 

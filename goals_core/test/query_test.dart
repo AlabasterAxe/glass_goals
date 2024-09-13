@@ -16,12 +16,17 @@ Map<String, Goal> testGoals() {
 }
 
 void main() {
-  test('getActiveGoalExpiringSoonest', () {
+  test('getActiveGoalExpiringSoonest', () async {
     final client = SyncClient();
+
+    Hive.init(".");
+    await client.init();
+
     final Map<String, Goal> goals = testGoals();
+    var hlc = HLC.now("test");
     client.applyDeltaOps(goals, [
       DeltaOp(
-          hlcTimestamp: '0',
+          hlcTimestamp: hlc.pack(),
           delta: GoalDelta(
               id: '0',
               logEntry: StatusLogEntry(
@@ -244,6 +249,109 @@ void main() {
       DeltaOp(
         hlcTimestamp: tick(),
         delta: GoalDelta(
+            id: 'child-1',
+            logEntry: SetParentLogEntry(
+                id: '2',
+                parentId: 'root',
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'child-1',
+            logEntry: StatusLogEntry(
+                id: '3',
+                status: GoalStatus.active,
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'child-2',
+            logEntry: SetParentLogEntry(
+                id: '2',
+                parentId: 'root',
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-1-1',
+            logEntry: SetParentLogEntry(
+                id: '4',
+                parentId: 'child',
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-1-1',
+            logEntry: StatusLogEntry(
+                id: '5',
+                status: GoalStatus.active,
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-1-2',
+            logEntry: SetParentLogEntry(
+                id: '6',
+                parentId: 'child',
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-1-2',
+            logEntry: StatusLogEntry(
+                id: '7',
+                status: GoalStatus.active,
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-2-1',
+            logEntry: SetParentLogEntry(
+                id: '6',
+                parentId: 'child-2',
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+    ]);
+
+    final requiringAttention = getGoalsRequiringAttention(
+        WorldContext(time: DateTime(2020, 1, 1, 14, 30)), goals);
+
+    expect(requiringAttention, contains('child-2'));
+    expect(requiringAttention, contains('sub-child-2-1'));
+  });
+
+  test('getTransitiveSubgoals', () async {
+    final client = SyncClient();
+
+    Hive.init(".");
+    await client.init();
+
+    final Map<String, Goal> goals = {};
+    var hlc = HLC.now("test");
+
+    tick() {
+      hlc = hlc.increment();
+      return hlc.pack();
+    }
+
+    client.applyDeltaOps(goals, [
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'root',
+            logEntry: StatusLogEntry(
+                id: '1', creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
             id: 'child',
             logEntry: SetParentLogEntry(
                 id: '2',
@@ -297,12 +405,97 @@ void main() {
       ),
     ]);
 
-    final requiringAttention = getGoalsRequiringAttention(
-        WorldContext(time: DateTime(2020, 1, 1, 14, 30)), goals);
+    final transitiveSubGoals = getTransitiveSubGoals(goals, 'root');
 
-    expect(requiringAttention, contains('child'));
-    expect(requiringAttention, contains('sub-child-1'));
-    expect(requiringAttention, contains('sub-child-2'));
+    expect(transitiveSubGoals, contains('child'));
+    expect(transitiveSubGoals, contains('sub-child-1'));
+    expect(transitiveSubGoals, contains('sub-child-2'));
+  });
+
+  test('getTransitiveSubgoals, with predicate', () async {
+    final client = SyncClient();
+
+    Hive.init(".");
+    await client.init();
+
+    final Map<String, Goal> goals = {};
+    var hlc = HLC.now("test");
+
+    tick() {
+      hlc = hlc.increment();
+      return hlc.pack();
+    }
+
+    client.applyDeltaOps(goals, [
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'root',
+            logEntry: StatusLogEntry(
+                id: '1', creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'child',
+            logEntry: SetParentLogEntry(
+                id: '2',
+                parentId: 'root',
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'child',
+            logEntry: StatusLogEntry(
+                id: '3',
+                status: GoalStatus.active,
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-1',
+            logEntry: SetParentLogEntry(
+                id: '4',
+                parentId: 'child',
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-1',
+            logEntry: StatusLogEntry(
+                id: '5',
+                status: GoalStatus.active,
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-2',
+            logEntry: SetParentLogEntry(
+                id: '6',
+                parentId: 'child',
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+      DeltaOp(
+        hlcTimestamp: tick(),
+        delta: GoalDelta(
+            id: 'sub-child-2',
+            logEntry: StatusLogEntry(
+                id: '7',
+                status: GoalStatus.active,
+                creationTime: DateTime(2020, 1, 1, 12))),
+      ),
+    ]);
+
+    final transitiveSubGoals = getTransitiveSubGoals(goals, 'root',
+        predicate: (goal) => !goal.id.startsWith('sub'));
+
+    expect(transitiveSubGoals, contains('child'));
+    expect(transitiveSubGoals, isNot(contains('sub-child-1')));
+    expect(transitiveSubGoals, isNot(contains('sub-child-2')));
   });
 
   test('getGoalsForDateRange', () async {
@@ -388,16 +581,16 @@ void main() {
     Goal child =
         Goal(id: 'child', text: 'child', creationTime: DateTime(2020, 1, 1));
 
-    parent.addOrReplaceSubGoal(child);
-    child.superGoals.add(parent);
+    parent.addSubGoal(child.id);
+    child.superGoalIds.add(parent.id);
 
     Goal grandChild = Goal(
         id: 'grandChild',
         text: 'grandChild',
         creationTime: DateTime(2020, 1, 1));
 
-    child.addOrReplaceSubGoal(grandChild);
-    grandChild.superGoals.add(child);
+    child.addSubGoal(grandChild.id);
+    grandChild.superGoalIds.add(child.id);
 
     final goalMap = {
       parent.id: parent,
@@ -428,16 +621,16 @@ void main() {
     Goal child =
         Goal(id: 'child', text: 'child', creationTime: DateTime(2020, 1, 1));
 
-    parent.addOrReplaceSubGoal(child);
-    child.superGoals.add(parent);
+    parent.addSubGoal(child.id);
+    child.superGoalIds.add(parent.id);
 
     Goal grandChild = Goal(
         id: 'grandChild',
         text: 'grandChild',
         creationTime: DateTime(2020, 1, 1));
 
-    child.addOrReplaceSubGoal(grandChild);
-    grandChild.superGoals.add(child);
+    child.addSubGoal(grandChild.id);
+    grandChild.superGoalIds.add(child.id);
 
     final goalMap = {
       parent.id: parent,
@@ -469,19 +662,19 @@ void main() {
     Goal sibling = Goal(
         id: 'sibling', text: 'sibling', creationTime: DateTime(2020, 1, 1));
 
-    parent.addOrReplaceSubGoal(child);
-    child.superGoals.add(parent);
+    parent.addSubGoal(child.id);
+    child.superGoalIds.add(parent.id);
 
-    parent.addOrReplaceSubGoal(sibling);
-    sibling.superGoals.add(parent);
+    parent.addSubGoal(sibling.id);
+    sibling.superGoalIds.add(parent.id);
 
     Goal grandChild = Goal(
         id: 'grandChild',
         text: 'grandChild',
         creationTime: DateTime(2020, 1, 1));
 
-    child.addOrReplaceSubGoal(grandChild);
-    grandChild.superGoals.add(child);
+    child.addSubGoal(grandChild.id);
+    grandChild.superGoalIds.add(child.id);
 
     final goalMap = {
       parent.id: parent,
@@ -519,19 +712,19 @@ void main() {
     Goal sibling = Goal(
         id: 'sibling', text: 'sibling', creationTime: DateTime(2020, 1, 1));
 
-    parent.addOrReplaceSubGoal(child);
-    child.superGoals.add(parent);
+    parent.addSubGoal(child.id);
+    child.superGoalIds.add(parent.id);
 
-    parent.addOrReplaceSubGoal(sibling);
-    sibling.superGoals.add(parent);
+    parent.addSubGoal(sibling.id);
+    sibling.superGoalIds.add(parent.id);
 
     Goal grandChild = Goal(
         id: 'grandChild',
         text: 'grandChild',
         creationTime: DateTime(2020, 1, 1));
 
-    child.addOrReplaceSubGoal(grandChild);
-    grandChild.superGoals.add(child);
+    child.addSubGoal(grandChild.id);
+    grandChild.superGoalIds.add(child.id);
 
     final goalMap = {
       parent.id: parent,

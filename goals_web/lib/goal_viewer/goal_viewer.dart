@@ -851,7 +851,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       final goalIds = _mode == GoalViewMode.tree
           ? goalMap.values
               .where((goal) {
-                for (final superGoal in goal.superGoals) {
+                for (final superGoal in goal.superGoalIds) {
                   if (goalMap.containsKey(superGoal.id)) {
                     return false;
                   }
@@ -968,7 +968,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final goalIds = _mode == GoalViewMode.tree
         ? goalMap.values
             .where((goal) {
-              for (final superGoal in goal.superGoals) {
+              for (final superGoal in goal.superGoalIds) {
                 if (goalMap.containsKey(superGoal.id)) {
                   return false;
                 }
@@ -1005,7 +1005,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final goalIds = _mode == GoalViewMode.tree
         ? goalMap.values
             .where((goal) {
-              for (final superGoal in goal.superGoals) {
+              for (final superGoal in goal.superGoalIds) {
                 if (goalMap.containsKey(superGoal.id)) {
                   return false;
                 }
@@ -1042,7 +1042,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final goalIds = _mode == GoalViewMode.tree
         ? goalMap.values
             .where((goal) {
-              for (final superGoal in goal.superGoals) {
+              for (final superGoal in goal.superGoalIds) {
                 if (goalMap.containsKey(superGoal.id)) {
                   return false;
                 }
@@ -1157,7 +1157,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         final goalIds = _mode == GoalViewMode.tree
                             ? goalMap.values
                                 .where((goal) {
-                                  for (final superGoal in goal.superGoals) {
+                                  for (final superGoal in goal.superGoalIds) {
                                     if (goalMap.containsKey(superGoal.id)) {
                                       return false;
                                     }
@@ -1219,7 +1219,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         final goalIds = _mode == GoalViewMode.tree
                             ? goalMap.values
                                 .where((goal) {
-                                  for (final superGoal in goal.superGoals) {
+                                  for (final superGoal in goal.superGoalIds) {
                                     if (goalMap.containsKey(superGoal.id)) {
                                       return false;
                                     }
