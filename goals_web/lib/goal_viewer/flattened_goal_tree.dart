@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/basic.dart';
+import 'package:flutter/material.dart' show Icons, Theme;
+import 'package:flutter/painting.dart' show EdgeInsets, FontWeight;
 import 'package:flutter/widgets.dart'
-    show BuildContext, Column, MediaQuery, Widget;
+    show BuildContext, Column, ListView, MediaQuery, Padding, Row, Text, Widget;
 import 'package:goals_core/model.dart'
     show
         Goal,
@@ -72,6 +72,7 @@ class FlattenedGoalTree extends ConsumerStatefulWidget {
   final List<FlattenedGoalTreeSection> sections;
   final bool showAddGoal;
   final Function(String)? toggleSectionExpansion;
+  final bool useListView;
   const FlattenedGoalTree({
     super.key,
     this.depthLimit,
@@ -80,6 +81,7 @@ class FlattenedGoalTree extends ConsumerStatefulWidget {
     this.showAddGoal = true,
     required this.sections,
     this.toggleSectionExpansion,
+    this.useListView = false,
   });
 
   @override
@@ -203,6 +205,94 @@ class _StatefulFlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
     );
   }
 
+  Widget? _getItemWidget(int i) {
+    final isNarrow = MediaQuery.of(context).size.width < 600;
+    final onDropGoal = GoalActionsContext.of(context).onDropGoal;
+
+    if (i >= _flattenedGoalItems.length) {
+      return null;
+    }
+
+    final prevGoal = i > 0 && _flattenedGoalItems[i - 1] is _GoalItem
+        ? _flattenedGoalItems[i - 1] as _GoalItem
+        : null;
+    final flattenedGoal = _flattenedGoalItems[i];
+
+    if (flattenedGoal is _SectionTitle) {
+      return Row(
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: uiUnit())
+                .copyWith(left: uiUnit(2)),
+            child: Text(
+              flattenedGoal.title,
+              style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ),
+          GlassGoalsIconButton(
+            icon: flattenedGoal.expanded
+                ? Icons.arrow_drop_down
+                : Icons.arrow_right,
+            onPressed: () {
+              this.widget.toggleSectionExpansion?.call(flattenedGoal.key);
+            },
+          ),
+        ],
+      );
+    } else if (flattenedGoal is _GoalItem) {
+      final goalId = flattenedGoal.goalPath.last;
+      final columnItems = <Widget>[];
+
+      columnItems.add(GoalSeparator(
+          isFirst: i == 0,
+          prevGoalPath: prevGoal?.goalPath ?? flattenedGoal.rootPath,
+          nextGoalPath: flattenedGoal.goalPath,
+          goalMap: flattenedGoal.goalMap,
+          onDropGoal: (goalDragDetails) {
+            onDropGoal(goalDragDetails.goalId,
+                sourcePath: goalDragDetails.sourcePath,
+                prevDropPath: prevGoal?.goalPath ?? flattenedGoal.rootPath,
+                nextDropPath: flattenedGoal.goalPath);
+          }));
+      columnItems.add(Padding(
+        padding: EdgeInsets.only(
+            left: uiUnit(4) *
+                (flattenedGoal.goalPath.length -
+                    (1 + flattenedGoal.rootPath.length))),
+        child: goalId != NEW_GOAL_PLACEHOLDER
+            ? GoalItemWidget(
+                onDropGoal: (details) {
+                  onDropGoal(
+                    details.goalId,
+                    sourcePath: details.sourcePath,
+                    dropPath: flattenedGoal.goalPath,
+                  );
+                },
+                goal: flattenedGoal.goalMap[goalId]!,
+                hoverActionsBuilder: this.widget.hoverActionsBuilder,
+                hasRenderableChildren: flattenedGoal.hasRenderableChildren,
+                showExpansionArrow: flattenedGoal.hasRenderableChildren ||
+                    this.widget.showAddGoal,
+                dragHandle: isNarrow
+                    ? GoalItemDragHandle.bullet
+                    : GoalItemDragHandle.item,
+                path: flattenedGoal.goalPath,
+              )
+            : AddSubgoalItemWidget(
+                path: flattenedGoal.goalPath,
+              ),
+      ));
+
+      return Column(
+        children: columnItems,
+      );
+    }
+
+    throw Exception('Unknown item type');
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(expandedGoalsProvider, (_, expandedGoalIds) {
@@ -230,83 +320,22 @@ class _StatefulFlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
         sections: this.widget.sections,
       );
     });
-    final isNarrow = MediaQuery.of(context).size.width < 600;
+
+    if (this.widget.useListView) {
+      return ListView.builder(
+        itemBuilder: (BuildContext context, int index) {
+          return _getItemWidget(index);
+        },
+      );
+    }
 
     final goalItems = <Widget>[];
-    final onDropGoal = GoalActionsContext.of(context).onDropGoal;
-
-    _GoalItem? prevGoal;
     for (int i = 0; i < _flattenedGoalItems.length; i++) {
-      final flattenedGoal = _flattenedGoalItems[i];
-
-      if (flattenedGoal is _SectionTitle) {
-        goalItems.add(Row(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: uiUnit())
-                  .copyWith(left: uiUnit(2)),
-              child: Text(
-                flattenedGoal.title,
-                style: Theme.of(context).textTheme.headlineSmall!.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-            ),
-            GlassGoalsIconButton(
-              icon: flattenedGoal.expanded
-                  ? Icons.arrow_drop_down
-                  : Icons.arrow_right,
-              onPressed: () {
-                this.widget.toggleSectionExpansion?.call(flattenedGoal.key);
-              },
-            ),
-          ],
-        ));
-        prevGoal = null;
-        continue;
-      } else if (flattenedGoal is _GoalItem) {
-        final goalId = flattenedGoal.goalPath.last;
-
-        goalItems.add(GoalSeparator(
-            isFirst: i == 0,
-            prevGoalPath: prevGoal?.goalPath ?? flattenedGoal.rootPath,
-            nextGoalPath: flattenedGoal.goalPath,
-            goalMap: flattenedGoal.goalMap,
-            onDropGoal: (goalDragDetails) {
-              onDropGoal(goalDragDetails.goalId,
-                  sourcePath: goalDragDetails.sourcePath,
-                  prevDropPath: prevGoal?.goalPath ?? flattenedGoal.rootPath,
-                  nextDropPath: flattenedGoal.goalPath);
-            }));
-        goalItems.add(Padding(
-          padding: EdgeInsets.only(
-              left: uiUnit(4) *
-                  (flattenedGoal.goalPath.length -
-                      (1 + flattenedGoal.rootPath.length))),
-          child: goalId != NEW_GOAL_PLACEHOLDER
-              ? GoalItemWidget(
-                  onDropGoal: (details) {
-                    onDropGoal(
-                      details.goalId,
-                      sourcePath: details.sourcePath,
-                      dropPath: flattenedGoal.goalPath,
-                    );
-                  },
-                  goal: flattenedGoal.goalMap[goalId]!,
-                  hoverActionsBuilder: this.widget.hoverActionsBuilder,
-                  hasRenderableChildren: flattenedGoal.hasRenderableChildren,
-                  showExpansionArrow: flattenedGoal.hasRenderableChildren ||
-                      this.widget.showAddGoal,
-                  dragHandle: isNarrow
-                      ? GoalItemDragHandle.bullet
-                      : GoalItemDragHandle.item,
-                  path: flattenedGoal.goalPath,
-                )
-              : AddSubgoalItemWidget(
-                  path: flattenedGoal.goalPath,
-                ),
-        ));
-        prevGoal = flattenedGoal;
+      final widgetMaybe = _getItemWidget(i);
+      if (widgetMaybe != null) {
+        goalItems.add(widgetMaybe);
+      } else {
+        break;
       }
     }
     return Column(children: goalItems);

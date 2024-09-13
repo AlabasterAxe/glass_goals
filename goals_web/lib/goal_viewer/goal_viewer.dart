@@ -14,7 +14,6 @@ import 'package:flutter/material.dart'
         Theme,
         Tooltip,
         showDialog;
-import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter/widgets.dart';
 import 'package:goals_core/model.dart'
     show
@@ -78,13 +77,6 @@ enum GoalFilter {
   pending(displayName: "Pending Goals"),
   all(displayName: "All Goals"),
   to_review(displayName: "To Review"),
-  today(displayName: "Today"),
-  this_week(displayName: "This Week"),
-  this_month(displayName: "This Month"),
-  this_quarter(displayName: "This Quarter"),
-  this_year(displayName: "This Year"),
-  long_term(displayName: "Long Term"),
-  schedule(displayName: "Scheduled Goals"),
   schedule_v2(displayName: "Scheduled Goals"),
   pending_v2(displayName: "Pending Goals");
 
@@ -338,9 +330,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                 defaultValue: GoalFilter.schedule_v2.name);
 
             try {
-              _filter = filterString == GoalFilter.schedule.name
-                  ? GoalFilter.schedule_v2
-                  : GoalFilter.values.byName(filterString);
+              GoalFilter.values.byName(filterString);
             } catch (_) {
               _filter = GoalFilter.schedule_v2;
             }
@@ -1172,178 +1162,133 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             ),
           ),
         Expanded(
-          child: SingleChildScrollView(
-              child: FutureBuilder<void>(
-                  future: openBoxFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState != ConnectionState.done) {
-                      return const Text('Loading...');
-                    }
-                    var goalMap = widget.goalMap;
-                    switch (_filter) {
-                      case GoalFilter.all:
-                        final goalIds = _mode == GoalViewMode.tree
-                            ? goalMap.values
-                                .where((goal) {
-                                  for (final superGoalId in goal.superGoalIds) {
-                                    if (goalMap.containsKey(superGoalId)) {
-                                      return false;
-                                    }
-                                  }
-                                  return true;
-                                })
-                                .map((e) => e.id)
-                                .toList()
-                            : (goalMap.values.toList(growable: false)
-                                  ..sort((a, b) => a.text
-                                      .toLowerCase()
-                                      .compareTo(b.text.toLowerCase())))
-                                .map((g) => g.id)
-                                .toList();
-                        return FlattenedGoalTree(
-                          sections: [
-                            (
-                              key: 'all-goals',
-                              goalMap: goalMap,
-                              rootGoalIds: goalIds,
-                              expanded: true,
-                              path: [],
-                              title: null,
-                            )
-                          ],
-                          hoverActionsBuilder: (path) => HoverActionsWidget(
-                            path: path,
-                            goalMap: widget.goalMap,
-                          ),
-                          depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                        );
-                      case GoalFilter.to_review:
-                        final toReview = {
-                          'Orphaned Goals': _orphanedGoals(worldContext),
-                          'Previously Active Goals':
-                              _previouslyActiveGoals(worldContext),
-                        };
+          child: FutureBuilder<void>(
+              future: openBoxFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Text('Loading...');
+                }
+                var goalMap = widget.goalMap;
+                switch (_filter) {
+                  case GoalFilter.all:
+                    final goalIds = _mode == GoalViewMode.tree
+                        ? goalMap.values
+                            .where((goal) {
+                              for (final superGoalId in goal.superGoalIds) {
+                                if (goalMap.containsKey(superGoalId)) {
+                                  return false;
+                                }
+                              }
+                              return true;
+                            })
+                            .map((e) => e.id)
+                            .toList()
+                        : (goalMap.values.toList(growable: false)
+                              ..sort((a, b) => a.text
+                                  .toLowerCase()
+                                  .compareTo(b.text.toLowerCase())))
+                            .map((g) => g.id)
+                            .toList();
+                    return SingleChildScrollView(
+                      child: FlattenedGoalTree(
+                        sections: [
+                          (
+                            key: 'all-goals',
+                            goalMap: goalMap,
+                            rootGoalIds: goalIds,
+                            expanded: true,
+                            path: [],
+                            title: null,
+                          )
+                        ],
+                        hoverActionsBuilder: (path) => HoverActionsWidget(
+                          path: path,
+                          goalMap: widget.goalMap,
+                        ),
+                        depthLimit: _mode == GoalViewMode.list ? 1 : null,
+                      ),
+                    );
+                  case GoalFilter.to_review:
+                    final toReview = {
+                      'Orphaned Goals': _orphanedGoals(worldContext),
+                      'Previously Active Goals':
+                          _previouslyActiveGoals(worldContext),
+                    };
 
-                        final nothingToReview =
-                            toReview.values.every((element) => element == null);
+                    final nothingToReview =
+                        toReview.values.every((element) => element == null);
 
-                        return nothingToReview
-                            ? Text('All caught up!', style: theme.headlineSmall)
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                    for (final entry in toReview.entries)
-                                      if (entry.value != null) ...[
-                                        Padding(
-                                          padding: EdgeInsets.all(uiUnit(2)),
-                                          child: Text(entry.key,
-                                              style: theme.headlineSmall),
-                                        ),
-                                        entry.value!
-                                      ]
-                                  ]);
-                      case GoalFilter.pending:
-                        goalMap = getGoalsMatchingPredicate(
-                            worldContext,
-                            widget.goalMap,
-                            (goal) =>
-                                getGoalStatus(worldContext, goal).status !=
-                                    GoalStatus.archived &&
-                                getGoalStatus(worldContext, goal).status !=
-                                    GoalStatus.done);
-                        final goalIds = _mode == GoalViewMode.tree
-                            ? goalMap.values
-                                .where((goal) {
-                                  for (final superGoalId in goal.superGoalIds) {
-                                    if (goalMap.containsKey(superGoalId)) {
-                                      return false;
-                                    }
-                                  }
-                                  return true;
-                                })
-                                .map((e) => e.id)
-                                .toList()
-                            : (goalMap.values.toList(growable: false)
-                                  ..sort((a, b) => a.text
-                                      .toLowerCase()
-                                      .compareTo(b.text.toLowerCase())))
-                                .map((g) => g.id)
-                                .toList();
-                        return FlattenedGoalTree(
-                          sections: [
-                            (
-                              key: 'pending',
-                              goalMap: goalMap,
-                              rootGoalIds: goalIds,
-                              expanded: true,
-                              path: [],
-                              title: null,
-                            )
-                          ],
-                          hoverActionsBuilder: (path) => HoverActionsWidget(
-                              path: path, goalMap: widget.goalMap),
-                          depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                        );
-                      case GoalFilter.today:
-                        final additionalSections = {
-                          'Yesterday': _previousTimeSliceGoals(
-                              worldContext, TimeSlice.today),
-                          'This Week':
-                              _timeSlice(worldContext, TimeSlice.this_week),
-                        };
-                        return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _timeSlice(worldContext, TimeSlice.today) ??
-                                  Container(),
-                              for (final entry in additionalSections.entries)
-                                if (entry.value != null) ...[
-                                  Padding(
-                                    padding: EdgeInsets.all(uiUnit(2)),
-                                    child: Text(entry.key,
-                                        style: theme.headlineSmall),
-                                  ),
-                                  entry.value!
-                                ]
-                            ]);
-                      case GoalFilter.this_week:
-                        return _timeSlice(worldContext, TimeSlice.this_week) ??
-                            Text('No Goals!');
-                      case GoalFilter.this_month:
-                        return _timeSlice(worldContext, TimeSlice.this_month) ??
-                            Text('No Goals!');
-                      case GoalFilter.this_quarter:
-                        return _timeSlice(
-                                worldContext, TimeSlice.this_quarter) ??
-                            Text('No Goals!');
-                      case GoalFilter.this_year:
-                        return _timeSlice(worldContext, TimeSlice.this_year) ??
-                            Text('No Goals!');
-                      case GoalFilter.long_term:
-                        return _timeSlice(worldContext, TimeSlice.long_term) ??
-                            Text('No Goals!');
-                      case GoalFilter.schedule:
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: _timeSlices(worldContext, [
-                            TimeSlice.today,
-                            TimeSlice.this_week,
-                            TimeSlice.this_month,
-                            TimeSlice.this_quarter,
-                            TimeSlice.this_year,
-                            TimeSlice.long_term
-                          ]),
-                        );
-                      case GoalFilter.schedule_v2:
-                        return ScheduledGoalsV2(goalMap: goalMap);
-                      case GoalFilter.pending_v2:
-                        return PendingGoalViewer(
-                          goalMap: goalMap,
-                          viewKey: 'root',
-                          mode: this._pendingGoalViewMode,
-                        );
-                    }
-                  })),
+                    return SingleChildScrollView(
+                      child: nothingToReview
+                          ? Text('All caught up!', style: theme.headlineSmall)
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                  for (final entry in toReview.entries)
+                                    if (entry.value != null) ...[
+                                      Padding(
+                                        padding: EdgeInsets.all(uiUnit(2)),
+                                        child: Text(entry.key,
+                                            style: theme.headlineSmall),
+                                      ),
+                                      entry.value!
+                                    ]
+                                ]),
+                    );
+                  case GoalFilter.pending:
+                    goalMap = getGoalsMatchingPredicate(
+                        worldContext,
+                        widget.goalMap,
+                        (goal) =>
+                            getGoalStatus(worldContext, goal).status !=
+                                GoalStatus.archived &&
+                            getGoalStatus(worldContext, goal).status !=
+                                GoalStatus.done);
+                    final goalIds = _mode == GoalViewMode.tree
+                        ? goalMap.values
+                            .where((goal) {
+                              for (final superGoalId in goal.superGoalIds) {
+                                if (goalMap.containsKey(superGoalId)) {
+                                  return false;
+                                }
+                              }
+                              return true;
+                            })
+                            .map((e) => e.id)
+                            .toList()
+                        : (goalMap.values.toList(growable: false)
+                              ..sort((a, b) => a.text
+                                  .toLowerCase()
+                                  .compareTo(b.text.toLowerCase())))
+                            .map((g) => g.id)
+                            .toList();
+                    return SingleChildScrollView(
+                      child: FlattenedGoalTree(
+                        sections: [
+                          (
+                            key: 'pending',
+                            goalMap: goalMap,
+                            rootGoalIds: goalIds,
+                            expanded: true,
+                            path: [],
+                            title: null,
+                          )
+                        ],
+                        hoverActionsBuilder: (path) => HoverActionsWidget(
+                            path: path, goalMap: widget.goalMap),
+                        depthLimit: _mode == GoalViewMode.list ? 1 : null,
+                      ),
+                    );
+                  case GoalFilter.schedule_v2:
+                    return ScheduledGoalsV2(goalMap: goalMap);
+                  case GoalFilter.pending_v2:
+                    return PendingGoalViewer(
+                      goalMap: goalMap,
+                      viewKey: 'root',
+                      mode: this._pendingGoalViewMode,
+                    );
+                }
+              }),
         ),
       ],
     );
