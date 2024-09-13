@@ -1,7 +1,9 @@
 import 'dart:math';
 
+import 'package:goals_core/src/sync/sync_client.dart';
 import 'package:goals_types/goals_types.dart';
-import 'package:collection/collection.dart' show IterableZip, IterableExtension;
+import 'package:collection/collection.dart'
+    show IterableExtension, IterableNullableExtension, IterableZip;
 
 import '../model.dart' show Goal, WorldContext;
 import 'util/date_utils.dart';
@@ -14,9 +16,9 @@ Map<String, Goal> getTransitiveSubGoals(
   final queue = <String>[...goalMap[rootGoalId]!.subGoalIds];
   while (queue.isNotEmpty) {
     final goalId = queue.removeLast();
-    final goal = goalMap[goalId]!;
+    final goal = goalMap[goalId];
 
-    if (predicate != null && !predicate(goal)) {
+    if (goal == null || predicate != null && !predicate(goal)) {
       continue;
     }
     result[goalId] = goal;
@@ -131,7 +133,8 @@ bool _traverseDown(
   final newTail = [...tail, rootGoalId];
   for (final subGoalIds in childTraversalComparator != null
       ? headGoal.subGoalIds
-          .map((e) => goalMap[e]!)
+          .map((e) => goalMap[e])
+          .whereNotNull()
           .sorted(childTraversalComparator)
           .map((e) => e.id)
       : headGoal.subGoalIds) {
@@ -278,6 +281,19 @@ Map<String, Goal> getGoalsRequiringAttention(
       .fold(<String, Goal>{}, (value, element) => value..addAll(element));
 
   result.addAll(transitivelyUnscheduledGoals);
+
+  final completedAndArchivedGoals =
+      getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
+    final status = getGoalStatus(context, goal);
+    return [GoalStatus.done, GoalStatus.archived].contains(status.status);
+  });
+
+  for (final goalId in completedAndArchivedGoals.keys) {
+    final transitiveGoals = getTransitiveSubGoals(goalMap, goalId);
+    for (final subgoalId in transitiveGoals.keys) {
+      result.remove(subgoalId);
+    }
+  }
 
   return result;
 }

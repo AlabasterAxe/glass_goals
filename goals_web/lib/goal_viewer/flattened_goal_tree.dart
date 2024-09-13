@@ -66,7 +66,7 @@ class FlattenedGoalTree extends ConsumerWidget {
             hasRenderableChildren: this
                 .goalMap[goalId]!
                 .subGoalIds
-                .where((g) => this.goalMap.containsKey(g.id))
+                .where((gId) => this.goalMap.containsKey(gId))
                 .isNotEmpty,
           ));
 

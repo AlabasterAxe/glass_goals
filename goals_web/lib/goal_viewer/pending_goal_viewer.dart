@@ -104,8 +104,8 @@ class PendingGoalViewer extends ConsumerWidget {
                 ].contains(getGoalStatus(worldContext, goal).status)) {
                   return false;
                 }
-                for (final superGoal in goal.superGoalIds) {
-                  if (this.goalMap.containsKey(superGoal.id)) {
+                for (final superGoalId in goal.superGoalIds) {
+                  if (this.goalMap.containsKey(superGoalId)) {
                     return false;
                   }
                 }

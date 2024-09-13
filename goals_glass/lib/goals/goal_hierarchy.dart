@@ -62,7 +62,7 @@ class _GoalHierarchyState extends State<GoalHierarchy> {
         return;
       }
       childPage = parentGoal.subGoalIds
-          .indexWhere((subGoal) => subGoal.id == activeGoal.id);
+          .indexWhere((subGoalId) => subGoalId == activeGoal.id);
 
       setState(() {
         _activeGoalId = parentGoal.id;
@@ -96,17 +96,18 @@ class _GoalHierarchyState extends State<GoalHierarchy> {
           controller: _pageController,
           children: [
             ...activeGoal.subGoalIds
-                .where((subGoal) => ![GoalStatus.archived, GoalStatus.done]
-                    .contains(
-                        getGoalStatus(WorldContext.now(), subGoal).status))
-                .map((subGoal) => GoalCard(
-                    key: ValueKey(subGoal.id),
-                    goal: subGoal,
+                .where((subGoalId) => ![GoalStatus.archived, GoalStatus.done]
+                    .contains(getGoalStatus(
+                            WorldContext.now(), widget.goalState[subGoalId]!)
+                        .status))
+                .map((subGoalId) => GoalCard(
+                    key: ValueKey(subGoalId),
+                    goal: widget.goalState[subGoalId]!,
                     onTap: () {
                       setState(() {
                         // TODO: preserve scroll position?
                         _pageController.jumpToPage(0);
-                        _activeGoalId = subGoal.id;
+                        _activeGoalId = subGoalId;
                       });
                     },
                     onBack: onBack))

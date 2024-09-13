@@ -890,7 +890,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     while (curGoal != null) {
       widgets.add(Breadcrumb(goal: curGoal));
       widgets.add(const Icon(Icons.chevron_right));
-      curGoal = curGoal.superGoalIds.firstOrNull;
+      curGoal = widget.goalMap[curGoal.superGoalIds.firstOrNull];
     }
     widgets.removeLast();
 
@@ -903,8 +903,8 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     }
 
     final List<Widget> widgets = [];
-    for (final supergoal in this.widget.goal.superGoalIds) {
-      widgets.add(parentBreadcrumbs(supergoal));
+    for (final superGoalId in this.widget.goal.superGoalIds) {
+      widgets.add(parentBreadcrumbs(widget.goalMap[superGoalId]!));
     }
 
     return Column(children: widgets);
@@ -916,7 +916,8 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     final worldContext =
         ref.watch(worldContextProvider).value ?? worldContextStream.value;
     final List<DetailViewLogEntryItem> logItems = [];
-    for (final goal in [...widget.goal.subGoalIds, widget.goal]) {
+    for (final goalId in [...widget.goal.subGoalIds, widget.goal.id]) {
+      final goal = widget.goalMap[goalId]!;
       logItems.addAll(goal.log.map((entry) => DetailViewLogEntryItem(
           goal: goal, entry: entry, time: entry.creationTime)));
     }
@@ -1032,8 +1033,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         FlattenedGoalTree(
           goalMap: subgoalMap,
           rootGoalIds: widget.goal.subGoalIds
-              .where((g) => subgoalMap.containsKey(g.id))
-              .map((g) => g.id)
+              .where((g) => subgoalMap.containsKey(g))
               .toList(),
           hoverActionsBuilder: widget.hoverActionsBuilder,
           path: [widget.goal.id],

@@ -851,8 +851,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       final goalIds = _mode == GoalViewMode.tree
           ? goalMap.values
               .where((goal) {
-                for (final superGoal in goal.superGoalIds) {
-                  if (goalMap.containsKey(superGoal.id)) {
+                for (final superGoalId in goal.superGoalIds) {
+                  if (goalMap.containsKey(superGoalId)) {
                     return false;
                   }
                 }
@@ -968,8 +968,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final goalIds = _mode == GoalViewMode.tree
         ? goalMap.values
             .where((goal) {
-              for (final superGoal in goal.superGoalIds) {
-                if (goalMap.containsKey(superGoal.id)) {
+              for (final superGoalId in goal.superGoalIds) {
+                if (goalMap.containsKey(superGoalId)) {
                   return false;
                 }
               }
@@ -1005,8 +1005,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final goalIds = _mode == GoalViewMode.tree
         ? goalMap.values
             .where((goal) {
-              for (final superGoal in goal.superGoalIds) {
-                if (goalMap.containsKey(superGoal.id)) {
+              for (final superGoalId in goal.superGoalIds) {
+                if (goalMap.containsKey(superGoalId)) {
                   return false;
                 }
               }
@@ -1042,8 +1042,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final goalIds = _mode == GoalViewMode.tree
         ? goalMap.values
             .where((goal) {
-              for (final superGoal in goal.superGoalIds) {
-                if (goalMap.containsKey(superGoal.id)) {
+              for (final superGoalId in goal.superGoalIds) {
+                if (goalMap.containsKey(superGoalId)) {
                   return false;
                 }
               }
@@ -1157,8 +1157,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         final goalIds = _mode == GoalViewMode.tree
                             ? goalMap.values
                                 .where((goal) {
-                                  for (final superGoal in goal.superGoalIds) {
-                                    if (goalMap.containsKey(superGoal.id)) {
+                                  for (final superGoalId in goal.superGoalIds) {
+                                    if (goalMap.containsKey(superGoalId)) {
                                       return false;
                                     }
                                   }
@@ -1219,8 +1219,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         final goalIds = _mode == GoalViewMode.tree
                             ? goalMap.values
                                 .where((goal) {
-                                  for (final superGoal in goal.superGoalIds) {
-                                    if (goalMap.containsKey(superGoal.id)) {
+                                  for (final superGoalId in goal.superGoalIds) {
+                                    if (goalMap.containsKey(superGoalId)) {
                                       return false;
                                     }
                                   }

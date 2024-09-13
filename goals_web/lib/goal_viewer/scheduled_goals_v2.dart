@@ -67,8 +67,8 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
       Map<String, Goal> sliceGoalMap) {
     final goalIds = sliceGoalMap.values
         .where((goal) {
-          for (final superGoal in goal.superGoalIds) {
-            if (sliceGoalMap.containsKey(superGoal.id)) {
+          for (final superGoalId in goal.superGoalIds) {
+            if (sliceGoalMap.containsKey(superGoalId)) {
               return false;
             }
           }
@@ -120,11 +120,7 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
     Widget? unscheduledSlice;
     for (final slice in slices) {
       final sliceGoalMap = slice == TimeSlice.unscheduled
-          ? getGoalsMatchingPredicate(
-              worldContext,
-              widget.goalMap,
-              (goal) => [GoalStatus.active, null]
-                  .contains(getGoalStatus(worldContext, goal).status))
+          ? getGoalsRequiringAttention(worldContext, widget.goalMap)
           : getGoalsForDateRange(
               worldContext,
               widget.goalMap,
@@ -145,8 +141,8 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
 
       final goalIds = sliceGoalMap.values
           .where((goal) {
-            for (final superGoal in goal.superGoalIds) {
-              if (sliceGoalMap.containsKey(superGoal.id)) {
+            for (final superGoalId in goal.superGoalIds) {
+              if (sliceGoalMap.containsKey(superGoalId)) {
                 return false;
               }
             }
