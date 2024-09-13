@@ -928,11 +928,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
           child: FlattenedGoalTree(
             sections: [
               (
-                section: slice.name,
+                key: slice.name,
                 goalMap: goalMap,
                 rootGoalIds: goalIds,
                 path: [],
                 expanded: true,
+                title: null,
               )
             ],
             hoverActionsBuilder: (path) => HoverActionsWidget(
@@ -996,11 +997,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     return FlattenedGoalTree(
       sections: [
         (
-          section: 'previous-${slice.name}',
+          key: 'previous-${slice.name}',
           goalMap: goalMap,
           rootGoalIds: goalIds,
           expanded: true,
           path: [],
+          title: null,
         )
       ],
       hoverActionsBuilder: (path) => HoverActionsWidget(
@@ -1038,11 +1040,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     return FlattenedGoalTree(
       sections: [
         (
-          section: 'previously-active',
+          key: 'previously-active',
           goalMap: goalMap,
           rootGoalIds: goalIds,
           expanded: true,
           path: [],
+          title: null,
         )
       ],
       hoverActionsBuilder: (path) => HoverActionsWidget(
@@ -1081,11 +1084,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     return FlattenedGoalTree(
       sections: [
         (
-          section: 'orphaned',
+          key: 'orphaned',
           goalMap: goalMap,
           rootGoalIds: goalIds,
           expanded: true,
           path: [],
+          title: null,
         )
       ],
       hoverActionsBuilder: (path) => HoverActionsWidget(
@@ -1199,11 +1203,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         return FlattenedGoalTree(
                           sections: [
                             (
-                              section: 'all-goals',
+                              key: 'all-goals',
                               goalMap: goalMap,
                               rootGoalIds: goalIds,
                               expanded: true,
                               path: [],
+                              title: null,
                             )
                           ],
                           hoverActionsBuilder: (path) => HoverActionsWidget(
@@ -1267,11 +1272,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         return FlattenedGoalTree(
                           sections: [
                             (
-                              section: 'pending',
+                              key: 'pending',
                               goalMap: goalMap,
                               rootGoalIds: goalIds,
                               expanded: true,
                               path: [],
+                              title: null,
                             )
                           ],
                           hoverActionsBuilder: (path) => HoverActionsWidget(

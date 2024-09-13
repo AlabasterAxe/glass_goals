@@ -115,9 +115,10 @@ class PendingGoalViewer extends ConsumerWidget {
                   })
                   .map((e) => e.id)
                   .toList(),
-              section: this.viewKey,
+              key: this.viewKey,
               expanded: true,
               path: [],
+              title: null,
             )
           ],
           hoverActionsBuilder: (path) =>

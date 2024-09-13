@@ -1033,13 +1033,14 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         FlattenedGoalTree(
           sections: [
             (
-              section: 'detail',
+              key: 'detail',
               goalMap: subgoalMap,
               rootGoalIds: widget.goal.subGoalIds
                   .where((g) => subgoalMap.containsKey(g))
                   .toList(),
               path: [widget.goal.id],
               expanded: true,
+              title: null,
             )
           ],
           hoverActionsBuilder: widget.hoverActionsBuilder,

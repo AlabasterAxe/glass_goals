@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:goals_core/src/sync/sync_client.dart';
 import 'package:goals_types/goals_types.dart';
 import 'package:collection/collection.dart'
     show IterableExtension, IterableNullableExtension, IterableZip;
