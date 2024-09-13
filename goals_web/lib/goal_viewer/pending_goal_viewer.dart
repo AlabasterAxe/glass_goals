@@ -85,37 +85,44 @@ class PendingGoalViewer extends ConsumerWidget {
       // TODO: Handle this case.
       PendingGoalViewMode.schedule => ScheduledGoalsV2(goalMap: this.goalMap),
       PendingGoalViewMode.tree => FlattenedGoalTree(
-          goalMap: getGoalsMatchingPredicate(
-              worldContext,
-              this.goalMap,
-              (goal) => ![
-                    GoalStatus.done,
-                    GoalStatus.archived,
-                    GoalStatus.pending
-                  ].contains(getGoalStatus(worldContext, goal).status)),
-          rootGoalIds: this
-              .goalMap
-              .values
-              .where((goal) {
-                if ([
-                  GoalStatus.done,
-                  GoalStatus.archived,
-                  GoalStatus.pending,
-                ].contains(getGoalStatus(worldContext, goal).status)) {
-                  return false;
-                }
-                for (final superGoalId in goal.superGoalIds) {
-                  if (this.goalMap.containsKey(superGoalId)) {
-                    return false;
-                  }
-                }
-                return true;
-              })
-              .map((e) => e.id)
-              .toList(),
+          sections: [
+            (
+              goalMap: getGoalsMatchingPredicate(
+                  worldContext,
+                  this.goalMap,
+                  (goal) => ![
+                        GoalStatus.done,
+                        GoalStatus.archived,
+                        GoalStatus.pending
+                      ].contains(getGoalStatus(worldContext, goal).status)),
+              rootGoalIds: this
+                  .goalMap
+                  .values
+                  .where((goal) {
+                    if ([
+                      GoalStatus.done,
+                      GoalStatus.archived,
+                      GoalStatus.pending,
+                    ].contains(getGoalStatus(worldContext, goal).status)) {
+                      return false;
+                    }
+                    for (final superGoalId in goal.superGoalIds) {
+                      if (this.goalMap.containsKey(superGoalId)) {
+                        return false;
+                      }
+                    }
+                    return true;
+                  })
+                  .map((e) => e.id)
+                  .toList(),
+              section: this.viewKey,
+              expanded: true,
+              path: [],
+            )
+          ],
           hoverActionsBuilder: (path) =>
               HoverActionsWidget(path: path, goalMap: this.goalMap),
-          section: this.viewKey),
+        ),
     };
   }
 }

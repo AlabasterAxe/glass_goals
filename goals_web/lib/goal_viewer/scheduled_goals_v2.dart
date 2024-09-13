@@ -248,9 +248,15 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                       }
                     },
                     child: FlattenedGoalTree(
-                      section: slice.name,
-                      goalMap: sliceGoalMap,
-                      rootGoalIds: goalIds,
+                      sections: [
+                        (
+                          section: slice.name,
+                          goalMap: sliceGoalMap,
+                          rootGoalIds: goalIds,
+                          expanded: true,
+                          path: [],
+                        )
+                      ],
                       hoverActionsBuilder: (path) => HoverActionsWidget(
                         path: path,
                         goalMap: widget.goalMap,

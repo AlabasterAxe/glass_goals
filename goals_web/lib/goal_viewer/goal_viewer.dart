@@ -926,9 +926,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             AppContext.of(context).syncClient.modifyGoals(goalDeltas);
           },
           child: FlattenedGoalTree(
-            section: slice.name,
-            goalMap: goalMap,
-            rootGoalIds: goalIds,
+            sections: [
+              (
+                section: slice.name,
+                goalMap: goalMap,
+                rootGoalIds: goalIds,
+                path: [],
+                expanded: true,
+              )
+            ],
             hoverActionsBuilder: (path) => HoverActionsWidget(
               path: path,
               goalMap: widget.goalMap,
@@ -988,9 +994,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     return FlattenedGoalTree(
-      section: 'previous-${slice.name}',
-      goalMap: goalMap,
-      rootGoalIds: goalIds,
+      sections: [
+        (
+          section: 'previous-${slice.name}',
+          goalMap: goalMap,
+          rootGoalIds: goalIds,
+          expanded: true,
+          path: [],
+        )
+      ],
       hoverActionsBuilder: (path) => HoverActionsWidget(
         path: path,
         goalMap: widget.goalMap,
@@ -1024,9 +1036,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       return null;
     }
     return FlattenedGoalTree(
-      section: 'previously-active',
-      goalMap: goalMap,
-      rootGoalIds: goalIds,
+      sections: [
+        (
+          section: 'previously-active',
+          goalMap: goalMap,
+          rootGoalIds: goalIds,
+          expanded: true,
+          path: [],
+        )
+      ],
       hoverActionsBuilder: (path) => HoverActionsWidget(
         path: path,
         goalMap: widget.goalMap,
@@ -1061,9 +1079,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       return null;
     }
     return FlattenedGoalTree(
-      section: 'orphaned',
-      goalMap: goalMap,
-      rootGoalIds: goalIds,
+      sections: [
+        (
+          section: 'orphaned',
+          goalMap: goalMap,
+          rootGoalIds: goalIds,
+          expanded: true,
+          path: [],
+        )
+      ],
       hoverActionsBuilder: (path) => HoverActionsWidget(
         path: path,
         goalMap: widget.goalMap,
@@ -1173,9 +1197,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                                 .map((g) => g.id)
                                 .toList();
                         return FlattenedGoalTree(
-                          section: 'all-goals',
-                          goalMap: goalMap,
-                          rootGoalIds: goalIds,
+                          sections: [
+                            (
+                              section: 'all-goals',
+                              goalMap: goalMap,
+                              rootGoalIds: goalIds,
+                              expanded: true,
+                              path: [],
+                            )
+                          ],
                           hoverActionsBuilder: (path) => HoverActionsWidget(
                             path: path,
                             goalMap: widget.goalMap,
@@ -1235,9 +1265,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                                 .map((g) => g.id)
                                 .toList();
                         return FlattenedGoalTree(
-                          section: 'pending',
-                          goalMap: goalMap,
-                          rootGoalIds: goalIds,
+                          sections: [
+                            (
+                              section: 'pending',
+                              goalMap: goalMap,
+                              rootGoalIds: goalIds,
+                              expanded: true,
+                              path: [],
+                            )
+                          ],
                           hoverActionsBuilder: (path) => HoverActionsWidget(
                               path: path, goalMap: widget.goalMap),
                           depthLimit: _mode == GoalViewMode.list ? 1 : null,

@@ -1031,13 +1031,18 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         Text('Subgoals', style: textTheme.headlineSmall),
         SizedBox(height: uiUnit(1)),
         FlattenedGoalTree(
-          goalMap: subgoalMap,
-          rootGoalIds: widget.goal.subGoalIds
-              .where((g) => subgoalMap.containsKey(g))
-              .toList(),
+          sections: [
+            (
+              section: 'detail',
+              goalMap: subgoalMap,
+              rootGoalIds: widget.goal.subGoalIds
+                  .where((g) => subgoalMap.containsKey(g))
+                  .toList(),
+              path: [widget.goal.id],
+              expanded: true,
+            )
+          ],
           hoverActionsBuilder: widget.hoverActionsBuilder,
-          path: [widget.goal.id],
-          section: 'detail',
         ),
         SizedBox(height: uiUnit(2)),
         Text('History', style: textTheme.headlineSmall),
