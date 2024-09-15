@@ -248,9 +248,9 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                                 builder: (context, snapshot) {
                                   final modalMap = snapshot.data ?? Map();
                                   final goal = modalMap[widget.goalId];
-                                  for (final subGoal
-                                      in goal?.subGoalIds ?? []) {
-                                    modalMap.remove(subGoal.id);
+                                  for (final subGoalId
+                                      in goal?.subGoalIds ?? <String>[]) {
+                                    modalMap.remove(subGoalId);
                                   }
                                   return GoalSearchModal(
                                     goalMap: snapshot.data ?? Map(),
