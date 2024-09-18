@@ -14,7 +14,6 @@ import 'package:flutter/material.dart'
         Theme,
         Tooltip,
         showDialog;
-import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter/widgets.dart';
 import 'package:goals_core/model.dart'
     show

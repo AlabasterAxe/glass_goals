@@ -917,7 +917,10 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         ref.watch(worldContextProvider).value ?? worldContextStream.value;
     final List<DetailViewLogEntryItem> logItems = [];
     for (final goalId in [...widget.goal.subGoalIds, widget.goal.id]) {
-      final goal = widget.goalMap[goalId]!;
+      final goal = widget.goalMap[goalId];
+      if (goal == null) {
+        continue;
+      }
       logItems.addAll(goal.log.map((entry) => DetailViewLogEntryItem(
           goal: goal, entry: entry, time: entry.creationTime)));
     }
@@ -993,6 +996,8 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                   onPrint: (_) {
                 printGoal((pw.Document doc) async {
                   final font = await PdfGoogleFonts.jostRegular();
+                  final fontBold = await PdfGoogleFonts.jostBold();
+                  final fontItalic = await PdfGoogleFonts.jostItalic();
                   final widgets = [
                     pw.Header(
                         level: 1,
@@ -1015,7 +1020,11 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                         ...(await HTMLToPdf().convert(
                             markdownToHtml((item.entry as NoteLogEntry).text,
                                 extensionSet: ExtensionSet.gitHubWeb),
-                            defaultFont: font)),
+                            fontResolver: (_, bold, italic) {
+                          if (bold) return fontBold;
+                          if (italic) return fontItalic;
+                          return font;
+                        })),
                       ]
                   ];
                   doc.addPage(pw.MultiPage(

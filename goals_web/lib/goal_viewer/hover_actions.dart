@@ -246,7 +246,9 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                                     .syncClient
                                     .stateSubject,
                                 builder: (context, snapshot) {
-                                  final modalMap = snapshot.data ?? Map();
+                                  final modalMap = snapshot.data != null
+                                      ? {...snapshot.data!}
+                                      : Map();
                                   final goal = modalMap[widget.goalId];
                                   for (final subGoalId
                                       in goal?.subGoalIds ?? <String>[]) {

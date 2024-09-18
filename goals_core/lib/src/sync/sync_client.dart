@@ -24,7 +24,7 @@ import 'persistence_service.dart' show PersistenceService;
 Map<String, Goal> initialGoalState() => {};
 
 class SyncClient {
-  Subject<Map<String, Goal>> stateSubject =
+  BehaviorSubject<Map<String, Goal>> stateSubject =
       BehaviorSubject.seeded(initialGoalState());
   late HLC hlc;
   late String clientId;
@@ -52,20 +52,13 @@ class SyncClient {
   }
 
   void modifyGoal(GoalDelta delta) {
-    hlc = hlc.increment();
-    List<String> unsyncedOps =
-        (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
-            .cast<String>();
+    modifyGoals([delta]);
+  }
 
-    final op = DeltaOp(hlcTimestamp: hlc.pack(), delta: delta);
-    final actionId = const Uuid().v4();
-    this.modificationMap[actionId] = {op.hlcTimestamp};
-    unsyncedOps.add(Op.toJson(op));
-    appBox.put('unsyncedOps', unsyncedOps);
-    _computeState();
-    sync();
-    undoStack.add(actionId);
-    redoStack.clear();
+  void _computeStateOptimistic(Iterable<DeltaOp> ops) {
+    Map<String, Goal> goals = {...stateSubject.value};
+    applyDeltaOps(goals, ops.whereType<DeltaOp>());
+    stateSubject.add(goals);
   }
 
   void modifyGoals(List<GoalDelta> deltas) {
@@ -74,17 +67,19 @@ class SyncClient {
             .cast<String>();
 
     final actionHlcs = <String>{};
+    final deltaOps = <DeltaOp>[];
     for (final delta in deltas) {
       hlc = hlc.increment();
       final op = DeltaOp(hlcTimestamp: hlc.pack(), delta: delta);
+      deltaOps.add(op);
       actionHlcs.add(op.hlcTimestamp);
       unsyncedOps.add(Op.toJson(op));
     }
     final actionId = const Uuid().v4();
     this.modificationMap[actionId] = actionHlcs;
+    _computeStateOptimistic(deltaOps);
 
     appBox.put('unsyncedOps', unsyncedOps);
-    _computeState();
     sync();
     undoStack.add(actionId);
     redoStack.clear();
