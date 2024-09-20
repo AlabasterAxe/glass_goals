@@ -271,7 +271,14 @@ Map<String, Goal> getGoalsRequiringAttention(
   final result = <String, Goal>{};
   final unscheduledRootGoals = getGoalsMatchingPredicate(goalMap, (Goal goal) {
     final status = getGoalStatus(context, goal);
-    return status.status == null && goal.superGoalIds.isEmpty;
+    bool hasSuperGoalsInMap = false;
+    for (final superGoalId in goal.superGoalIds) {
+      if (goalMap.containsKey(superGoalId)) {
+        hasSuperGoalsInMap = true;
+        break;
+      }
+    }
+    return status.status == null && !hasSuperGoalsInMap;
   });
 
   final transitivelyUnscheduledGoals = unscheduledRootGoals.values

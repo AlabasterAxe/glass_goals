@@ -185,20 +185,21 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   }
 
   _onAddGoal(String? parentId, String text, [TimeSlice? timeSlice]) {
-    final id = const Uuid().v4();
-    final goalDeltas = <GoalDelta>[
-      GoalDelta(
-          id: id,
+    final goalDeltas = <GoalDelta>[];
+
+    if (parentId != null || _filter is GoalGoalFilter) {
+      goalDeltas.add(GoalDelta(
+          id: const Uuid().v4(),
           text: text,
           logEntry: SetParentLogEntry(
-              id: Uuid().v4(),
-              parentId: parentId,
-              creationTime: DateTime.now())),
-    ];
+              id: const Uuid().v4(),
+              creationTime: DateTime.now(),
+              parentId: parentId ?? (_filter as GoalGoalFilter).goalId)));
+    }
 
     if (timeSlice != null && timeSlice != TimeSlice.unscheduled) {
       goalDeltas.add(GoalDelta(
-          id: id,
+          id: const Uuid().v4(),
           logEntry: StatusLogEntry(
               id: const Uuid().v4(),
               creationTime: DateTime.now(),
@@ -1169,7 +1170,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       ),
                   ],
                 ),
-                if (_filter == GoalFilterType.pending_v2)
+                if (_filter is PredefinedGoalFilter &&
+                        (_filter as PredefinedGoalFilter).type ==
+                            GoalFilterType.pending_v2 ||
+                    _filter is GoalGoalFilter)
                   PendingGoalViewModePicker(
                       onModeChanged: (mode) => this.setState(() {
                             _pendingGoalViewMode = mode;
