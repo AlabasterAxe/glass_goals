@@ -70,45 +70,16 @@ abstract class GoalLogEntry extends Equatable {
         return AddParentLogEntry.fromJsonMap(json, version);
       case 'removeParent':
         return RemoveParentLogEntry.fromJsonMap(json, version);
+      case 'makeAnchor':
+        return MakeAnchorLogEntry.fromJsonMap(json, version);
+      case 'clearAnchor':
+        return ClearAnchorLogEntry.fromJsonMap(json, version);
       default:
         throw Exception('Invalid data: $json has unknown type: $type');
     }
   }
 
-  static Map<String, dynamic> toJsonMap(GoalLogEntry entry) {
-    if (entry is StatusLogEntry) {
-      return StatusLogEntry.toJsonMap(entry);
-    }
-    if (entry is ArchiveStatusLogEntry) {
-      return ArchiveStatusLogEntry.toJsonMap(entry);
-    }
-    if (entry is NoteLogEntry) {
-      return NoteLogEntry.toJsonMap(entry);
-    }
-    if (entry is ArchiveNoteLogEntry) {
-      return ArchiveNoteLogEntry.toJsonMap(entry);
-    }
-    if (entry is SetParentLogEntry) {
-      return SetParentLogEntry.toJsonMap(entry);
-    }
-    if (entry is PriorityLogEntry) {
-      return PriorityLogEntry.toJsonMap(entry);
-    }
-    if (entry is AddStatusIntentionLogEntry) {
-      return AddStatusIntentionLogEntry.toJsonMap(entry);
-    }
-    if (entry is AddStatusReflectionLogEntry) {
-      return AddStatusReflectionLogEntry.toJsonMap(entry);
-    }
-    if (entry is AddParentLogEntry) {
-      return AddParentLogEntry.toJsonMap(entry);
-    }
-    if (entry is RemoveParentLogEntry) {
-      return RemoveParentLogEntry.toJsonMap(entry);
-    }
-    throw Exception(
-        'Failed to convert GoalLogEntry to JSON Map: Unknown type: ${entry.runtimeType}');
-  }
+  Map<String, dynamic> toJsonMap();
 
   static GoalLogEntry? fromPrevious(prev_goal_types.GoalLogEntry? legacyEntry) {
     if (legacyEntry == null) {
@@ -160,12 +131,13 @@ class PriorityLogEntry extends GoalLogEntry {
     );
   }
 
-  static Map<String, dynamic> toJsonMap(PriorityLogEntry entry) {
+  @override
+  Map<String, dynamic> toJsonMap() {
     return {
       'type': 'priority',
-      'id': entry.id,
-      'priority': entry.priority,
-      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+      'id': this.id,
+      'priority': this.priority,
+      'creationTime': this.creationTime.toUtc().toIso8601String(),
     };
   }
 
@@ -209,12 +181,13 @@ class NoteLogEntry extends GoalLogEntry {
     );
   }
 
-  static Map<String, dynamic> toJsonMap(NoteLogEntry noteLogEntry) {
+  @override
+  Map<String, dynamic> toJsonMap() {
     return {
       'type': 'note',
-      'id': noteLogEntry.id,
-      'text': noteLogEntry.text,
-      'creationTime': noteLogEntry.creationTime.toUtc().toIso8601String(),
+      'id': this.id,
+      'text': this.text,
+      'creationTime': this.creationTime.toUtc().toIso8601String(),
     };
   }
 
@@ -258,11 +231,11 @@ class ArchiveNoteLogEntry extends GoalLogEntry {
     );
   }
 
-  static Map<String, dynamic> toJsonMap(ArchiveNoteLogEntry entry) {
+  Map<String, dynamic> toJsonMap() {
     return {
       'type': 'archiveNote',
-      'id': entry.id,
-      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+      'id': this.id,
+      'creationTime': this.creationTime.toUtc().toIso8601String(),
     };
   }
 
@@ -311,12 +284,13 @@ class SetParentLogEntry extends GoalLogEntry {
     );
   }
 
-  static Map<String, dynamic> toJsonMap(SetParentLogEntry entry) {
+  @override
+  Map<String, dynamic> toJsonMap() {
     return {
       'type': 'setParent',
-      'id': entry.id,
-      'parentId': entry.parentId,
-      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+      'id': this.id,
+      'parentId': this.parentId,
+      'creationTime': this.creationTime.toUtc().toIso8601String(),
     };
   }
 
@@ -327,6 +301,81 @@ class SetParentLogEntry extends GoalLogEntry {
       parentId: legacyEntry.parentId,
       creationTime: legacyEntry.creationTime,
     );
+  }
+}
+
+class MakeAnchorLogEntry extends GoalLogEntry {
+  static const FIRST_VERSION = 5;
+  const MakeAnchorLogEntry({
+    required super.id,
+    required super.creationTime,
+  });
+
+  @override
+  List<Object?> get props => [id, creationTime];
+
+  static MakeAnchorLogEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    final creationTime = json['creationTime'] != null
+        ? DateTime.parse(json['creationTime']).toLocal()
+        : DateTime(2023, 1, 1);
+    return MakeAnchorLogEntry(
+      id: json['id'] ?? '${creationTime.millisecondsSinceEpoch}',
+      creationTime: creationTime,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toJsonMap() {
+    return {
+      'type': 'makeAnchor',
+      'id': this.id,
+      'creationTime': this.creationTime.toUtc().toIso8601String(),
+    };
+  }
+}
+
+class ClearAnchorLogEntry extends GoalLogEntry {
+  static const FIRST_VERSION = 5;
+  const ClearAnchorLogEntry({
+    required super.id,
+    required super.creationTime,
+  });
+
+  @override
+  List<Object?> get props => [id, creationTime];
+
+  static ClearAnchorLogEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    final creationTime = json['creationTime'] != null
+        ? DateTime.parse(json['creationTime']).toLocal()
+        : DateTime(2023, 1, 1);
+    return ClearAnchorLogEntry(
+      id: json['id'] ?? '${creationTime.millisecondsSinceEpoch}',
+      creationTime: creationTime,
+    );
+  }
+
+  Map<String, dynamic> toJsonMap() {
+    return {
+      'type': 'clearAnchor',
+      'id': this.id,
+      'creationTime': this.creationTime.toUtc().toIso8601String(),
+    };
   }
 }
 
@@ -362,12 +411,13 @@ class AddParentLogEntry extends GoalLogEntry {
     );
   }
 
-  static Map<String, dynamic> toJsonMap(AddParentLogEntry entry) {
+  @override
+  Map<String, dynamic> toJsonMap() {
     return {
       'type': 'addParent',
-      'id': entry.id,
-      'parentId': entry.parentId,
-      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+      'id': this.id,
+      'parentId': this.parentId,
+      'creationTime': this.creationTime.toUtc().toIso8601String(),
     };
   }
 }
@@ -403,12 +453,13 @@ class RemoveParentLogEntry extends GoalLogEntry {
     );
   }
 
-  static Map<String, dynamic> toJsonMap(RemoveParentLogEntry entry) {
+  @override
+  Map<String, dynamic> toJsonMap() {
     return {
       'type': 'removeParent',
-      'id': entry.id,
-      'parentId': entry.parentId,
-      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+      'id': this.id,
+      'parentId': this.parentId,
+      'creationTime': this.creationTime.toUtc().toIso8601String(),
     };
   }
 }
@@ -456,10 +507,6 @@ class StatusLogEntry extends GoalLogEntry {
     );
   }
 
-  static String toJson(StatusLogEntry entry) {
-    return jsonEncode(toJsonMap(entry));
-  }
-
   static StatusLogEntry fromJson(String json, int? version) {
     return fromJsonMap(jsonDecode(json), version);
   }
@@ -479,14 +526,15 @@ class StatusLogEntry extends GoalLogEntry {
     );
   }
 
-  static Map<String, dynamic> toJsonMap(StatusLogEntry statusLogEntry) {
+  @override
+  Map<String, dynamic> toJsonMap() {
     return {
       'type': 'status',
-      'id': statusLogEntry.id,
-      'status': statusLogEntry.status?.name,
-      'creationTime': statusLogEntry.creationTime.toUtc().toIso8601String(),
-      'startTime': statusLogEntry.startTime?.toUtc().toIso8601String(),
-      'endTime': statusLogEntry.endTime?.toUtc().toIso8601String(),
+      'id': this.id,
+      'status': this.status?.name,
+      'creationTime': this.creationTime.toUtc().toIso8601String(),
+      'startTime': this.startTime?.toUtc().toIso8601String(),
+      'endTime': this.endTime?.toUtc().toIso8601String(),
     };
   }
 
@@ -524,11 +572,12 @@ class ArchiveStatusLogEntry extends GoalLogEntry {
     );
   }
 
-  static Map<String, dynamic> toJsonMap(ArchiveStatusLogEntry entry) {
+  @override
+  Map<String, dynamic> toJsonMap() {
     return {
       'type': 'archiveStatus',
-      'id': entry.id,
-      'creationTime': entry.creationTime.toUtc().toIso8601String(),
+      'id': this.id,
+      'creationTime': this.creationTime.toUtc().toIso8601String(),
     };
   }
 
@@ -574,13 +623,14 @@ class AddStatusIntentionLogEntry extends GoalLogEntry {
     );
   }
 
-  static Map<String, dynamic> toJsonMap(AddStatusIntentionLogEntry entry) {
+  @override
+  Map<String, dynamic> toJsonMap() {
     return {
       'type': 'addStatusIntention',
-      'id': entry.id,
-      'creationTime': entry.creationTime.toUtc().toIso8601String(),
-      'intentionText': entry.intentionText,
-      'statusId': entry.statusId,
+      'id': this.id,
+      'creationTime': this.creationTime.toUtc().toIso8601String(),
+      'intentionText': this.intentionText,
+      'statusId': this.statusId,
     };
   }
 }
@@ -618,13 +668,13 @@ class AddStatusReflectionLogEntry extends GoalLogEntry {
     );
   }
 
-  static Map<String, dynamic> toJsonMap(AddStatusReflectionLogEntry entry) {
+  Map<String, dynamic> toJsonMap() {
     return {
       'type': 'addStatusReflection',
-      'id': entry.id,
-      'creationTime': entry.creationTime.toUtc().toIso8601String(),
-      'reflectionText': entry.reflectionText,
-      'statusId': entry.statusId,
+      'id': this.id,
+      'creationTime': this.creationTime.toUtc().toIso8601String(),
+      'reflectionText': this.reflectionText,
+      'statusId': this.statusId,
     };
   }
 }
@@ -684,7 +734,7 @@ class GoalDelta extends Equatable {
       json[TEXT_FIELD_NAME] = delta.text!;
     }
     if (delta.logEntry != null) {
-      json[LOG_ENTRY_FIELD_NAME] = GoalLogEntry.toJsonMap(delta.logEntry!);
+      json[LOG_ENTRY_FIELD_NAME] = delta.logEntry!.toJsonMap();
     }
     return json;
   }
