@@ -391,6 +391,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   void initState() {
     super.initState();
 
+    _goalFilters =
+        getGoalsMatchingPredicate(widget.goalMap, (g) => isAnchor(g) != null)
+            .entries
+            .map((e) => GoalGoalFilter(e.key, widget.goalMap))
+            .toList();
+
     Future.delayed(Duration.zero, () {
       if (ref.read(debugProvider)) {
         this.setState(() {
@@ -1135,8 +1141,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       _filter.displayName,
                       style: theme.headlineMedium,
                     ),
-                    if (_filter == GoalFilterType.schedule_v2 ||
-                        _filter == GoalFilterType.pending_v2)
+                    if (_filter is PredefinedGoalFilter &&
+                            (_filter as PredefinedGoalFilter).type ==
+                                GoalFilterType.pending_v2 ||
+                        _filter is GoalGoalFilter)
                       Tooltip(
                         waitDuration: Duration(milliseconds: 200),
                         showDuration: Duration.zero,
@@ -1342,8 +1350,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       case GoalGoalFilter filter:
                         return PendingGoalViewer(
                           viewKey: '',
-                          goalMap:
-                              getTransitiveSubGoals(goalMap, filter.goalId),
+                          goalMap: getTransitiveSubGoals(goalMap, filter.goalId)
+                            ..remove(filter.goalId),
                           mode: this._pendingGoalViewMode,
                         );
                     }
