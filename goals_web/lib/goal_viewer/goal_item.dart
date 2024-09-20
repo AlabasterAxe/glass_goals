@@ -7,6 +7,7 @@ import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart'
     show HoverActionsBuilder;
 import 'package:goals_web/goal_viewer/status_chip.dart';
+import 'package:goals_web/intents.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../app_context.dart';
@@ -55,18 +56,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
 class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
   final TextEditingController _textController = TextEditingController();
   bool _editing = false;
-  late final FocusNode _focusNode = FocusNode(onKeyEvent: (node, event) {
-    if (event.logicalKey == LogicalKeyboardKey.escape) {
-      hoverEventStream.add(null);
-      this._focusNode.unfocus();
-      this._textController.text = widget.goal.text;
-      this.setState(() {
-        this._editing = false;
-      });
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  });
+  final FocusNode _focusNode = FocusNode();
   bool _hovering = false;
 
   List<StreamSubscription> subscriptions = [];
@@ -91,6 +81,24 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     }
 
     super.dispose();
+  }
+
+  _cancelEditing() {
+    hoverEventStream.add(null);
+    this._focusNode.unfocus();
+    this._textController.text = widget.goal.text;
+    this.setState(() {
+      this._editing = false;
+    });
+  }
+
+  _updateGoal() {
+    AppContext.of(context)
+        .syncClient
+        .modifyGoal(GoalDelta(id: widget.goal.id, text: _textController.text));
+    setState(() {
+      _editing = false;
+    });
   }
 
   Widget _dragWrapWidget(
@@ -165,13 +173,13 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
               },
         child: StreamBuilder<List<String>?>(
             stream: hoverEventStream.stream,
-            builder: (context, snapshot) {
+            builder: (context, hoveredGoalSnapshot) {
               return Container(
                 decoration: BoxDecoration(
                   color: (_hovering ||
-                          snapshot.hasData &&
-                              pathsMatch(
-                                  snapshot.requireData, this.widget.path))
+                          hoveredGoalSnapshot.hasData &&
+                              pathsMatch(hoveredGoalSnapshot.requireData,
+                                  this.widget.path))
                       ? emphasizedLightBackground
                       : Colors.transparent,
                 ),
@@ -193,26 +201,14 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                   autocorrect: false,
                                   controller: _textController,
                                   decoration: null,
+
+                                  // NOTE: this is a workaround so that the text field doesn't
+                                  // auto-highlight when switching between windows.
+                                  maxLines: null,
                                   style: mainTextStyle,
-                                  onEditingComplete: () {
-                                    AppContext.of(context)
-                                        .syncClient
-                                        .modifyGoal(GoalDelta(
-                                            id: widget.goal.id,
-                                            text: _textController.text));
-                                    setState(() {
-                                      _editing = false;
-                                    });
-                                  },
+                                  onEditingComplete: this._updateGoal,
                                   onTapOutside: (_) {
-                                    AppContext.of(context)
-                                        .syncClient
-                                        .modifyGoal(GoalDelta(
-                                            id: widget.goal.id,
-                                            text: _textController.text));
-                                    setState(() {
-                                      _editing = false;
-                                    });
+                                    _updateGoal();
                                   },
                                   focusNode: _focusNode,
                                 ),
@@ -225,6 +221,11 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                       this._textController.text =
                                           widget.goal.text;
                                       _focusNode.requestFocus();
+                                      this._textController.selection =
+                                          TextSelection(
+                                              baseOffset: 0,
+                                              extentOffset:
+                                                  _textController.text.length);
                                       setState(() {
                                         _editing = true;
                                       });
@@ -264,9 +265,9 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                         !_editing &&
                         (isSelected ||
                             _hovering ||
-                            snapshot.hasData &&
-                                pathsMatch(
-                                    snapshot.requireData, this.widget.path)))
+                            hoveredGoalSnapshot.hasData &&
+                                pathsMatch(hoveredGoalSnapshot.requireData,
+                                    this.widget.path)))
                       widget.hoverActionsBuilder([...this.widget.path])
                   ],
                 ),
@@ -274,23 +275,39 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
             }),
       ),
     );
-    return DragTarget<GoalDragDetails>(
-      onAcceptWithDetails: (deets) => this.widget.onDropGoal?.call(deets.data),
-      onMove: (details) {
-        setState(() {
-          if (!_hovering) {
-            _hovering = true;
-            hoverEventStream.add(this.widget.path);
-          }
-        });
+    return Actions(
+      actions: {
+        CancelIntent: CallbackAction<CancelIntent>(
+          onInvoke: (_) {
+            this._cancelEditing();
+          },
+        ),
+        AcceptIntent: CallbackAction<AcceptIntent>(
+          onInvoke: (_) {
+            this._updateGoal();
+          },
+        ),
       },
-      builder: (context, _, __) => widget.dragHandle == GoalItemDragHandle.item
-          ? _dragWrapWidget(
-              isSelected: isSelected,
-              selectedGoals: selectedGoals,
-              child: content,
-            )
-          : content,
+      child: DragTarget<GoalDragDetails>(
+        onAcceptWithDetails: (deets) =>
+            this.widget.onDropGoal?.call(deets.data),
+        onMove: (details) {
+          setState(() {
+            if (!_hovering) {
+              _hovering = true;
+              hoverEventStream.add(this.widget.path);
+            }
+          });
+        },
+        builder: (context, _, __) =>
+            widget.dragHandle == GoalItemDragHandle.item
+                ? _dragWrapWidget(
+                    isSelected: isSelected,
+                    selectedGoals: selectedGoals,
+                    child: content,
+                  )
+                : content,
+      ),
     );
   }
 }

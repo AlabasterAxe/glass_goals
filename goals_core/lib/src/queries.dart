@@ -27,7 +27,7 @@ Map<String, Goal> getTransitiveSubGoals(
   return result;
 }
 
-Map<String, Goal> getGoalsMatchingPredicate(WorldContext context,
+Map<String, Goal> getGoalsMatchingPredicate(
     Map<String, Goal> goalMap, bool Function(Goal) predicate) {
   final result = <String, Goal>{};
   for (final goal in goalMap.values) {
@@ -269,8 +269,7 @@ Map<String, Goal> getGoalsRequiringAttention(
   ///  - Don't show tasks if any of their children are marked active
   ///  - Show tasks that don't currently have a setting (i.e. they were previously active and have become inactive)
   final result = <String, Goal>{};
-  final unscheduledRootGoals =
-      getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
+  final unscheduledRootGoals = getGoalsMatchingPredicate(goalMap, (Goal goal) {
     final status = getGoalStatus(context, goal);
     return status.status == null && goal.superGoalIds.isEmpty;
   });
@@ -283,7 +282,7 @@ Map<String, Goal> getGoalsRequiringAttention(
   result.addAll(transitivelyUnscheduledGoals);
 
   final completedAndArchivedGoals =
-      getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
+      getGoalsMatchingPredicate(goalMap, (Goal goal) {
     final status = getGoalStatus(context, goal);
     return [GoalStatus.done, GoalStatus.archived].contains(status.status);
   });
@@ -300,8 +299,7 @@ Map<String, Goal> getGoalsRequiringAttention(
 
 Map<String, Goal> getPreviouslyActiveGoals(
     WorldContext context, Map<String, Goal> goalMap) {
-  final previouslyActiveGoals =
-      getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
+  final previouslyActiveGoals = getGoalsMatchingPredicate(goalMap, (Goal goal) {
     if (getGoalStatus(context, goal).status != null) {
       return false;
     }
@@ -339,7 +337,7 @@ Map<String, Goal> getGoalsForDateRange(
     DateTime? smallerWindowEnd]) {
   final result = <String, Goal>{};
   final activeGoalsWithinWindow =
-      getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
+      getGoalsMatchingPredicate(goalMap, (Goal goal) {
     final status = getGoalStatus(context, goal);
     if (status.status != GoalStatus.active) {
       return false;
@@ -355,7 +353,7 @@ Map<String, Goal> getGoalsForDateRange(
   });
 
   final snoozedGoalsEndingWithinWindow =
-      getGoalsMatchingPredicate(context, goalMap, (Goal goal) {
+      getGoalsMatchingPredicate(goalMap, (Goal goal) {
     final status = getGoalStatus(context, goal);
     if (status.status != GoalStatus.pending) {
       return false;
@@ -425,5 +423,24 @@ StatusLogEntry? goalHasStatus(
   if (statusLogEntry.status == status) {
     return statusLogEntry;
   }
+  return null;
+}
+
+// should I be accepting the world context here and using it to determine the current time?
+MakeAnchorLogEntry? isAnchor(Goal? goal) {
+  if (goal == null) {
+    return null;
+  }
+
+  for (final entry in goal.log) {
+    if (entry is MakeAnchorLogEntry) {
+      return entry;
+    }
+
+    if (entry is ClearAnchorLogEntry) {
+      return null;
+    }
+  }
+
   return null;
 }

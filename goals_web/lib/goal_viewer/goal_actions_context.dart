@@ -22,6 +22,8 @@ class GoalActionsContext extends InheritedWidget {
   final Function(String?) onArchive;
   final Function(String?, DateTime?) onDone;
   final Function(String?, DateTime?) onSnooze;
+  final Function(String) onMakeAnchor;
+  final Function(String) onClearAnchor;
   final Function(
     String goalId, {
     List<String>? sourcePath,
@@ -44,6 +46,8 @@ class GoalActionsContext extends InheritedWidget {
     required this.onSnooze,
     required this.onActive,
     required this.onDropGoal,
+    required this.onMakeAnchor,
+    required this.onClearAnchor,
     this.onPrint,
   }) : super(child: child);
 
@@ -76,6 +80,8 @@ class GoalActionsContext extends InheritedWidget {
       List<String>? nextDropPath,
     })? onDropGoal,
     Function(String? goalId)? onPrint,
+    Function(String? goalId)? onClearAnchor,
+    Function(String? goalId)? onMakeAnchor,
   }) {
     return GoalActionsContext(
       child: child,
@@ -90,6 +96,9 @@ class GoalActionsContext extends InheritedWidget {
       onActive: onActive ?? GoalActionsContext.of(context).onActive,
       onDropGoal: onDropGoal ?? GoalActionsContext.of(context).onDropGoal,
       onPrint: onPrint ?? GoalActionsContext.of(context).onPrint,
+      onClearAnchor:
+          onClearAnchor ?? GoalActionsContext.of(context).onClearAnchor,
+      onMakeAnchor: onMakeAnchor ?? GoalActionsContext.of(context).onMakeAnchor,
     );
   }
 }

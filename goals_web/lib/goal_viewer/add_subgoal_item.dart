@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
+import 'package:goals_web/intents.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
 
@@ -23,14 +24,7 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
   late TextEditingController _textController =
       TextEditingController(text: _defaultText);
   bool _editing = false;
-  late final FocusNode _focusNode = FocusNode(onKeyEvent: (node, event) {
-    if (event.logicalKey == LogicalKeyboardKey.escape) {
-      this._textController.text = _defaultText;
-      textFocusStream.add(null);
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  });
+  final FocusNode _focusNode = FocusNode();
 
   String get _defaultText =>
       widget.path.length < 3 ? "[New Goal]" : "[New Subgoal]";
@@ -53,6 +47,11 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
     _textController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  _cancelEditing() {
+    this._textController.text = _defaultText;
+    textFocusStream.add(null);
   }
 
   _addGoal() {
@@ -87,46 +86,61 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
         });
       }
     });
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () {
-              textFocusStream.add(widget.path);
-            },
-            child: SizedBox(
-              width: uiUnit(10),
-              height: uiUnit(8),
-              child: const Center(child: Icon(Icons.add, size: 18)),
+    return Actions(
+      actions: {
+        CancelIntent: CallbackAction<CancelIntent>(
+          onInvoke: (_) {
+            this._cancelEditing();
+          },
+        ),
+        AcceptIntent: CallbackAction<AcceptIntent>(
+          onInvoke: (_) {
+            this._addGoal();
+          },
+        ),
+      },
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: () {
+                textFocusStream.add(widget.path);
+              },
+              child: SizedBox(
+                width: uiUnit(10),
+                height: uiUnit(8),
+                child: const Center(child: Icon(Icons.add, size: 18)),
+              ),
             ),
-          ),
-          _editing
-              ? IntrinsicWidth(
-                  child: TextField(
-                    autocorrect: false,
-                    controller: _textController,
-                    decoration: null,
-                    style: mainTextStyle,
-                    onEditingComplete: _addGoal,
-                    onTapOutside: (_) {
-                      if (_textController.text != _defaultText &&
-                          _textController.text.isNotEmpty) {
-                        _addGoal();
-                      }
-                      textFocusStream.add(null);
+            _editing
+                ? IntrinsicWidth(
+                    child: TextField(
+                      autocorrect: false,
+                      controller: _textController,
+                      decoration: null,
+                      style: mainTextStyle,
+                      maxLines: null,
+                      onEditingComplete: _addGoal,
+                      onTapOutside: (_) {
+                        if (_textController.text != _defaultText &&
+                            _textController.text.isNotEmpty) {
+                          _addGoal();
+                        }
+                        textFocusStream.add(null);
+                      },
+                      focusNode: _focusNode,
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: () {
+                      textFocusStream.add(widget.path);
                     },
-                    focusNode: _focusNode,
+                    child: Text(_textController.text,
+                        style: mainTextStyle.copyWith(color: Colors.black54)),
                   ),
-                )
-              : GestureDetector(
-                  onTap: () {
-                    textFocusStream.add(widget.path);
-                  },
-                  child: Text(_textController.text,
-                      style: mainTextStyle.copyWith(color: Colors.black54)),
-                ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -16,6 +16,10 @@ class CancelIntent extends Intent {
   const CancelIntent();
 }
 
+class AcceptIntent extends Intent {
+  const AcceptIntent();
+}
+
 class RedoIntent extends Intent {
   const RedoIntent();
 }

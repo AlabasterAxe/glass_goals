@@ -39,6 +39,7 @@ final SHORTCUTS = <ShortcutActivator, Intent>{
   LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
       const AcceptMultiLineText(),
   SingleActivator(LogicalKeyboardKey.escape): const CancelIntent(),
+  SingleActivator(LogicalKeyboardKey.enter): const AcceptIntent(),
 };
 
 final MAC_SHORTCUTS = <ShortcutActivator, Intent>{
@@ -51,4 +52,5 @@ final MAC_SHORTCUTS = <ShortcutActivator, Intent>{
   LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter):
       const AcceptMultiLineText(),
   SingleActivator(LogicalKeyboardKey.escape): const CancelIntent(),
+  SingleActivator(LogicalKeyboardKey.enter): const AcceptIntent(),
 };

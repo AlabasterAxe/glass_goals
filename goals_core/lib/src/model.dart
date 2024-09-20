@@ -9,7 +9,7 @@ class Goal {
   final List<String> superGoalIds = [];
 
   /// A log of changes to this goal. This is guaranteed to be
-  /// sorted from oldest to newest.
+  /// sorted from newest to oldest.
   final List<GoalLogEntry> log = [];
   final DateTime creationTime;
 

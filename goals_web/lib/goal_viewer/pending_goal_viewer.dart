@@ -86,7 +86,6 @@ class PendingGoalViewer extends ConsumerWidget {
       PendingGoalViewMode.schedule => ScheduledGoalsV2(goalMap: this.goalMap),
       PendingGoalViewMode.tree => FlattenedGoalTree(
           goalMap: getGoalsMatchingPredicate(
-              worldContext,
               this.goalMap,
               (goal) => ![
                     GoalStatus.done,

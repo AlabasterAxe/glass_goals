@@ -18,7 +18,7 @@ import 'package:flutter/painting.dart' show FractionalOffset;
 import 'package:flutter/rendering.dart' show MainAxisAlignment, MainAxisSize;
 import 'package:flutter/widgets.dart'
     show BuildContext, Icon, Row, StreamBuilder, Text, Widget;
-import 'package:goals_core/model.dart' show Goal, getGoalStatus;
+import 'package:goals_core/model.dart' show Goal, getGoalStatus, isAnchor;
 import 'package:goals_core/sync.dart'
     show AddParentLogEntry, GoalDelta, GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
@@ -79,6 +79,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
     final onUnarchive = GoalActionsContext.of(context).onUnarchive;
     final onPrint = GoalActionsContext.of(context).onPrint;
     final onExpanded = GoalActionsContext.of(context).onExpanded;
+    final onMakeAnchor = GoalActionsContext.of(context).onMakeAnchor;
+    final onClearAnchor = GoalActionsContext.of(context).onClearAnchor;
 
     bool allArchived = selectedGoals.isNotEmpty;
     for (final selectedGoalId in selectedGoals) {
@@ -89,6 +91,11 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
         break;
       }
     }
+
+    final showAnchorOption = selectedGoals.isEmpty || selectedGoals.length == 1;
+    final showClearAnchorOption =
+        isAnchor(widget.goalMap[widget.goalId]) != null;
+    null; // && selectedGoals.isEmpty;
     return Row(
       mainAxisSize: widget.mainAxisSize,
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -337,6 +344,19 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                       leadingIcon: Icon(Icons.archive),
                       onPressed: () => onArchive(widget.goalId),
                     ),
+              showClearAnchorOption
+                  ? MenuItemButton(
+                      child: Text('Clear Anchor'),
+                      leadingIcon: Icon(Icons.anchor),
+                      onPressed: !showAnchorOption
+                          ? null
+                          : () => onClearAnchor(widget.goalId))
+                  : MenuItemButton(
+                      child: Text('Make Anchor'),
+                      leadingIcon: Icon(Icons.anchor),
+                      onPressed: !showAnchorOption
+                          ? null
+                          : () => onMakeAnchor(widget.goalId)),
               if (onPrint != null)
                 MenuItemButton(
                   child: Text('Save as PDF'),

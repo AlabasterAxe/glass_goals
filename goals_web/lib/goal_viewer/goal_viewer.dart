@@ -25,12 +25,15 @@ import 'package:goals_core/model.dart'
         getGoalsMatchingPredicate,
         getGoalsRequiringAttention,
         getPreviouslyActiveGoals,
-        getTransitiveSubGoals;
+        getTransitiveSubGoals,
+        isAnchor;
 import 'package:goals_core/sync.dart'
     show
         AddParentLogEntry,
+        ClearAnchorLogEntry,
         GoalDelta,
         GoalStatus,
+        MakeAnchorLogEntry,
         PriorityLogEntry,
         RemoveParentLogEntry,
         SetParentLogEntry,
@@ -52,13 +55,7 @@ import 'package:uuid/uuid.dart' show Uuid;
 
 import '../common/keyboard_utils.dart';
 import '../common/time_slice.dart';
-import '../styles.dart'
-    show
-        darkElementColor,
-        lightBackground,
-        multiSplitViewThemeData,
-        smallTextStyle,
-        uiUnit;
+import '../styles.dart' show lightBackground, multiSplitViewThemeData, uiUnit;
 import '../widgets/gg_icon_button.dart';
 import 'goal_actions_context.dart';
 import 'goal_search_modal.dart';
@@ -73,7 +70,7 @@ class GoalViewer extends StatefulHookConsumerWidget {
   ConsumerState<GoalViewer> createState() => _GoalViewerState();
 }
 
-enum GoalFilter {
+enum GoalFilterType {
   pending(displayName: "Pending Goals"),
   all(displayName: "All Goals"),
   to_review(displayName: "To Review"),
@@ -87,18 +84,40 @@ enum GoalFilter {
   schedule_v2(displayName: "Scheduled Goals"),
   pending_v2(displayName: "Pending Goals");
 
-  const GoalFilter({required this.displayName});
+  const GoalFilterType({required this.displayName});
 
   final String displayName;
 }
 
 enum GoalViewMode { tree, list, schedule }
 
+sealed class GoalFilter {
+  get displayName;
+}
+
+class PredefinedGoalFilter extends GoalFilter {
+  final GoalFilterType type;
+  PredefinedGoalFilter(this.type);
+  get displayName => type.displayName;
+}
+
+class GoalGoalFilter extends GoalFilter {
+  final String goalId;
+  final Map<String, Goal> goalMap;
+  GoalGoalFilter(
+    this.goalId,
+    this.goalMap,
+  );
+  get displayName => this.goalMap[this.goalId]?.text ?? 'Untitled';
+}
+
 class _GoalViewerState extends ConsumerState<GoalViewer> {
-  GoalFilter _filter = GoalFilter.pending_v2;
+  GoalFilter _filter = PredefinedGoalFilter(GoalFilterType.pending_v2);
   GoalViewMode _mode = GoalViewMode.tree;
   final FocusNode _focusNode = FocusNode();
   bool _isDebug = false;
+
+  List<GoalGoalFilter> _goalFilters = [];
 
   Future<void>? openBoxFuture;
   bool isInitted = false;
@@ -126,7 +145,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       focusedGoalStream.add(null);
       _filter = filter;
     });
-    Hive.box('goals_web.ui').put('goalViewerFilter', filter.name);
+    // TODO: fix this
+    if (filter is PredefinedGoalFilter) {
+      Hive.box('goals_web.ui').put('goalViewerFilter', filter.type.name);
+    }
   }
 
   _onExpanded(String goalId, {bool? expanded}) {
@@ -261,6 +283,20 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
   }
 
+  @override
+  didUpdateWidget(GoalViewer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.goalMap != widget.goalMap) {
+      setState(() {
+        _goalFilters = getGoalsMatchingPredicate(
+                widget.goalMap, (g) => isAnchor(g) != null)
+            .entries
+            .map((e) => GoalGoalFilter(e.key, widget.goalMap))
+            .toList();
+      });
+    }
+  }
+
   String? _parseUrlGoalId() {
     final parts = window.location.href.split('/');
     if (parts.length >= 3 && parts[parts.length - 2] == 'goal') {
@@ -334,14 +370,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               _mode = GoalViewMode.tree;
             }
             final filterString = box.get('goalViewerFilter',
-                defaultValue: GoalFilter.schedule_v2.name);
+                defaultValue: GoalFilterType.schedule_v2.name);
 
             try {
-              _filter = filterString == GoalFilter.schedule.name
-                  ? GoalFilter.schedule_v2
-                  : GoalFilter.values.byName(filterString);
+              _filter = PredefinedGoalFilter(
+                  filterString == GoalFilterType.schedule.name
+                      ? GoalFilterType.schedule_v2
+                      : GoalFilterType.values.byName(filterString));
             } catch (_) {
-              _filter = GoalFilter.schedule_v2;
+              _filter = PredefinedGoalFilter(GoalFilterType.schedule_v2);
             }
           }
         });
@@ -385,18 +422,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   _viewSwitcher(bool drawer, WorldContext worldContext, bool debug) {
     final sidebarFilters = [
-      GoalFilter.pending_v2,
-      GoalFilter.all,
+      PredefinedGoalFilter(GoalFilterType.pending_v2),
+      PredefinedGoalFilter(GoalFilterType.all),
+      ..._goalFilters,
     ];
 
-    final toReview = {
-      ...getGoalsRequiringAttention(worldContext, widget.goalMap),
-      ...getPreviouslyActiveGoals(
-        worldContext,
-        widget.goalMap,
-      )
-    };
-    final theme = Theme.of(context);
     return SizedBox(
       key: const ValueKey('viewSwitcher'),
       width: 200,
@@ -408,24 +438,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               title: Text(filter.displayName),
               selected: _filter == filter,
               contentPadding: EdgeInsets.symmetric(horizontal: uiUnit(2)),
-              trailing: (filter == GoalFilter.to_review && toReview.isNotEmpty)
-                  ? // material theme container with rounded corners and toReview size
-                  Container(
-                      width: uiUnit(8),
-                      height: uiUnit(6),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.secondary,
-                        borderRadius: BorderRadius.circular(uiUnit(2)),
-                      ),
-                      child: Center(
-                        child: Text(
-                          toReview.length.toString(),
-                          style:
-                              smallTextStyle.copyWith(color: darkElementColor),
-                        ),
-                      ),
-                    )
-                  : null,
               onTap: () {
                 this._onSwitchFilter(filter);
 
@@ -652,6 +664,20 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     selectedGoalsStream.add({});
   }
 
+  _onMakeAnchor(String goalId) {
+    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+        id: goalId,
+        logEntry:
+            MakeAnchorLogEntry(id: Uuid().v4(), creationTime: DateTime.now())));
+  }
+
+  _onClearAnchor(String goalId) {
+    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+        id: goalId,
+        logEntry: ClearAnchorLogEntry(
+            id: Uuid().v4(), creationTime: DateTime.now())));
+  }
+
   @override
   Widget build(BuildContext context) {
     final focusedGoalId =
@@ -705,6 +731,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       onAddGoal: this._onAddGoal,
       onFocused: this._onFocused,
       onDropGoal: this._onDropGoal,
+      onClearAnchor: this._onClearAnchor,
+      onMakeAnchor: this._onMakeAnchor,
       child: FocusableActionDetector(
         autofocus: true,
         shortcuts: isMacOS() ? MAC_SHORTCUTS : SHORTCUTS,
@@ -1107,8 +1135,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       _filter.displayName,
                       style: theme.headlineMedium,
                     ),
-                    if (_filter == GoalFilter.schedule_v2 ||
-                        _filter == GoalFilter.pending_v2)
+                    if (_filter == GoalFilterType.schedule_v2 ||
+                        _filter == GoalFilterType.pending_v2)
                       Tooltip(
                         waitDuration: Duration(milliseconds: 200),
                         showDuration: Duration.zero,
@@ -1133,7 +1161,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       ),
                   ],
                 ),
-                if (_filter == GoalFilter.pending_v2)
+                if (_filter == GoalFilterType.pending_v2)
                   PendingGoalViewModePicker(
                       onModeChanged: (mode) => this.setState(() {
                             _pendingGoalViewMode = mode;
@@ -1152,151 +1180,170 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                     }
                     var goalMap = widget.goalMap;
                     switch (_filter) {
-                      case GoalFilter.all:
-                        final goalIds = _mode == GoalViewMode.tree
-                            ? goalMap.values
-                                .where((goal) {
-                                  for (final superGoalId in goal.superGoalIds) {
-                                    if (goalMap.containsKey(superGoalId)) {
-                                      return false;
-                                    }
-                                  }
-                                  return true;
-                                })
-                                .map((e) => e.id)
-                                .toList()
-                            : (goalMap.values.toList(growable: false)
-                                  ..sort((a, b) => a.text
-                                      .toLowerCase()
-                                      .compareTo(b.text.toLowerCase())))
-                                .map((g) => g.id)
-                                .toList();
-                        return FlattenedGoalTree(
-                          section: 'all-goals',
-                          goalMap: goalMap,
-                          rootGoalIds: goalIds,
-                          hoverActionsBuilder: (path) => HoverActionsWidget(
-                            path: path,
-                            goalMap: widget.goalMap,
-                          ),
-                          depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                        );
-                      case GoalFilter.to_review:
-                        final toReview = {
-                          'Orphaned Goals': _orphanedGoals(worldContext),
-                          'Previously Active Goals':
-                              _previouslyActiveGoals(worldContext),
-                        };
+                      case PredefinedGoalFilter filter:
+                        switch (filter.type) {
+                          case GoalFilterType.all:
+                            final goalIds = _mode == GoalViewMode.tree
+                                ? goalMap.values
+                                    .where((goal) {
+                                      for (final superGoalId
+                                          in goal.superGoalIds) {
+                                        if (goalMap.containsKey(superGoalId)) {
+                                          return false;
+                                        }
+                                      }
+                                      return true;
+                                    })
+                                    .map((e) => e.id)
+                                    .toList()
+                                : (goalMap.values.toList(growable: false)
+                                      ..sort((a, b) => a.text
+                                          .toLowerCase()
+                                          .compareTo(b.text.toLowerCase())))
+                                    .map((g) => g.id)
+                                    .toList();
+                            return FlattenedGoalTree(
+                              section: 'all-goals',
+                              goalMap: goalMap,
+                              rootGoalIds: goalIds,
+                              hoverActionsBuilder: (path) => HoverActionsWidget(
+                                path: path,
+                                goalMap: widget.goalMap,
+                              ),
+                              depthLimit: _mode == GoalViewMode.list ? 1 : null,
+                            );
+                          case GoalFilterType.to_review:
+                            final toReview = {
+                              'Orphaned Goals': _orphanedGoals(worldContext),
+                              'Previously Active Goals':
+                                  _previouslyActiveGoals(worldContext),
+                            };
 
-                        final nothingToReview =
-                            toReview.values.every((element) => element == null);
+                            final nothingToReview = toReview.values
+                                .every((element) => element == null);
 
-                        return nothingToReview
-                            ? Text('All caught up!', style: theme.headlineSmall)
-                            : Column(
+                            return nothingToReview
+                                ? Text('All caught up!',
+                                    style: theme.headlineSmall)
+                                : Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                        for (final entry in toReview.entries)
+                                          if (entry.value != null) ...[
+                                            Padding(
+                                              padding:
+                                                  EdgeInsets.all(uiUnit(2)),
+                                              child: Text(entry.key,
+                                                  style: theme.headlineSmall),
+                                            ),
+                                            entry.value!
+                                          ]
+                                      ]);
+                          case GoalFilterType.pending:
+                            goalMap = getGoalsMatchingPredicate(
+                                widget.goalMap,
+                                (goal) =>
+                                    getGoalStatus(worldContext, goal).status !=
+                                        GoalStatus.archived &&
+                                    getGoalStatus(worldContext, goal).status !=
+                                        GoalStatus.done);
+                            final goalIds = _mode == GoalViewMode.tree
+                                ? goalMap.values
+                                    .where((goal) {
+                                      for (final superGoalId
+                                          in goal.superGoalIds) {
+                                        if (goalMap.containsKey(superGoalId)) {
+                                          return false;
+                                        }
+                                      }
+                                      return true;
+                                    })
+                                    .map((e) => e.id)
+                                    .toList()
+                                : (goalMap.values.toList(growable: false)
+                                      ..sort((a, b) => a.text
+                                          .toLowerCase()
+                                          .compareTo(b.text.toLowerCase())))
+                                    .map((g) => g.id)
+                                    .toList();
+                            return FlattenedGoalTree(
+                              section: 'pending',
+                              goalMap: goalMap,
+                              rootGoalIds: goalIds,
+                              hoverActionsBuilder: (path) => HoverActionsWidget(
+                                  path: path, goalMap: widget.goalMap),
+                              depthLimit: _mode == GoalViewMode.list ? 1 : null,
+                            );
+                          case GoalFilterType.today:
+                            final additionalSections = {
+                              'Yesterday': _previousTimeSliceGoals(
+                                  worldContext, TimeSlice.today),
+                              'This Week':
+                                  _timeSlice(worldContext, TimeSlice.this_week),
+                            };
+                            return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                    for (final entry in toReview.entries)
-                                      if (entry.value != null) ...[
-                                        Padding(
-                                          padding: EdgeInsets.all(uiUnit(2)),
-                                          child: Text(entry.key,
-                                              style: theme.headlineSmall),
-                                        ),
-                                        entry.value!
-                                      ]
-                                  ]);
-                      case GoalFilter.pending:
-                        goalMap = getGoalsMatchingPredicate(
-                            worldContext,
-                            widget.goalMap,
-                            (goal) =>
-                                getGoalStatus(worldContext, goal).status !=
-                                    GoalStatus.archived &&
-                                getGoalStatus(worldContext, goal).status !=
-                                    GoalStatus.done);
-                        final goalIds = _mode == GoalViewMode.tree
-                            ? goalMap.values
-                                .where((goal) {
-                                  for (final superGoalId in goal.superGoalIds) {
-                                    if (goalMap.containsKey(superGoalId)) {
-                                      return false;
-                                    }
-                                  }
-                                  return true;
-                                })
-                                .map((e) => e.id)
-                                .toList()
-                            : (goalMap.values.toList(growable: false)
-                                  ..sort((a, b) => a.text
-                                      .toLowerCase()
-                                      .compareTo(b.text.toLowerCase())))
-                                .map((g) => g.id)
-                                .toList();
-                        return FlattenedGoalTree(
-                          section: 'pending',
-                          goalMap: goalMap,
-                          rootGoalIds: goalIds,
-                          hoverActionsBuilder: (path) => HoverActionsWidget(
-                              path: path, goalMap: widget.goalMap),
-                          depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                        );
-                      case GoalFilter.today:
-                        final additionalSections = {
-                          'Yesterday': _previousTimeSliceGoals(
-                              worldContext, TimeSlice.today),
-                          'This Week':
-                              _timeSlice(worldContext, TimeSlice.this_week),
-                        };
-                        return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _timeSlice(worldContext, TimeSlice.today) ??
-                                  Container(),
-                              for (final entry in additionalSections.entries)
-                                if (entry.value != null) ...[
-                                  Padding(
-                                    padding: EdgeInsets.all(uiUnit(2)),
-                                    child: Text(entry.key,
-                                        style: theme.headlineSmall),
-                                  ),
-                                  entry.value!
-                                ]
-                            ]);
-                      case GoalFilter.this_week:
-                        return _timeSlice(worldContext, TimeSlice.this_week) ??
-                            Text('No Goals!');
-                      case GoalFilter.this_month:
-                        return _timeSlice(worldContext, TimeSlice.this_month) ??
-                            Text('No Goals!');
-                      case GoalFilter.this_quarter:
-                        return _timeSlice(
-                                worldContext, TimeSlice.this_quarter) ??
-                            Text('No Goals!');
-                      case GoalFilter.this_year:
-                        return _timeSlice(worldContext, TimeSlice.this_year) ??
-                            Text('No Goals!');
-                      case GoalFilter.long_term:
-                        return _timeSlice(worldContext, TimeSlice.long_term) ??
-                            Text('No Goals!');
-                      case GoalFilter.schedule:
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: _timeSlices(worldContext, [
-                            TimeSlice.today,
-                            TimeSlice.this_week,
-                            TimeSlice.this_month,
-                            TimeSlice.this_quarter,
-                            TimeSlice.this_year,
-                            TimeSlice.long_term
-                          ]),
-                        );
-                      case GoalFilter.schedule_v2:
-                        return ScheduledGoalsV2(goalMap: goalMap);
-                      case GoalFilter.pending_v2:
+                                  _timeSlice(worldContext, TimeSlice.today) ??
+                                      Container(),
+                                  for (final entry
+                                      in additionalSections.entries)
+                                    if (entry.value != null) ...[
+                                      Padding(
+                                        padding: EdgeInsets.all(uiUnit(2)),
+                                        child: Text(entry.key,
+                                            style: theme.headlineSmall),
+                                      ),
+                                      entry.value!
+                                    ]
+                                ]);
+                          case GoalFilterType.this_week:
+                            return _timeSlice(
+                                    worldContext, TimeSlice.this_week) ??
+                                Text('No Goals!');
+                          case GoalFilterType.this_month:
+                            return _timeSlice(
+                                    worldContext, TimeSlice.this_month) ??
+                                Text('No Goals!');
+                          case GoalFilterType.this_quarter:
+                            return _timeSlice(
+                                    worldContext, TimeSlice.this_quarter) ??
+                                Text('No Goals!');
+                          case GoalFilterType.this_year:
+                            return _timeSlice(
+                                    worldContext, TimeSlice.this_year) ??
+                                Text('No Goals!');
+                          case GoalFilterType.long_term:
+                            return _timeSlice(
+                                    worldContext, TimeSlice.long_term) ??
+                                Text('No Goals!');
+                          case GoalFilterType.schedule:
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: _timeSlices(worldContext, [
+                                TimeSlice.today,
+                                TimeSlice.this_week,
+                                TimeSlice.this_month,
+                                TimeSlice.this_quarter,
+                                TimeSlice.this_year,
+                                TimeSlice.long_term
+                              ]),
+                            );
+                          case GoalFilterType.schedule_v2:
+                            return ScheduledGoalsV2(goalMap: goalMap);
+                          case GoalFilterType.pending_v2:
+                            return PendingGoalViewer(
+                              goalMap: goalMap,
+                              viewKey: 'root',
+                              mode: this._pendingGoalViewMode,
+                            );
+                        }
+                      case GoalGoalFilter filter:
                         return PendingGoalViewer(
-                          goalMap: goalMap,
-                          viewKey: 'root',
+                          viewKey: '',
+                          goalMap:
+                              getTransitiveSubGoals(goalMap, filter.goalId),
                           mode: this._pendingGoalViewMode,
                         );
                     }

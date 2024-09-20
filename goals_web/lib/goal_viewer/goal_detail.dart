@@ -926,8 +926,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     }
     final textTheme = Theme.of(context).textTheme;
     final historyLog = _computeHistoryLog(worldContext, logItems);
-    final subgoalMap =
-        getGoalsMatchingPredicate(worldContext, widget.goalMap, (goal) {
+    final subgoalMap = getGoalsMatchingPredicate(widget.goalMap, (goal) {
       final status = getGoalStatus(worldContext, goal);
       return status.status != GoalStatus.archived &&
           status.status != GoalStatus.done;
