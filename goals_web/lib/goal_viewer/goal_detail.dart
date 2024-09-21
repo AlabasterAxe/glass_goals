@@ -20,7 +20,7 @@ import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
 import 'package:goals_web/goal_viewer/goal_actions_context.dart';
 import 'package:goals_web/goal_viewer/goal_search_modal.dart'
-    show GoalSearchModal;
+    show GoalSearchModal, GoalSelectedResult;
 import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/printed_goal.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
@@ -223,7 +223,7 @@ class _AddParentBreadcrumbState extends State<AddParentBreadcrumb> {
           GestureDetector(
               child: Text("+ Add Parent"),
               onTap: () async {
-                final newParentId = await showDialog(
+                showDialog(
                     barrierColor: Colors.black26,
                     context: context,
                     builder: (context) => Dialog(
@@ -236,16 +236,19 @@ class _AddParentBreadcrumbState extends State<AddParentBreadcrumb> {
                                   .stateSubject,
                               builder: (context, snapshot) => GoalSearchModal(
                                     goalMap: snapshot.data ?? Map(),
+                                    onGoalSelected: (newParentId) {
+                                      AppContext.of(context)
+                                          .syncClient
+                                          .modifyGoal(GoalDelta(
+                                              id: widget.goalId,
+                                              logEntry: SetParentLogEntry(
+                                                  id: Uuid().v4(),
+                                                  creationTime: DateTime.now(),
+                                                  parentId: newParentId)));
+                                      return GoalSelectedResult.close;
+                                    },
                                   )),
                         ));
-                if (newParentId != null) {
-                  AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                      id: widget.goalId,
-                      logEntry: SetParentLogEntry(
-                          id: Uuid().v4(),
-                          creationTime: DateTime.now(),
-                          parentId: newParentId)));
-                }
               }),
         ],
       ),

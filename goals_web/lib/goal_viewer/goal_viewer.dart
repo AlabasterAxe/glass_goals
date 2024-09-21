@@ -799,7 +799,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   }
 
   _openSearch(_) async {
-    final focusedGoalId = await showDialog(
+    await showDialog(
         barrierColor: Colors.black26,
         context: context,
         builder: (context) => Dialog(
@@ -809,12 +809,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               child: StreamBuilder<Map<String, Goal>>(
                   stream: AppContext.of(context).syncClient.stateSubject,
                   builder: (context, snapshot) => GoalSearchModal(
-                        goalMap: snapshot.data ?? Map(),
-                      )),
+                      goalMap: snapshot.data ?? Map(),
+                      onGoalSelected: (focusedGoalId) {
+                        focusedGoalStream.add(focusedGoalId);
+                        return GoalSelectedResult.close;
+                      })),
             ));
-    if (focusedGoalId != null) {
-      focusedGoalStream.add(focusedGoalId);
-    }
   }
 
   List<TimeSlice> _computeCreateTimeSliceOptions(WorldContext worldContext,

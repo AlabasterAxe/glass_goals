@@ -569,8 +569,8 @@ void main() {
       ),
     ]);
 
-    final yearlyGoals = getGoalsForDateRange(WorldContext(time: now), goals,
-        now.startOfYear, now.endOfYear, now.startOfQuarter, now.endOfQuarter);
+    final yearlyGoals = getGoalsForDateRange(
+        WorldContext(time: now), goals, now.startOfYear, now.endOfYear);
 
     expect(yearlyGoals, contains('sub-child-2'));
   });

@@ -239,9 +239,9 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
             menuChildren: [
               MenuItemButton(
                 leadingIcon: Icon(Icons.play_for_work),
-                child: const Text('Import goal...'),
+                child: const Text('Import goals...'),
                 onPressed: () async {
-                  final newChildId = await showDialog(
+                  await showDialog(
                       barrierColor: Colors.black26,
                       context: context,
                       builder: (context) => Dialog(
@@ -264,17 +264,21 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                                   }
                                   return GoalSearchModal(
                                     goalMap: modalMap,
+                                    onGoalSelected: (newChildId) {
+                                      AppContext.of(context)
+                                          .syncClient
+                                          .modifyGoal(GoalDelta(
+                                              id: newChildId,
+                                              logEntry: AddParentLogEntry(
+                                                  id: Uuid().v4(),
+                                                  creationTime: DateTime.now(),
+                                                  parentId:
+                                                      this.widget.goalId)));
+                                      return GoalSelectedResult.keepOpen;
+                                    },
                                   );
                                 }),
                           ));
-                  if (newChildId != null) {
-                    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                        id: newChildId,
-                        logEntry: AddParentLogEntry(
-                            id: Uuid().v4(),
-                            creationTime: DateTime.now(),
-                            parentId: this.widget.goalId)));
-                  }
                 },
               ),
               SubmenuButton(

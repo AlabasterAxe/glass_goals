@@ -7,9 +7,20 @@ import 'package:goals_web/goal_viewer/status_chip.dart';
 
 import '../styles.dart';
 
+enum GoalSelectedResult {
+  close,
+  keepOpen,
+}
+
 class GoalSearchModal extends StatefulWidget {
   final Map<String, Goal> goalMap;
-  const GoalSearchModal({super.key, required this.goalMap});
+
+  final GoalSelectedResult Function(String) onGoalSelected;
+  const GoalSearchModal({
+    super.key,
+    required this.goalMap,
+    required this.onGoalSelected,
+  });
 
   @override
   State<GoalSearchModal> createState() => _GoalSearchModalState();
@@ -53,13 +64,15 @@ class _KeyboardFocusableListTileState extends State<KeyboardFocusableListTile> {
 
 class _GoalSearchModalState extends State<GoalSearchModal> {
   final _textController = TextEditingController();
-  late final FocusNode _textFocusNode = FocusNode(onKey: (node, event) {
-    if (event.isKeyPressed(LogicalKeyboardKey.arrowDown)) {
+  late final FocusNode _textFocusNode = FocusNode(onKeyEvent: (node, event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.arrowDown) {
       setState(() {
         this._selectedIndex++;
       });
       return KeyEventResult.handled;
-    } else if (event.isKeyPressed(LogicalKeyboardKey.arrowUp)) {
+    } else if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.arrowUp) {
       setState(() {
         this._selectedIndex--;
       });
@@ -90,6 +103,15 @@ class _GoalSearchModalState extends State<GoalSearchModal> {
     _textController.dispose();
     _textFocusNode.dispose();
     super.dispose();
+  }
+
+  _selectGoal(String goalId) {
+    final result = this.widget.onGoalSelected(goalId);
+    if (result == GoalSelectedResult.close) {
+      Navigator.pop(context);
+    } else {
+      this._textFocusNode.requestFocus();
+    }
   }
 
   @override
@@ -128,7 +150,9 @@ class _GoalSearchModalState extends State<GoalSearchModal> {
                       : null,
                 ),
                 onSubmitted: (_) {
-                  Navigator.pop(context, results[wrappedSelectedIndex].id);
+                  if (results.isNotEmpty) {
+                    _selectGoal(results[wrappedSelectedIndex].id);
+                  }
                 },
                 focusNode: this._textFocusNode,
                 controller: this._textController,
@@ -141,7 +165,7 @@ class _GoalSearchModalState extends State<GoalSearchModal> {
                 KeyboardFocusableListTile(
                   isFocused: wrappedSelectedIndex == i,
                   onTap: () {
-                    Navigator.pop(context, goal.id);
+                    _selectGoal(goal.id);
                   },
                   goal: goal,
                 ),
