@@ -20,9 +20,11 @@ import 'package:collection/collection.dart' show IterableExtension;
 
 class ScheduledGoalsV2 extends ConsumerStatefulWidget {
   final Map<String, Goal> goalMap;
+  final List<String> path;
   const ScheduledGoalsV2({
     super.key,
     required this.goalMap,
+    this.path = const [],
   });
 
   @override
@@ -38,16 +40,15 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
   void initState() {
     super.initState();
 
-    Hive.openBox('goals_web.ui').then((box) {
-      final List<String> expandedTimeSlices =
-          (box.get(EXPANDED_TIME_SLICES_KEY, defaultValue: <String>['today'])
-                  as List<dynamic>)
-              .cast();
-      setState(() {
-        _expandedTimeSlices = expandedTimeSlices
-            .map((e) => TimeSlice.values.firstWhere((slice) => slice.name == e))
-            .toSet();
-      });
+    final List<String> expandedTimeSlices = (Hive.box('goals_web.ui')
+                .get(EXPANDED_TIME_SLICES_KEY, defaultValue: <String>['today'])
+            as List<dynamic>)
+        .cast();
+
+    setState(() {
+      _expandedTimeSlices = expandedTimeSlices
+          .map((e) => TimeSlice.values.firstWhere((slice) => slice.name == e))
+          .toSet();
     });
   }
 
@@ -136,7 +137,8 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
 
       for (final goal in sliceGoalMap.values) {
         goalsAccountedFor[goal.id] = goal;
-        goalsAccountedFor.addAll(getTransitiveSubGoals(sliceGoalMap, goal.id));
+        goalsAccountedFor
+            .addAll(getTransitiveSubGoals(widget.goalMap, goal.id));
       }
 
       final goalIds = sliceGoalMap.values
@@ -251,6 +253,7 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                       section: slice.name,
                       goalMap: sliceGoalMap,
                       rootGoalIds: goalIds,
+                      path: widget.path,
                       hoverActionsBuilder: (path) => HoverActionsWidget(
                         path: path,
                         goalMap: widget.goalMap,

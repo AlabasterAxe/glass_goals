@@ -71,16 +71,7 @@ class GoalViewer extends StatefulHookConsumerWidget {
 }
 
 enum GoalFilterType {
-  pending(displayName: "Pending Goals"),
   all(displayName: "All Goals"),
-  to_review(displayName: "To Review"),
-  today(displayName: "Today"),
-  this_week(displayName: "This Week"),
-  this_month(displayName: "This Month"),
-  this_quarter(displayName: "This Quarter"),
-  this_year(displayName: "This Year"),
-  long_term(displayName: "Long Term"),
-  schedule(displayName: "Scheduled Goals"),
   schedule_v2(displayName: "Scheduled Goals"),
   pending_v2(displayName: "Pending Goals");
 
@@ -187,14 +178,19 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   _onAddGoal(String? parentId, String text, [TimeSlice? timeSlice]) {
     final goalDeltas = <GoalDelta>[];
 
-    if (parentId != null || _filter is GoalGoalFilter) {
+    if (parentId != null) {
       goalDeltas.add(GoalDelta(
           id: const Uuid().v4(),
           text: text,
           logEntry: SetParentLogEntry(
               id: const Uuid().v4(),
               creationTime: DateTime.now(),
-              parentId: parentId ?? (_filter as GoalGoalFilter).goalId)));
+              parentId: parentId)));
+    } else {
+      goalDeltas.add(GoalDelta(
+        id: const Uuid().v4(),
+        text: text,
+      ));
     }
 
     if (timeSlice != null && timeSlice != TimeSlice.unscheduled) {
@@ -375,9 +371,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
             try {
               _filter = PredefinedGoalFilter(
-                  filterString == GoalFilterType.schedule.name
-                      ? GoalFilterType.schedule_v2
-                      : GoalFilterType.values.byName(filterString));
+                  GoalFilterType.values.byName(filterString));
             } catch (_) {
               _filter = PredefinedGoalFilter(GoalFilterType.schedule_v2);
             }
@@ -823,9 +817,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
   }
 
-  Widget? _timeSlice(WorldContext context, TimeSlice slice) =>
-      _timeSlices(context, [slice]).firstOrNull;
-
   List<TimeSlice> _computeCreateTimeSliceOptions(WorldContext worldContext,
       List<TimeSlice> possibleSlices, List<TimeSlice> manualTimeSlices) {
     final List<TimeSlice> result = [];
@@ -854,257 +845,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       }
     }
     return result;
-  }
-
-  List<Widget> _timeSlices(WorldContext worldContext, List<TimeSlice> slices) {
-    final Map<String, Goal> goalsAccountedFor = {};
-    final List<Widget> result = [];
-    for (final slice in slices) {
-      final goalMap = getGoalsForDateRange(
-        worldContext,
-        widget.goalMap,
-        slice.startTime(worldContext.time),
-        slice.endTime(worldContext.time),
-      );
-
-      if (goalMap.isEmpty && slice.zoomDown != null) {
-        continue;
-      }
-
-      for (final goalId in goalsAccountedFor.keys) {
-        if (goalMap.containsKey(goalId)) {
-          goalMap.remove(goalId);
-        }
-      }
-
-      for (final goal in goalMap.values) {
-        goalsAccountedFor[goal.id] = goal;
-        goalsAccountedFor.addAll(getTransitiveSubGoals(goalMap, goal.id));
-      }
-
-      final goalIds = _mode == GoalViewMode.tree
-          ? goalMap.values
-              .where((goal) {
-                for (final superGoalId in goal.superGoalIds) {
-                  if (goalMap.containsKey(superGoalId)) {
-                    return false;
-                  }
-                }
-                return true;
-              })
-              .map((e) => e.id)
-              .toList()
-          : (goalMap.values.toList(growable: false)
-                ..sort((a, b) =>
-                    a.text.toLowerCase().compareTo(b.text.toLowerCase())))
-              .map((g) => g.id)
-              .toList();
-      result.add(Padding(
-        padding: EdgeInsets.all(uiUnit(2)),
-        child: Text(
-          slice.displayName,
-          style: Theme.of(this.context).textTheme.headlineSmall,
-        ),
-      ));
-      result.add(Builder(builder: (context) {
-        return GoalActionsContext.overrideWith(
-          context,
-          onAddGoal: (String? parentId, String text, [TimeSlice? _]) =>
-              this._onAddGoal(parentId, text, slice),
-          onDropGoal: (
-            droppedGoalId, {
-            List<String>? dropPath,
-            List<String>? sourcePath,
-            List<String>? prevDropPath,
-            List<String>? nextDropPath,
-          }) {
-            final goalDeltas = this._computeDropGoalEffects(
-              droppedGoalId,
-              dropPath: dropPath,
-              prevDropPath: prevDropPath,
-              nextDropPath: nextDropPath,
-            );
-            final goalsToUpdate =
-                selectedGoalsStream.value.contains(droppedGoalId)
-                    ? selectedGoalsStream.value
-                    : {droppedGoalId};
-            bool setNullParent = goalsToUpdate.every(goalMap.containsKey);
-            bool addStatus =
-                goalsToUpdate.every((goalId) => !goalMap.containsKey(goalId));
-            for (final goalId in goalsToUpdate) {
-              if (addStatus) {
-                goalDeltas.add(GoalDelta(
-                    id: goalId,
-                    logEntry: StatusLogEntry(
-                      id: const Uuid().v4(),
-                      creationTime: DateTime.now(),
-                      status: GoalStatus.active,
-                      startTime: slice.startTime(worldContext.time),
-                      endTime: slice.endTime(worldContext.time),
-                    )));
-              }
-
-              if (setNullParent &&
-                  (prevDropPath?.length == 0 || prevDropPath?.length == 1) &&
-                  (nextDropPath?.length == 0 || nextDropPath?.length == 1)) {
-                goalDeltas.add(GoalDelta(
-                    id: goalId,
-                    logEntry: SetParentLogEntry(
-                        id: const Uuid().v4(),
-                        parentId: null,
-                        creationTime: DateTime.now())));
-              }
-            }
-
-            selectedGoalsStream.add({});
-            AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-          },
-          child: FlattenedGoalTree(
-            section: slice.name,
-            goalMap: goalMap,
-            rootGoalIds: goalIds,
-            hoverActionsBuilder: (path) => HoverActionsWidget(
-              path: path,
-              goalMap: widget.goalMap,
-            ),
-            depthLimit: _mode == GoalViewMode.list ? 1 : null,
-          ),
-        );
-      }));
-    }
-    return result;
-  }
-
-  Widget? _previousTimeSliceGoals(WorldContext context, TimeSlice slice) {
-    final endOfPreviousSlice =
-        slice.startTime(context.time)?.subtract(const Duration(seconds: 1));
-
-    if (endOfPreviousSlice == null) {
-      return null;
-    }
-    final yesterdayContext = WorldContext(time: endOfPreviousSlice);
-
-    var goalMap = getGoalsForDateRange(
-      yesterdayContext,
-      widget.goalMap,
-      slice.startTime(yesterdayContext.time),
-      slice.endTime(yesterdayContext.time),
-      slice.zoomDown?.startTime(yesterdayContext.time),
-      slice.zoomDown?.endTime(yesterdayContext.time),
-    );
-
-    goalMap = {
-      for (final key in goalMap.keys)
-        if (getGoalStatus(context, goalMap[key]!).status == null)
-          key: goalMap[key]!
-    };
-
-    final goalIds = _mode == GoalViewMode.tree
-        ? goalMap.values
-            .where((goal) {
-              for (final superGoalId in goal.superGoalIds) {
-                if (goalMap.containsKey(superGoalId)) {
-                  return false;
-                }
-              }
-              return true;
-            })
-            .map((e) => e.id)
-            .toList()
-        : (goalMap.values.toList(growable: false)
-              ..sort((a, b) =>
-                  a.text.toLowerCase().compareTo(b.text.toLowerCase())))
-            .map((g) => g.id)
-            .toList();
-
-    if (goalMap.isEmpty || goalIds.isEmpty) {
-      return null;
-    }
-
-    return FlattenedGoalTree(
-      section: 'previous-${slice.name}',
-      goalMap: goalMap,
-      rootGoalIds: goalIds,
-      hoverActionsBuilder: (path) => HoverActionsWidget(
-        path: path,
-        goalMap: widget.goalMap,
-      ),
-      depthLimit: _mode == GoalViewMode.list ? 1 : null,
-    );
-  }
-
-  Widget? _previouslyActiveGoals(WorldContext context) {
-    final goalMap = getPreviouslyActiveGoals(context, widget.goalMap);
-
-    final goalIds = _mode == GoalViewMode.tree
-        ? goalMap.values
-            .where((goal) {
-              for (final superGoalId in goal.superGoalIds) {
-                if (goalMap.containsKey(superGoalId)) {
-                  return false;
-                }
-              }
-              return true;
-            })
-            .map((e) => e.id)
-            .toList()
-        : (goalMap.values.toList(growable: false)
-              ..sort((a, b) =>
-                  a.text.toLowerCase().compareTo(b.text.toLowerCase())))
-            .map((g) => g.id)
-            .toList();
-
-    if (goalMap.isEmpty || goalIds.isEmpty) {
-      return null;
-    }
-    return FlattenedGoalTree(
-      section: 'previously-active',
-      goalMap: goalMap,
-      rootGoalIds: goalIds,
-      hoverActionsBuilder: (path) => HoverActionsWidget(
-        path: path,
-        goalMap: widget.goalMap,
-      ),
-      depthLimit: _mode == GoalViewMode.list ? 1 : null,
-      showAddGoal: false,
-    );
-  }
-
-  Widget? _orphanedGoals(WorldContext context) {
-    final goalMap = getGoalsRequiringAttention(context, widget.goalMap);
-
-    final goalIds = _mode == GoalViewMode.tree
-        ? goalMap.values
-            .where((goal) {
-              for (final superGoalId in goal.superGoalIds) {
-                if (goalMap.containsKey(superGoalId)) {
-                  return false;
-                }
-              }
-              return true;
-            })
-            .map((e) => e.id)
-            .toList()
-        : (goalMap.values.toList(growable: false)
-              ..sort((a, b) =>
-                  a.text.toLowerCase().compareTo(b.text.toLowerCase())))
-            .map((g) => g.id)
-            .toList();
-
-    if (goalMap.isEmpty || goalIds.isEmpty) {
-      return null;
-    }
-    return FlattenedGoalTree(
-      section: 'orphaned',
-      goalMap: goalMap,
-      rootGoalIds: goalIds,
-      hoverActionsBuilder: (path) => HoverActionsWidget(
-        path: path,
-        goalMap: widget.goalMap,
-      ),
-      depthLimit: _mode == GoalViewMode.list ? 1 : null,
-      showAddGoal: false,
-    );
   }
 
   Widget _listView(WorldContext worldContext) {
@@ -1224,124 +964,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                               ),
                               depthLimit: _mode == GoalViewMode.list ? 1 : null,
                             );
-                          case GoalFilterType.to_review:
-                            final toReview = {
-                              'Orphaned Goals': _orphanedGoals(worldContext),
-                              'Previously Active Goals':
-                                  _previouslyActiveGoals(worldContext),
-                            };
-
-                            final nothingToReview = toReview.values
-                                .every((element) => element == null);
-
-                            return nothingToReview
-                                ? Text('All caught up!',
-                                    style: theme.headlineSmall)
-                                : Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                        for (final entry in toReview.entries)
-                                          if (entry.value != null) ...[
-                                            Padding(
-                                              padding:
-                                                  EdgeInsets.all(uiUnit(2)),
-                                              child: Text(entry.key,
-                                                  style: theme.headlineSmall),
-                                            ),
-                                            entry.value!
-                                          ]
-                                      ]);
-                          case GoalFilterType.pending:
-                            goalMap = getGoalsMatchingPredicate(
-                                widget.goalMap,
-                                (goal) =>
-                                    getGoalStatus(worldContext, goal).status !=
-                                        GoalStatus.archived &&
-                                    getGoalStatus(worldContext, goal).status !=
-                                        GoalStatus.done);
-                            final goalIds = _mode == GoalViewMode.tree
-                                ? goalMap.values
-                                    .where((goal) {
-                                      for (final superGoalId
-                                          in goal.superGoalIds) {
-                                        if (goalMap.containsKey(superGoalId)) {
-                                          return false;
-                                        }
-                                      }
-                                      return true;
-                                    })
-                                    .map((e) => e.id)
-                                    .toList()
-                                : (goalMap.values.toList(growable: false)
-                                      ..sort((a, b) => a.text
-                                          .toLowerCase()
-                                          .compareTo(b.text.toLowerCase())))
-                                    .map((g) => g.id)
-                                    .toList();
-                            return FlattenedGoalTree(
-                              section: 'pending',
-                              goalMap: goalMap,
-                              rootGoalIds: goalIds,
-                              hoverActionsBuilder: (path) => HoverActionsWidget(
-                                  path: path, goalMap: widget.goalMap),
-                              depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                            );
-                          case GoalFilterType.today:
-                            final additionalSections = {
-                              'Yesterday': _previousTimeSliceGoals(
-                                  worldContext, TimeSlice.today),
-                              'This Week':
-                                  _timeSlice(worldContext, TimeSlice.this_week),
-                            };
-                            return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _timeSlice(worldContext, TimeSlice.today) ??
-                                      Container(),
-                                  for (final entry
-                                      in additionalSections.entries)
-                                    if (entry.value != null) ...[
-                                      Padding(
-                                        padding: EdgeInsets.all(uiUnit(2)),
-                                        child: Text(entry.key,
-                                            style: theme.headlineSmall),
-                                      ),
-                                      entry.value!
-                                    ]
-                                ]);
-                          case GoalFilterType.this_week:
-                            return _timeSlice(
-                                    worldContext, TimeSlice.this_week) ??
-                                Text('No Goals!');
-                          case GoalFilterType.this_month:
-                            return _timeSlice(
-                                    worldContext, TimeSlice.this_month) ??
-                                Text('No Goals!');
-                          case GoalFilterType.this_quarter:
-                            return _timeSlice(
-                                    worldContext, TimeSlice.this_quarter) ??
-                                Text('No Goals!');
-                          case GoalFilterType.this_year:
-                            return _timeSlice(
-                                    worldContext, TimeSlice.this_year) ??
-                                Text('No Goals!');
-                          case GoalFilterType.long_term:
-                            return _timeSlice(
-                                    worldContext, TimeSlice.long_term) ??
-                                Text('No Goals!');
-                          case GoalFilterType.schedule:
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: _timeSlices(worldContext, [
-                                TimeSlice.today,
-                                TimeSlice.this_week,
-                                TimeSlice.this_month,
-                                TimeSlice.this_quarter,
-                                TimeSlice.this_year,
-                                TimeSlice.long_term
-                              ]),
-                            );
                           case GoalFilterType.schedule_v2:
                             return ScheduledGoalsV2(goalMap: goalMap);
                           case GoalFilterType.pending_v2:
@@ -1353,6 +975,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         }
                       case GoalGoalFilter filter:
                         return PendingGoalViewer(
+                          path: [filter.goalId],
                           viewKey: '',
                           goalMap: getTransitiveSubGoals(goalMap, filter.goalId)
                             ..remove(filter.goalId),

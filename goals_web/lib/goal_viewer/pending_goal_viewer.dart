@@ -71,20 +71,24 @@ class PendingGoalViewer extends ConsumerWidget {
   final Map<String, Goal> goalMap;
   final String viewKey;
   final PendingGoalViewMode mode;
+  final List<String> path;
 
   const PendingGoalViewer(
       {super.key,
       required this.goalMap,
       required this.viewKey,
-      required this.mode});
+      required this.mode,
+      this.path = const []});
 
   @override
   Widget build(BuildContext context, ref) {
     final worldContext = ref.read(worldContextProvider).value!;
     return switch (this.mode) {
       // TODO: Handle this case.
-      PendingGoalViewMode.schedule => ScheduledGoalsV2(goalMap: this.goalMap),
+      PendingGoalViewMode.schedule =>
+        ScheduledGoalsV2(goalMap: this.goalMap, path: this.path),
       PendingGoalViewMode.tree => FlattenedGoalTree(
+          path: this.path,
           goalMap: getGoalsMatchingPredicate(
               this.goalMap,
               (goal) => ![

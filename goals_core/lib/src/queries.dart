@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:goals_core/src/sync/sync_client.dart';
 import 'package:goals_types/goals_types.dart';
 import 'package:collection/collection.dart'
     show IterableExtension, IterableNullableExtension, IterableZip;
@@ -338,21 +337,12 @@ Map<String, Goal> getPreviouslyActiveGoals(
 
 Map<String, Goal> getGoalsForDateRange(
     WorldContext context, Map<String, Goal> goalMap,
-    [DateTime? start,
-    DateTime? end,
-    DateTime? smallerWindowStart,
-    DateTime? smallerWindowEnd]) {
+    [DateTime? start, DateTime? end]) {
   final result = <String, Goal>{};
   final activeGoalsWithinWindow =
       getGoalsMatchingPredicate(goalMap, (Goal goal) {
     final status = getGoalStatus(context, goal);
     if (status.status != GoalStatus.active) {
-      return false;
-    }
-    if (smallerWindowStart != null &&
-        smallerWindowEnd != null &&
-        statusIsBetweenDatesInclusive(
-            status, smallerWindowStart, smallerWindowEnd)) {
       return false;
     }
 
@@ -363,13 +353,6 @@ Map<String, Goal> getGoalsForDateRange(
       getGoalsMatchingPredicate(goalMap, (Goal goal) {
     final status = getGoalStatus(context, goal);
     if (status.status != GoalStatus.pending) {
-      return false;
-    }
-    if (smallerWindowStart != null &&
-        smallerWindowEnd != null &&
-        status.endTime != null &&
-        status.endTime!.isAfter(smallerWindowStart) &&
-        status.endTime!.isBefore(smallerWindowEnd)) {
       return false;
     }
 
