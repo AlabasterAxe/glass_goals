@@ -219,7 +219,35 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                       bool addStatus = goalsToUpdate
                           .every((goalId) => !sliceGoalMap.containsKey(goalId));
                       for (final goalId in goalsToUpdate) {
+                        final goal = widget.goalMap[goalId];
+
+                        if (goal == null) {
+                          continue;
+                        }
+
                         if (addStatus) {
+                          final goalStatus = getGoalStatus(worldContext, goal);
+
+                          final sliceStartTime =
+                              slice.startTime(worldContext.time);
+                          final sliceEndTime = slice.endTime(worldContext.time);
+
+                          // This is for the special case where a goal has an active status with a specific end date
+                          // and we're moving it into a smaller time slice (e.g. from This Month to This Week).
+                          // In this case, we want to keep the end date the same.
+                          final newEndTime =
+                              goalStatus.status == GoalStatus.active &&
+                                      (sliceStartTime == null ||
+                                          goalStatus.startTime
+                                                  ?.isBefore(sliceStartTime) ==
+                                              true) &&
+                                      (sliceEndTime == null ||
+                                          goalStatus.endTime
+                                                  ?.isBefore(sliceEndTime) ==
+                                              true)
+                                  ? goalStatus.endTime
+                                  : sliceEndTime;
+
                           AppContext.of(this.context)
                               .syncClient
                               .modifyGoal(GoalDelta(
@@ -230,7 +258,7 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                                     status: GoalStatus.active,
                                     startTime:
                                         slice.startTime(worldContext.time),
-                                    endTime: slice.endTime(worldContext.time),
+                                    endTime: newEndTime,
                                   )));
                         }
 

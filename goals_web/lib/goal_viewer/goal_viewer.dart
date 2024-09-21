@@ -20,11 +20,8 @@ import 'package:goals_core/model.dart'
         Goal,
         WorldContext,
         getGoalPriority,
-        getGoalStatus,
         getGoalsForDateRange,
         getGoalsMatchingPredicate,
-        getGoalsRequiringAttention,
-        getPreviouslyActiveGoals,
         getTransitiveSubGoals,
         isAnchor;
 import 'package:goals_core/sync.dart'
