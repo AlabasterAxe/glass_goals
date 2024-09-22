@@ -718,76 +718,83 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         key: const ValueKey('debug'),
       ));
 
-    return GoalActionsContext(
-      onActive: this.onActive,
-      onArchive: this._onArchive,
-      onDone: this._onDone,
-      onExpanded: this._onExpanded,
-      onSelected: this._onSelected,
-      onSnooze: this._onSnooze,
-      onUnarchive: this._onUnarchive,
-      onAddGoal: this._onAddGoal,
-      onFocused: this._onFocused,
-      onDropGoal: this._onDropGoal,
-      onClearAnchor: this._onClearAnchor,
-      onMakeAnchor: this._onMakeAnchor,
-      child: FocusableActionDetector(
-        autofocus: true,
-        shortcuts: isMacOS() ? MAC_SHORTCUTS : SHORTCUTS,
-        actions: {
-          SearchIntent: CallbackAction(onInvoke: _openSearch),
-          UndoIntent: CallbackAction(onInvoke: (_) {
-            AppContext.of(context).syncClient.undo();
-          }),
-          RedoIntent: CallbackAction(onInvoke: (_) {
-            AppContext.of(context).syncClient.redo();
-          }),
-        },
-        child: FocusScope(
-          child: Scaffold(
-            appBar: GlassGoalsAppBar(
-              appBarTitle: appBarTitle,
-              isNarrow: showHamburger,
-              signedIn: true,
-              onBack: () {
-                focusedGoalStream.add(null);
-              },
-              focusedGoalId: focusedGoalId,
-            ),
-            drawer: showHamburger && focusedGoalId == null
-                ? Drawer(
-                    child: _viewSwitcher(true, worldContext, this._isDebug),
-                  )
-                : null,
-            body: Stack(
-              children: [
-                Positioned.fill(
-                  top: uiUnit(2),
-                  child: children.isEmpty
-                      ? Container()
-                      : children.length == 1
-                          ? children[0]
-                          : MultiSplitViewTheme(
-                              data: multiSplitViewThemeData,
-                              child: MultiSplitView(
-                                controller: _multiSplitViewController,
-                                children: children,
-                              )),
-                ),
-                if (singleScreen && focusedGoalId != null)
-                  Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: uiUnit(16),
-                      child: Container(
-                        color: lightBackground,
-                        child: HoverActionsWidget(
-                          goalMap: widget.goalMap,
-                          mainAxisSize: MainAxisSize.max,
-                        ),
-                      ))
-              ],
+    return GestureDetector(
+      onTap: () {
+        _focusNode.requestFocus();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: GoalActionsContext(
+        onActive: this.onActive,
+        onArchive: this._onArchive,
+        onDone: this._onDone,
+        onExpanded: this._onExpanded,
+        onSelected: this._onSelected,
+        onSnooze: this._onSnooze,
+        onUnarchive: this._onUnarchive,
+        onAddGoal: this._onAddGoal,
+        onFocused: this._onFocused,
+        onDropGoal: this._onDropGoal,
+        onClearAnchor: this._onClearAnchor,
+        onMakeAnchor: this._onMakeAnchor,
+        child: FocusableActionDetector(
+          autofocus: true,
+          shortcuts: isMacOS() ? MAC_SHORTCUTS : SHORTCUTS,
+          actions: {
+            SearchIntent: CallbackAction(onInvoke: _openSearch),
+            UndoIntent: CallbackAction(onInvoke: (_) {
+              AppContext.of(context).syncClient.undo();
+            }),
+            RedoIntent: CallbackAction(onInvoke: (_) {
+              AppContext.of(context).syncClient.redo();
+            }),
+          },
+          focusNode: _focusNode,
+          child: FocusScope(
+            child: Scaffold(
+              appBar: GlassGoalsAppBar(
+                appBarTitle: appBarTitle,
+                isNarrow: showHamburger,
+                signedIn: true,
+                onBack: () {
+                  focusedGoalStream.add(null);
+                },
+                focusedGoalId: focusedGoalId,
+              ),
+              drawer: showHamburger && focusedGoalId == null
+                  ? Drawer(
+                      child: _viewSwitcher(true, worldContext, this._isDebug),
+                    )
+                  : null,
+              body: Stack(
+                children: [
+                  Positioned.fill(
+                    top: uiUnit(2),
+                    child: children.isEmpty
+                        ? Container()
+                        : children.length == 1
+                            ? children[0]
+                            : MultiSplitViewTheme(
+                                data: multiSplitViewThemeData,
+                                child: MultiSplitView(
+                                  controller: _multiSplitViewController,
+                                  children: children,
+                                )),
+                  ),
+                  if (singleScreen && focusedGoalId != null)
+                    Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: uiUnit(16),
+                        child: Container(
+                          color: lightBackground,
+                          child: HoverActionsWidget(
+                            goalMap: widget.goalMap,
+                            mainAxisSize: MainAxisSize.max,
+                          ),
+                        ))
+                ],
+              ),
             ),
           ),
         ),
