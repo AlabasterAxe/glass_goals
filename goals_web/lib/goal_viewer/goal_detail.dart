@@ -3,10 +3,13 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:goals_core/model.dart'
     show
         Goal,
+        TraversalDecision,
         WorldContext,
         getGoalStatus,
         getGoalsMatchingPredicate,
-        hasSummary;
+        getPriorityComparator,
+        hasSummary,
+        traverseDown;
 import 'package:goals_core/sync.dart'
     show
         AddStatusIntentionLogEntry,
@@ -18,6 +21,7 @@ import 'package:goals_core/sync.dart'
         GoalStatus,
         NoteLogEntry,
         SetParentLogEntry,
+        SetSummaryEntry,
         StatusLogEntry;
 import 'package:goals_core/util.dart' show formatTime;
 import 'package:goals_web/app_context.dart';
@@ -191,111 +195,32 @@ List<DetailViewLogEntryItem> _computeFlatHistoryLog(WorldContext worldContext,
   return sortedItems;
 }
 
-List<DetailViewLogEntryItem> _computeSubSummary(
-    WorldContext worldContext, List<DetailViewLogEntryItem> log) {
-  Map<String, DetailViewLogEntryItem> items = {};
-  log.sort((a, b) => a.entry.creationTime.compareTo(b.entry.creationTime));
-  for (final item in log) {
-    final entry = item.entry;
-    switch (entry) {
-      case NoteLogEntry():
-        final originalNoteDate = items[entry.id]?.entry.creationTime;
-        items[entry.id] = DetailViewLogEntryItem(
-            entry: entry,
-            time: originalNoteDate ?? entry.creationTime,
-            goal: item.goal);
-        break;
-      case ArchiveNoteLogEntry():
-        items.remove(entry.id);
-        break;
-      case ArchiveStatusLogEntry():
-        final archivedStatusEntry = items[entry.id]?.entry;
-        if (archivedStatusEntry != null &&
-            archivedStatusEntry is StatusLogEntry) {
-          // TODO: I'm not crazy about the way I'm doing this.
-          items["${entry.id}-archive"] = DetailViewLogEntryItem(
-            entry: archivedStatusEntry,
-            time: entry.creationTime,
-            archived: true,
-            goal: item.goal,
-          );
-        }
-      case StatusLogEntry():
-        items["${entry.id}-creation"] = DetailViewLogEntryItem(
-          entry: entry,
-          goal: item.goal,
-          time: entry.creationTime,
-        );
+List<DetailViewLogEntryItem> _getFlattenedSummaryItems(
+    WorldContext context, Map<String, Goal> goalMap, String rootGoalId) {
+  final priorityComparator = getPriorityComparator(context);
+  final List<DetailViewLogEntryItem> flattenedGoals = [];
+  traverseDown(
+    goalMap,
+    rootGoalId,
+    onVisit: (goalId, path) {
+      final summary = hasSummary(goalMap[goalId]!);
+      if (summary != null) {
+        flattenedGoals.add(DetailViewLogEntryItem(
+          goal: goalMap[goalId]!,
+          entry: summary,
+          time: summary.creationTime,
+          depth: path.length,
+        ));
+      }
 
-        // Only add an end entry for active statuses.
-        if (entry.endTime != null &&
-            entry.endTime != entry.creationTime &&
-            entry.endTime!.isBefore(worldContext.time) &&
-            entry.status == GoalStatus.active &&
-            // If the goal is archived or done by the time the status ends, don't show the end entry.
-            ![GoalStatus.archived, GoalStatus.done].contains(
-                getGoalStatus(WorldContext(time: entry.endTime!), item.goal)
-                    .status)) {
-          items["${entry.id}-end"] = DetailViewLogEntryItem(
-            entry: entry,
-            goal: item.goal,
-            time: entry.endTime!,
-          );
-        }
+      if (summary?.text == null) {
+        return TraversalDecision.dontRecurse;
+      }
+    },
+    childTraversalComparator: priorityComparator,
+  );
 
-        break;
-      case AddStatusIntentionLogEntry():
-        final existingItem = items["${entry.statusId}-creation"];
-        if (existingItem != null && existingItem.entry is StatusLogEntry) {
-          items["${entry.statusId}-creation"] = DetailViewLogEntryItem(
-            entry: existingItem.entry,
-            goal: existingItem.goal,
-            time: existingItem.time,
-            statusNote: entry,
-          );
-        }
-        break;
-
-      case AddStatusReflectionLogEntry():
-        // TODO: for done statuses, reflections are shown on the status creation
-        //   for active statuses, reflections are shown on the status end
-        var existingItem = items["${entry.statusId}-end"];
-        var itemKey = "${entry.statusId}-end";
-
-        if (existingItem?.entry is StatusLogEntry &&
-            (existingItem!.entry as StatusLogEntry).status !=
-                GoalStatus.active) {
-          break;
-        }
-
-        if (existingItem == null) {
-          existingItem = items["${entry.statusId}-creation"];
-          itemKey = "${entry.statusId}-creation";
-          if (existingItem?.entry is StatusLogEntry &&
-              (existingItem!.entry as StatusLogEntry).status !=
-                  GoalStatus.done) {
-            break;
-          }
-        }
-        if (existingItem != null && existingItem.entry is StatusLogEntry) {
-          items[itemKey] = DetailViewLogEntryItem(
-            entry: existingItem.entry,
-            goal: existingItem.goal,
-            time: existingItem.time,
-            statusNote: entry,
-          );
-        }
-        break;
-
-      default:
-      // ignore: no-empty-block
-    }
-  }
-
-  final sortedItems = items.values.toList()
-    ..sort((a, b) => b.time.compareTo(a.time));
-
-  return sortedItems;
+  return flattenedGoals;
 }
 
 class AddParentBreadcrumb extends StatefulWidget {
@@ -599,6 +524,7 @@ class DetailViewLogEntryItem {
   final DateTime time;
   final GoalLogEntry entry;
   final bool archived;
+  final int depth;
 
   // This could be either an AddStatusIntentionLogEntry or an AddStatusReflectionLogEntry
   final GoalLogEntry? statusNote;
@@ -609,6 +535,7 @@ class DetailViewLogEntryItem {
     this.archived = false,
     required this.time,
     this.statusNote,
+    this.depth = 0,
   });
 }
 
@@ -925,29 +852,39 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                         level: 1,
                         text: widget.goal.text,
                         textStyle: pw.TextStyle(fontSize: 24, font: font)),
-                    for (final item in _computeFlatHistoryLog(
-                        worldContext, this.widget.goal.id, logItems))
-                      if (item.entry is NoteLogEntry) ...[
-                        if (item.goal.id != widget.goal.id)
-                          pw.Header(
-                              level: 2,
-                              margin: pw.EdgeInsets.zero,
-                              padding: pw.EdgeInsets.fromLTRB(0, 18, 0, 0),
-                              text: item.goal.text,
-                              textStyle: pw.TextStyle(
-                                  font: font,
-                                  fontWeight: pw.FontWeight.bold,
-                                  fontSize: 18)),
-                        pw.Divider(),
-                        ...(await HTMLToPdf().convert(
-                            markdownToHtml((item.entry as NoteLogEntry).text,
-                                extensionSet: ExtensionSet.gitHubWeb),
-                            fontResolver: (_, bold, italic) {
-                          if (bold) return fontBold;
-                          if (italic) return fontItalic;
-                          return font;
-                        })),
-                      ]
+                    for (final item in _getFlattenedSummaryItems(
+                        worldContext, this.widget.goalMap, this.widget.goal.id))
+                      if (item.entry is SetSummaryEntry)
+                        pw.Padding(
+                          padding: pw.EdgeInsets.only(left: item.depth * 10.0),
+                          child: pw.Column(
+                            children: [
+                              if (item.goal.id != widget.goal.id)
+                                pw.Header(
+                                    level: 2,
+                                    margin: pw.EdgeInsets.zero,
+                                    padding: pw.EdgeInsets.only(top: 18),
+                                    text: item.goal.text,
+                                    textStyle: pw.TextStyle(
+                                        font: font,
+                                        fontWeight: pw.FontWeight.bold,
+                                        fontSize: 18)),
+                              pw.Divider(),
+                              pw.Row(children: [
+                                ...(await HTMLToPdf().convert(
+                                    markdownToHtml(
+                                        (item.entry as SetSummaryEntry).text ??
+                                            "Something went wrong.",
+                                        extensionSet: ExtensionSet.gitHubWeb),
+                                    fontResolver: (_, bold, italic) {
+                                  if (bold) return fontBold;
+                                  if (italic) return fontItalic;
+                                  return font;
+                                })),
+                              ]),
+                            ],
+                          ),
+                        ),
                   ];
                   doc.addPage(pw.MultiPage(
                     pageFormat: PdfPageFormat.letter,
