@@ -102,7 +102,7 @@ class _NoteCardState extends State<NoteCard> {
   didUpdateWidget(NoteCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     final text = widget.noteEntry?.text ?? widget.summaryEntry?.text;
-    if (text != null) {
+    if (text != null && widget.goal.id != oldWidget.goal.id) {
       _textController.text = text;
     }
   }
