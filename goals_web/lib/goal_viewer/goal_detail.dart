@@ -858,6 +858,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                         pw.Padding(
                           padding: pw.EdgeInsets.only(left: item.depth * 10.0),
                           child: pw.Column(
+                            mainAxisSize: pw.MainAxisSize.min,
                             children: [
                               if (item.goal.id != widget.goal.id)
                                 pw.Header(
@@ -870,18 +871,16 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                                         fontWeight: pw.FontWeight.bold,
                                         fontSize: 18)),
                               pw.Divider(),
-                              pw.Row(children: [
-                                ...(await HTMLToPdf().convert(
-                                    markdownToHtml(
-                                        (item.entry as SetSummaryEntry).text ??
-                                            "Something went wrong.",
-                                        extensionSet: ExtensionSet.gitHubWeb),
-                                    fontResolver: (_, bold, italic) {
-                                  if (bold) return fontBold;
-                                  if (italic) return fontItalic;
-                                  return font;
-                                })),
-                              ]),
+                              ...(await HTMLToPdf().convert(
+                                  markdownToHtml(
+                                      (item.entry as SetSummaryEntry).text ??
+                                          "Something went wrong.",
+                                      extensionSet: ExtensionSet.gitHubWeb),
+                                  fontResolver: (_, bold, italic) {
+                                if (bold) return fontBold;
+                                if (italic) return fontItalic;
+                                return font;
+                              })),
                             ],
                           ),
                         ),
