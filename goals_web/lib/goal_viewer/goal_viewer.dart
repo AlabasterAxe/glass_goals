@@ -34,6 +34,7 @@ import 'package:goals_core/sync.dart'
         PriorityLogEntry,
         RemoveParentLogEntry,
         SetParentLogEntry,
+        SetSummaryEntry,
         StatusLogEntry;
 import 'package:goals_web/app_bar.dart';
 import 'package:goals_web/app_context.dart';
@@ -676,6 +677,22 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             id: Uuid().v4(), creationTime: DateTime.now())));
   }
 
+  _onAddSummary(String goalId) {
+    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+        id: goalId,
+        logEntry: SetSummaryEntry(
+            id: Uuid().v4(),
+            text: "[Your Summary Here]",
+            creationTime: DateTime.now())));
+  }
+
+  _onClearSummary(String goalId) {
+    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+        id: goalId,
+        logEntry: SetSummaryEntry(
+            id: Uuid().v4(), text: null, creationTime: DateTime.now())));
+  }
+
   @override
   Widget build(BuildContext context) {
     final focusedGoalId =
@@ -736,6 +753,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         onDropGoal: this._onDropGoal,
         onClearAnchor: this._onClearAnchor,
         onMakeAnchor: this._onMakeAnchor,
+        onAddSummary: this._onAddSummary,
+        onClearSummary: this._onClearSummary,
         child: FocusableActionDetector(
           autofocus: true,
           shortcuts: isMacOS() ? MAC_SHORTCUTS : SHORTCUTS,

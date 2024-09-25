@@ -4,7 +4,7 @@ import 'dart:developer';
 import 'package:collection/collection.dart';
 import 'package:hive/hive.dart' show Box, Hive;
 import 'package:hlc/hlc.dart';
-import 'package:rxdart/rxdart.dart' show BehaviorSubject, Subject;
+import 'package:rxdart/rxdart.dart' show BehaviorSubject;
 import 'package:uuid/uuid.dart';
 
 import 'package:goals_core/model.dart' show Goal;

@@ -434,3 +434,17 @@ MakeAnchorLogEntry? isAnchor(Goal? goal) {
 
   return null;
 }
+
+SetSummaryEntry? hasSummary(Goal? goal) {
+  if (goal == null) {
+    return null;
+  }
+
+  for (final entry in goal.log) {
+    if (entry is SetSummaryEntry) {
+      return entry;
+    }
+  }
+
+  return null;
+}

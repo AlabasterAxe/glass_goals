@@ -41,8 +41,7 @@
             "name": "goals_web (unauthed)",
             "request": "launch",
             "type": "dart",
-            "program": "goals_web/lib/main_unauthed.dart",
-            "args": ["--web-hostname", "192.168.0.214"]
+            "program": "goals_web/lib/main_unauthed.dart"
         },
         {
             "name": "goals_web (local server)",

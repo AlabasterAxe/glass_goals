@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:goals_core/model.dart'
-    show Goal, WorldContext, getGoalStatus, getGoalsMatchingPredicate;
+    show
+        Goal,
+        WorldContext,
+        getGoalStatus,
+        getGoalsMatchingPredicate,
+        hasSummary;
 import 'package:goals_core/sync.dart'
     show
         AddStatusIntentionLogEntry,
@@ -14,6 +19,7 @@ import 'package:goals_core/sync.dart'
         GoalStatus,
         NoteLogEntry,
         SetParentLogEntry,
+        SetSummaryEntry,
         StatusLogEntry;
 import 'package:goals_core/util.dart' show formatDate, formatTime;
 import 'package:goals_web/app_context.dart';
@@ -457,17 +463,21 @@ class _StatusCardState extends ConsumerState<StatusCard> {
 
 class NoteCard extends StatefulWidget {
   final Goal goal;
-  final NoteLogEntry entry;
+  final NoteLogEntry? noteEntry;
+  final SetSummaryEntry? summaryEntry;
   final Function() onRefresh;
   final bool isChildGoal;
   final bool showDate;
+  final bool showTime;
   const NoteCard({
     super.key,
     required this.goal,
-    required this.entry,
+    this.noteEntry,
+    this.summaryEntry,
     required this.onRefresh,
     required this.isChildGoal,
     this.showDate = false,
+    this.showTime = true,
   });
 
   @override
@@ -475,8 +485,8 @@ class NoteCard extends StatefulWidget {
 }
 
 class _NoteCardState extends State<NoteCard> {
-  late TextEditingController _textController =
-      TextEditingController(text: widget.entry.text);
+  late TextEditingController _textController = TextEditingController(
+      text: widget.noteEntry?.text ?? widget.summaryEntry?.text);
   bool _editing = false;
   late final _focusNode = FocusNode();
 
@@ -491,19 +501,32 @@ class _NoteCardState extends State<NoteCard> {
   _saveNote() {
     _textController.selection =
         TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
-    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-        id: widget.goal.id,
-        logEntry: NoteLogEntry(
-            id: widget.entry.id,
-            creationTime: DateTime.now(),
-            text: _textController.text)));
+
+    if (widget.noteEntry != null) {
+      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+          id: widget.goal.id,
+          logEntry: NoteLogEntry(
+              id: widget.noteEntry!.id,
+              creationTime: DateTime.now(),
+              text: _textController.text)));
+    } else {
+      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+          id: widget.goal.id,
+          logEntry: SetSummaryEntry(
+              id: Uuid().v4(),
+              creationTime: DateTime.now(),
+              text: _textController.text)));
+    }
     setState(() {
       _editing = false;
     });
   }
 
   _discardEdit() {
-    _textController.text = widget.entry.text;
+    final text = widget.noteEntry?.text ?? widget.summaryEntry?.text;
+    if (text != null) {
+      _textController.text = text;
+    }
     setState(() {
       _editing = false;
     });
@@ -514,44 +537,49 @@ class _NoteCardState extends State<NoteCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ConstrainedBox(
-          constraints: BoxConstraints(minHeight: uiUnit(8)),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    if (this.widget.showDate)
-                      Text('${formatDate(this.widget.entry.creationTime)} '),
-                    Text(formatTime(widget.entry.creationTime)),
-                    if (widget.isChildGoal) ...[
-                      Text(" - "),
-                      Breadcrumb(goal: widget.goal),
-                      SizedBox(width: uiUnit(2)),
-                      Expanded(
-                          child: Container(
-                              height: uiUnit(.5), color: darkElementColor)),
+        if (this.widget.noteEntry != null)
+          ConstrainedBox(
+            constraints: BoxConstraints(minHeight: uiUnit(8)),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      if (this.widget.showDate)
+                        Text(
+                            '${formatDate(this.widget.noteEntry?.creationTime ?? this.widget.summaryEntry!.creationTime)} '),
+                      if (this.widget.showTime)
+                        Text(formatTime(widget.noteEntry?.creationTime ??
+                            widget.summaryEntry!.creationTime)),
+                      if (widget.isChildGoal) ...[
+                        Text(" - "),
+                        Breadcrumb(goal: widget.goal),
+                        SizedBox(width: uiUnit(2)),
+                        Expanded(
+                            child: Container(
+                                height: uiUnit(.5), color: darkElementColor)),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              !widget.isChildGoal
-                  ? GlassGoalsIconButton(
-                      onPressed: () {
-                        AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                            id: widget.goal.id,
-                            logEntry: ArchiveNoteLogEntry(
-                                id: widget.entry.id,
-                                creationTime: DateTime.now())));
-                        widget.onRefresh();
-                      },
-                      icon: Icons.delete)
-                  : Container(),
-            ],
+                !widget.isChildGoal
+                    ? GlassGoalsIconButton(
+                        onPressed: () {
+                          AppContext.of(context).syncClient.modifyGoal(
+                              GoalDelta(
+                                  id: widget.goal.id,
+                                  logEntry: ArchiveNoteLogEntry(
+                                      id: widget.noteEntry!.id,
+                                      creationTime: DateTime.now())));
+                          widget.onRefresh();
+                        },
+                        icon: Icons.delete)
+                    : Container(),
+              ],
+            ),
           ),
-        ),
         Padding(
           padding: EdgeInsets.only(bottom: uiUnit(4)),
           child: _editing
@@ -573,7 +601,12 @@ class _NoteCardState extends State<NoteCard> {
                         maxLines: null,
                         style: mainTextStyle,
                         onTapOutside: (_) {
-                          if (_textController.text != widget.entry.text) {
+                          if (widget.noteEntry?.text != null &&
+                                  _textController.text !=
+                                      widget.noteEntry!.text ||
+                              widget.summaryEntry?.text != null &&
+                                  _textController.text !=
+                                      widget.summaryEntry?.text) {
                             _saveNote();
                           }
                           setState(() {
@@ -747,7 +780,7 @@ class GoalHistoryWidget extends StatelessWidget {
                       NoteLogEntry() => NoteCard(
                           key: ValueKey((item.entry as NoteLogEntry).id),
                           goal: item.goal,
-                          entry: item.entry as NoteLogEntry,
+                          noteEntry: item.entry as NoteLogEntry,
                           isChildGoal: item.goal.id != this.goalId,
                           onRefresh: this.onRefresh,
                         ),
@@ -934,6 +967,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
       return status.status != GoalStatus.archived &&
           status.status != GoalStatus.done;
     });
+    final goalSummary = hasSummary(widget.goal);
     final isNarrow = MediaQuery.of(context).size.width < 600;
     return Padding(
       padding: EdgeInsets.all(uiUnit(2)),
@@ -1039,6 +1073,17 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
           ),
         breadcrumbs(),
         SizedBox(height: uiUnit(2)),
+        if (goalSummary != null) ...[
+          Text('Summary', style: textTheme.headlineSmall),
+          SizedBox(height: uiUnit(1)),
+          NoteCard(
+            goal: widget.goal,
+            summaryEntry: goalSummary,
+            onRefresh: () => setState(() {}),
+            isChildGoal: false,
+            showTime: false,
+          ),
+        ],
         Text('Subgoals', style: textTheme.headlineSmall),
         SizedBox(height: uiUnit(1)),
         FlattenedGoalTree(

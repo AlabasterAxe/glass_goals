@@ -18,7 +18,8 @@ import 'package:flutter/painting.dart' show FractionalOffset;
 import 'package:flutter/rendering.dart' show MainAxisAlignment, MainAxisSize;
 import 'package:flutter/widgets.dart'
     show BuildContext, Icon, Row, StreamBuilder, Text, Widget;
-import 'package:goals_core/model.dart' show Goal, getGoalStatus, isAnchor;
+import 'package:goals_core/model.dart'
+    show Goal, getGoalStatus, isAnchor, hasSummary;
 import 'package:goals_core/sync.dart'
     show AddParentLogEntry, GoalDelta, GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
@@ -81,6 +82,8 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
     final onExpanded = GoalActionsContext.of(context).onExpanded;
     final onMakeAnchor = GoalActionsContext.of(context).onMakeAnchor;
     final onClearAnchor = GoalActionsContext.of(context).onClearAnchor;
+    final onAddSummary = GoalActionsContext.of(context).onAddSummary;
+    final onClearSummary = GoalActionsContext.of(context).onClearSummary;
 
     bool allArchived = selectedGoals.isNotEmpty;
     for (final selectedGoalId in selectedGoals) {
@@ -95,7 +98,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
     final showAnchorOption = selectedGoals.isEmpty || selectedGoals.length == 1;
     final showClearAnchorOption =
         isAnchor(widget.goalMap[widget.goalId]) != null;
-    null; // && selectedGoals.isEmpty;
+    final goalHasSummary = hasSummary(widget.goalMap[widget.goalId]!) != null;
     return Row(
       mainAxisSize: widget.mainAxisSize,
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -338,6 +341,17 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 leadingIcon: Icon(Icons.hotel),
                 child: const Text('Snooze goal...'),
               ),
+              goalHasSummary
+                  ? MenuItemButton(
+                      child: Text('Remove Summary'),
+                      leadingIcon: Icon(Icons.clear),
+                      onPressed: () => onClearSummary(widget.goalId),
+                    )
+                  : MenuItemButton(
+                      child: Text('Add Summary'),
+                      leadingIcon: Icon(Icons.notes),
+                      onPressed: () => onAddSummary(widget.goalId),
+                    ),
               allArchived
                   ? MenuItemButton(
                       child: Text('Unarchive'),

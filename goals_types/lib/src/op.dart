@@ -30,6 +30,7 @@ abstract class GoalLogEntry extends Equatable {
   final DateTime creationTime;
   final String id;
   const GoalLogEntry({required this.creationTime, required this.id});
+
   static GoalLogEntry fromJsonMap(dynamic json, int? version) {
     if (version != null && version > TYPES_VERSION) {
       throw Exception('Unsupported version: $version');
@@ -74,6 +75,8 @@ abstract class GoalLogEntry extends Equatable {
         return MakeAnchorLogEntry.fromJsonMap(json, version);
       case 'clearAnchor':
         return ClearAnchorLogEntry.fromJsonMap(json, version);
+      case 'summary':
+        return SetSummaryEntry.fromJsonMap(json, version);
       default:
         throw Exception('Invalid data: $json has unknown type: $type');
     }
@@ -201,6 +204,45 @@ class NoteLogEntry extends GoalLogEntry {
       text: legacyEntry.text,
       creationTime: legacyEntry.creationTime,
     );
+  }
+}
+
+class SetSummaryEntry extends GoalLogEntry {
+  static const FIRST_VERSION = 5;
+  final String? text;
+  const SetSummaryEntry({
+    required super.creationTime,
+    required super.id,
+    required this.text,
+  });
+
+  @override
+  List<Object?> get props => [id, creationTime, text];
+
+  static SetSummaryEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    return SetSummaryEntry(
+      id: json['id'],
+      text: json['text'],
+      creationTime: DateTime.parse(json['creationTime']!).toLocal(),
+    );
+  }
+
+  @override
+  Map<String, dynamic> toJsonMap() {
+    return {
+      'type': 'summary',
+      'id': this.id,
+      'text': this.text,
+      'creationTime': this.creationTime.toUtc().toIso8601String(),
+    };
   }
 }
 
