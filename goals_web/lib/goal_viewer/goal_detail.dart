@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:goals_core/model.dart'
     show
@@ -37,7 +36,7 @@ import 'package:goals_web/intents.dart';
 import 'package:goals_web/styles.dart'
     show darkElementColor, lightBackground, mainTextStyle, uiUnit;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
+    show ConsumerState, ConsumerStatefulWidget;
 import 'package:htmltopdfwidgets/htmltopdfwidgets.dart' show HTMLToPdf;
 import 'package:intl/intl.dart';
 import 'package:markdown/markdown.dart' show ExtensionSet, markdownToHtml;
@@ -49,10 +48,10 @@ import 'package:pdf/pdf.dart' show PdfPageFormat;
 
 import 'flattened_goal_tree.dart' show FlattenedGoalTree;
 
-List<DetailViewLogEntryYear> _computeHistoryLog(
-    WorldContext worldContext, List<DetailViewLogEntryItem> log) {
+List<DetailViewLogEntryYear> _computeHistoryLog(WorldContext worldContext,
+    String rootGoalId, List<DetailViewLogEntryItem> log) {
   final List<DetailViewLogEntryYear> result = [];
-  for (final item in _computeFlatHistoryLog(worldContext, log)) {
+  for (final item in _computeFlatHistoryLog(worldContext, rootGoalId, log)) {
     final year = item.time.year;
     final month = item.time.month;
     final day = item.time.day;
@@ -82,14 +81,17 @@ List<DetailViewLogEntryYear> _computeHistoryLog(
   return result;
 }
 
-List<DetailViewLogEntryItem> _computeFlatHistoryLog(
-    WorldContext worldContext, List<DetailViewLogEntryItem> log) {
+List<DetailViewLogEntryItem> _computeFlatHistoryLog(WorldContext worldContext,
+    String rootGoalId, List<DetailViewLogEntryItem> log) {
   Map<String, DetailViewLogEntryItem> items = {};
   log.sort((a, b) => a.entry.creationTime.compareTo(b.entry.creationTime));
   for (final item in log) {
     final entry = item.entry;
     switch (entry) {
       case NoteLogEntry():
+        if (item.goal.id != rootGoalId) {
+          continue;
+        }
         final originalNoteDate = items[entry.id]?.entry.creationTime;
         items[entry.id] = DetailViewLogEntryItem(
             entry: entry,
@@ -844,7 +846,8 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
           goal: goal, entry: entry, time: entry.creationTime)));
     }
     final textTheme = Theme.of(context).textTheme;
-    final historyLog = _computeHistoryLog(worldContext, logItems);
+    final historyLog =
+        _computeHistoryLog(worldContext, this.widget.goal.id, logItems);
     final subgoalMap = getGoalsMatchingPredicate(widget.goalMap, (goal) {
       final status = getGoalStatus(worldContext, goal);
       return status.status != GoalStatus.archived &&
@@ -922,8 +925,8 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                         level: 1,
                         text: widget.goal.text,
                         textStyle: pw.TextStyle(fontSize: 24, font: font)),
-                    for (final item
-                        in _computeFlatHistoryLog(worldContext, logItems))
+                    for (final item in _computeFlatHistoryLog(
+                        worldContext, this.widget.goal.id, logItems))
                       if (item.entry is NoteLogEntry) ...[
                         if (item.goal.id != widget.goal.id)
                           pw.Header(
