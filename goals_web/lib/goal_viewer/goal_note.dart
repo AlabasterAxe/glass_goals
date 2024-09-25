@@ -98,6 +98,15 @@ class _NoteCardState extends State<NoteCard> {
     });
   }
 
+  @override
+  didUpdateWidget(NoteCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final text = widget.noteEntry?.text ?? widget.summaryEntry?.text;
+    if (text != null) {
+      _textController.text = text;
+    }
+  }
+
   _discardEdit() {
     final text = widget.noteEntry?.text ?? widget.summaryEntry?.text;
     if (text != null) {

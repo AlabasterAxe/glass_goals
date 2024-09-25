@@ -3,6 +3,7 @@ import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
     show BuildContext, StatelessWidget, Text, Widget;
 import 'package:goals_core/model.dart' show Goal, hasSummary;
+import 'package:goals_web/goal_viewer/goal_breadcrumb.dart';
 import 'package:goals_web/goal_viewer/goal_note.dart';
 import 'package:goals_web/styles.dart';
 
@@ -36,7 +37,8 @@ class GoalSummary extends StatelessWidget {
           colChildren.add(
             Padding(
                 padding: EdgeInsets.only(left: indent),
-                child: Text(childGoal.text,
+                child: Breadcrumb(
+                    goal: childGoal,
                     style: Theme.of(context).textTheme.headlineSmall)),
           );
 

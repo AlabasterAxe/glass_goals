@@ -9,9 +9,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 
 class Breadcrumb extends ConsumerWidget {
   final Goal goal;
+  final TextStyle? style;
   const Breadcrumb({
     super.key,
     required this.goal,
+    this.style,
   });
 
   @override
@@ -20,7 +22,9 @@ class Breadcrumb extends ConsumerWidget {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
           child: Text(goal.text,
-              style: TextStyle(decoration: TextDecoration.underline)),
+              style: this.style != null
+                  ? this.style!.copyWith(decoration: TextDecoration.underline)
+                  : TextStyle(decoration: TextDecoration.underline)),
           onTap: () {
             focusedGoalStream.add(goal.id);
           }),
