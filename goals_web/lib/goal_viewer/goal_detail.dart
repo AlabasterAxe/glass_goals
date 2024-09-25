@@ -19,18 +19,21 @@ import 'package:goals_core/sync.dart'
         GoalStatus,
         NoteLogEntry,
         SetParentLogEntry,
-        SetSummaryEntry,
         StatusLogEntry;
-import 'package:goals_core/util.dart' show formatDate, formatTime;
+import 'package:goals_core/util.dart' show formatTime;
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
 import 'package:goals_web/goal_viewer/goal_actions_context.dart';
+import 'package:goals_web/goal_viewer/goal_breadcrumb.dart';
+import 'package:goals_web/goal_viewer/goal_note.dart' show NoteCard;
 import 'package:goals_web/goal_viewer/goal_search_modal.dart'
     show GoalSearchModal, GoalSelectedResult;
+import 'package:goals_web/goal_viewer/goal_summary.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/printed_goal.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
+import 'package:goals_web/intents.dart';
 import 'package:goals_web/styles.dart'
     show darkElementColor, lightBackground, mainTextStyle, uiUnit;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
@@ -44,7 +47,6 @@ import 'package:uuid/uuid.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart' show PdfPageFormat;
 
-import '../widgets/gg_icon_button.dart';
 import 'flattened_goal_tree.dart' show FlattenedGoalTree;
 
 List<DetailViewLogEntryYear> _computeHistoryLog(
@@ -187,25 +189,111 @@ List<DetailViewLogEntryItem> _computeFlatHistoryLog(
   return sortedItems;
 }
 
-class Breadcrumb extends ConsumerWidget {
-  final Goal goal;
-  const Breadcrumb({
-    super.key,
-    required this.goal,
-  });
+List<DetailViewLogEntryItem> _computeSubSummary(
+    WorldContext worldContext, List<DetailViewLogEntryItem> log) {
+  Map<String, DetailViewLogEntryItem> items = {};
+  log.sort((a, b) => a.entry.creationTime.compareTo(b.entry.creationTime));
+  for (final item in log) {
+    final entry = item.entry;
+    switch (entry) {
+      case NoteLogEntry():
+        final originalNoteDate = items[entry.id]?.entry.creationTime;
+        items[entry.id] = DetailViewLogEntryItem(
+            entry: entry,
+            time: originalNoteDate ?? entry.creationTime,
+            goal: item.goal);
+        break;
+      case ArchiveNoteLogEntry():
+        items.remove(entry.id);
+        break;
+      case ArchiveStatusLogEntry():
+        final archivedStatusEntry = items[entry.id]?.entry;
+        if (archivedStatusEntry != null &&
+            archivedStatusEntry is StatusLogEntry) {
+          // TODO: I'm not crazy about the way I'm doing this.
+          items["${entry.id}-archive"] = DetailViewLogEntryItem(
+            entry: archivedStatusEntry,
+            time: entry.creationTime,
+            archived: true,
+            goal: item.goal,
+          );
+        }
+      case StatusLogEntry():
+        items["${entry.id}-creation"] = DetailViewLogEntryItem(
+          entry: entry,
+          goal: item.goal,
+          time: entry.creationTime,
+        );
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-          child: Text(goal.text,
-              style: TextStyle(decoration: TextDecoration.underline)),
-          onTap: () {
-            focusedGoalStream.add(goal.id);
-          }),
-    );
+        // Only add an end entry for active statuses.
+        if (entry.endTime != null &&
+            entry.endTime != entry.creationTime &&
+            entry.endTime!.isBefore(worldContext.time) &&
+            entry.status == GoalStatus.active &&
+            // If the goal is archived or done by the time the status ends, don't show the end entry.
+            ![GoalStatus.archived, GoalStatus.done].contains(
+                getGoalStatus(WorldContext(time: entry.endTime!), item.goal)
+                    .status)) {
+          items["${entry.id}-end"] = DetailViewLogEntryItem(
+            entry: entry,
+            goal: item.goal,
+            time: entry.endTime!,
+          );
+        }
+
+        break;
+      case AddStatusIntentionLogEntry():
+        final existingItem = items["${entry.statusId}-creation"];
+        if (existingItem != null && existingItem.entry is StatusLogEntry) {
+          items["${entry.statusId}-creation"] = DetailViewLogEntryItem(
+            entry: existingItem.entry,
+            goal: existingItem.goal,
+            time: existingItem.time,
+            statusNote: entry,
+          );
+        }
+        break;
+
+      case AddStatusReflectionLogEntry():
+        // TODO: for done statuses, reflections are shown on the status creation
+        //   for active statuses, reflections are shown on the status end
+        var existingItem = items["${entry.statusId}-end"];
+        var itemKey = "${entry.statusId}-end";
+
+        if (existingItem?.entry is StatusLogEntry &&
+            (existingItem!.entry as StatusLogEntry).status !=
+                GoalStatus.active) {
+          break;
+        }
+
+        if (existingItem == null) {
+          existingItem = items["${entry.statusId}-creation"];
+          itemKey = "${entry.statusId}-creation";
+          if (existingItem?.entry is StatusLogEntry &&
+              (existingItem!.entry as StatusLogEntry).status !=
+                  GoalStatus.done) {
+            break;
+          }
+        }
+        if (existingItem != null && existingItem.entry is StatusLogEntry) {
+          items[itemKey] = DetailViewLogEntryItem(
+            entry: existingItem.entry,
+            goal: existingItem.goal,
+            time: existingItem.time,
+            statusNote: entry,
+          );
+        }
+        break;
+
+      default:
+      // ignore: no-empty-block
+    }
   }
+
+  final sortedItems = items.values.toList()
+    ..sort((a, b) => b.time.compareTo(a.time));
+
+  return sortedItems;
 }
 
 class AddParentBreadcrumb extends StatefulWidget {
@@ -395,39 +483,32 @@ class _StatusCardState extends ConsumerState<StatusCard> {
             padding: EdgeInsets.only(bottom: uiUnit(4)),
             child: _editing
                 ? IntrinsicHeight(
-                    child: FocusScope(
-                      parentNode: FocusManager.instance.rootScope,
-                      child: CallbackShortcuts(
-                        bindings: <ShortcutActivator, Function()>{
-                          LogicalKeySet(LogicalKeyboardKey.meta,
-                                  LogicalKeyboardKey.enter):
-                              () => _saveNote(noteType),
-                          LogicalKeySet(LogicalKeyboardKey.control,
-                                  LogicalKeyboardKey.enter):
-                              () => _saveNote(noteType),
-                          LogicalKeySet(LogicalKeyboardKey.escape):
-                              _discardEdit,
-                        },
-                        child: TextField(
-                          autocorrect: false,
-                          controller: _textController,
-                          decoration: InputDecoration(
-                            hintText: noteType == "reflection"
-                                ? "Add any thoughts about how it went here."
-                                : "Add your specific intentions for this time window.",
-                          ),
-                          maxLines: null,
-                          style: mainTextStyle,
-                          onTapOutside: (_) {
-                            if (_textController.text != widget.text) {
-                              _saveNote(noteType);
-                            }
-                            setState(() {
-                              _editing = false;
-                            });
-                          },
-                          focusNode: _focusNode,
+                    child: Actions(
+                      actions: {
+                        AcceptMultiLineText: CallbackAction(
+                            onInvoke: (_) => _saveNote(noteType)),
+                        CancelIntent:
+                            CallbackAction(onInvoke: (_) => _discardEdit()),
+                      },
+                      child: TextField(
+                        autocorrect: false,
+                        controller: _textController,
+                        decoration: InputDecoration(
+                          hintText: noteType == "reflection"
+                              ? "Add any thoughts about how it went here."
+                              : "Add your specific intentions for this time window.",
                         ),
+                        maxLines: null,
+                        style: mainTextStyle,
+                        onTapOutside: (_) {
+                          if (_textController.text != widget.text) {
+                            _saveNote(noteType);
+                          }
+                          setState(() {
+                            _editing = false;
+                          });
+                        },
+                        focusNode: _focusNode,
                       ),
                     ),
                   )
@@ -456,206 +537,6 @@ class _StatusCardState extends ConsumerState<StatusCard> {
                       textScaleFactor: 1.4,
                     )),
           ),
-      ],
-    );
-  }
-}
-
-class NoteCard extends StatefulWidget {
-  final Goal goal;
-  final NoteLogEntry? noteEntry;
-  final SetSummaryEntry? summaryEntry;
-  final Function() onRefresh;
-  final bool isChildGoal;
-  final bool showDate;
-  final bool showTime;
-  const NoteCard({
-    super.key,
-    required this.goal,
-    this.noteEntry,
-    this.summaryEntry,
-    required this.onRefresh,
-    required this.isChildGoal,
-    this.showDate = false,
-    this.showTime = true,
-  });
-
-  @override
-  State<NoteCard> createState() => _NoteCardState();
-}
-
-class _NoteCardState extends State<NoteCard> {
-  late TextEditingController _textController = TextEditingController(
-      text: widget.noteEntry?.text ?? widget.summaryEntry?.text);
-  bool _editing = false;
-  late final _focusNode = FocusNode();
-
-  @override
-  void dispose() {
-    _textController.dispose();
-    _focusNode.dispose();
-
-    super.dispose();
-  }
-
-  _saveNote() {
-    _textController.selection =
-        TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
-
-    if (widget.noteEntry != null) {
-      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-          id: widget.goal.id,
-          logEntry: NoteLogEntry(
-              id: widget.noteEntry!.id,
-              creationTime: DateTime.now(),
-              text: _textController.text)));
-    } else {
-      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-          id: widget.goal.id,
-          logEntry: SetSummaryEntry(
-              id: Uuid().v4(),
-              creationTime: DateTime.now(),
-              text: _textController.text)));
-    }
-    setState(() {
-      _editing = false;
-    });
-  }
-
-  _discardEdit() {
-    final text = widget.noteEntry?.text ?? widget.summaryEntry?.text;
-    if (text != null) {
-      _textController.text = text;
-    }
-    setState(() {
-      _editing = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (this.widget.noteEntry != null)
-          ConstrainedBox(
-            constraints: BoxConstraints(minHeight: uiUnit(8)),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      if (this.widget.showDate)
-                        Text(
-                            '${formatDate(this.widget.noteEntry?.creationTime ?? this.widget.summaryEntry!.creationTime)} '),
-                      if (this.widget.showTime)
-                        Text(formatTime(widget.noteEntry?.creationTime ??
-                            widget.summaryEntry!.creationTime)),
-                      if (widget.isChildGoal) ...[
-                        Text(" - "),
-                        Breadcrumb(goal: widget.goal),
-                        SizedBox(width: uiUnit(2)),
-                        Expanded(
-                            child: Container(
-                                height: uiUnit(.5), color: darkElementColor)),
-                      ],
-                    ],
-                  ),
-                ),
-                !widget.isChildGoal
-                    ? GlassGoalsIconButton(
-                        onPressed: () {
-                          AppContext.of(context).syncClient.modifyGoal(
-                              GoalDelta(
-                                  id: widget.goal.id,
-                                  logEntry: ArchiveNoteLogEntry(
-                                      id: widget.noteEntry!.id,
-                                      creationTime: DateTime.now())));
-                          widget.onRefresh();
-                        },
-                        icon: Icons.delete)
-                    : Container(),
-              ],
-            ),
-          ),
-        Padding(
-          padding: EdgeInsets.only(bottom: uiUnit(4)),
-          child: _editing
-              ? IntrinsicHeight(
-                  child: FocusScope(
-                    parentNode: FocusManager.instance.rootScope,
-                    child: CallbackShortcuts(
-                      bindings: <ShortcutActivator, Function()>{
-                        LogicalKeySet(LogicalKeyboardKey.meta,
-                            LogicalKeyboardKey.enter): _saveNote,
-                        LogicalKeySet(LogicalKeyboardKey.control,
-                            LogicalKeyboardKey.enter): _saveNote,
-                        LogicalKeySet(LogicalKeyboardKey.escape): _discardEdit,
-                      },
-                      child: TextField(
-                        autocorrect: false,
-                        controller: _textController,
-                        decoration: null,
-                        maxLines: null,
-                        style: mainTextStyle,
-                        onTapOutside: (_) {
-                          if (widget.noteEntry?.text != null &&
-                                  _textController.text !=
-                                      widget.noteEntry!.text ||
-                              widget.summaryEntry?.text != null &&
-                                  _textController.text !=
-                                      widget.summaryEntry?.text) {
-                            _saveNote();
-                          }
-                          setState(() {
-                            _editing = false;
-                          });
-                        },
-                        focusNode: _focusNode,
-                      ),
-                    ),
-                  ),
-                )
-              : MarkdownBody(
-                  data: _textController.text,
-                  selectable: true,
-                  listItemCrossAxisAlignment:
-                      MarkdownListItemCrossAxisAlignment.baseline,
-                  bulletBuilder: (params) {
-                    switch (params.style) {
-                      case BulletStyle.orderedList:
-                        return Text("${params.index + 1}.",
-                            style: TextStyle(
-                                fontSize: 20,
-                                textBaseline: TextBaseline.alphabetic));
-                      case BulletStyle.unorderedList:
-                        return Text("⬤", style: TextStyle(fontSize: 8));
-                    }
-                  },
-                  onTapText: () {
-                    if (!widget.isChildGoal) {
-                      setState(() {
-                        _editing = true;
-                        _focusNode.requestFocus();
-                      });
-                    }
-                  },
-                  onTapLink: (text, href, title) async {
-                    if (href == null) {
-                      return;
-                    }
-
-                    final url = Uri.parse(href);
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(url);
-                    }
-                  },
-                  styleSheet: MarkdownStyleSheet(
-                    textScaler: TextScaler.linear(1.4),
-                  )),
-        ),
       ],
     );
   }
@@ -774,37 +655,39 @@ class GoalHistoryWidget extends StatelessWidget {
           Expanded(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               for (final item in dayItem.logItems)
-                ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: uiUnit(8)),
-                    child: switch (item.entry) {
-                      NoteLogEntry() => NoteCard(
-                          key: ValueKey((item.entry as NoteLogEntry).id),
-                          goal: item.goal,
-                          noteEntry: item.entry as NoteLogEntry,
-                          isChildGoal: item.goal.id != this.goalId,
-                          onRefresh: this.onRefresh,
-                        ),
-                      StatusLogEntry() => StatusCard(
-                          key: ValueKey(
-                              "${item.entry.id}${item.archived ? '-archive' : (item.entry as StatusLogEntry).endTime == item.time ? '-end' : '-creation'}"),
-                          goal: item.goal,
-                          entry: item.entry as StatusLogEntry,
-                          isChildGoal: item.goal.id != this.goalId,
-                          archived: item.archived,
-                          time: item.time,
-                          isStatusEnd: (item.entry as StatusLogEntry).endTime ==
-                              item.time,
-                          text: item.statusNote is AddStatusReflectionLogEntry
-                              ? (item.statusNote as AddStatusReflectionLogEntry)
-                                  .reflectionText
-                              : item.statusNote is AddStatusIntentionLogEntry
-                                  ? (item.statusNote
-                                          as AddStatusIntentionLogEntry)
-                                      .intentionText
-                                  : null,
-                        ),
-                      _ => throw UnimplementedError()
-                    })
+                if (!(item.entry is NoteLogEntry) ||
+                    (item.goal.id == this.goalId))
+                  ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: uiUnit(8)),
+                      child: switch (item.entry) {
+                        NoteLogEntry entry => NoteCard(
+                            key: ValueKey(entry.id),
+                            goal: item.goal,
+                            noteEntry: entry,
+                            isChildGoal: item.goal.id != this.goalId,
+                            onRefresh: this.onRefresh,
+                          ),
+                        StatusLogEntry entry => StatusCard(
+                            key: ValueKey(
+                                "${entry.id}${item.archived ? '-archive' : entry.endTime == item.time ? '-end' : '-creation'}"),
+                            goal: item.goal,
+                            entry: entry,
+                            isChildGoal: item.goal.id != this.goalId,
+                            archived: item.archived,
+                            time: item.time,
+                            isStatusEnd: entry.endTime == item.time,
+                            text: item.statusNote is AddStatusReflectionLogEntry
+                                ? (item.statusNote
+                                        as AddStatusReflectionLogEntry)
+                                    .reflectionText
+                                : item.statusNote is AddStatusIntentionLogEntry
+                                    ? (item.statusNote
+                                            as AddStatusIntentionLogEntry)
+                                        .intentionText
+                                    : null,
+                          ),
+                        _ => throw UnimplementedError()
+                      })
             ]),
           ),
         ],
@@ -1076,13 +959,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         if (goalSummary != null) ...[
           Text('Summary', style: textTheme.headlineSmall),
           SizedBox(height: uiUnit(1)),
-          NoteCard(
-            goal: widget.goal,
-            summaryEntry: goalSummary,
-            onRefresh: () => setState(() {}),
-            isChildGoal: false,
-            showTime: false,
-          ),
+          GoalSummary(goal: widget.goal),
         ],
         Text('Subgoals', style: textTheme.headlineSmall),
         SizedBox(height: uiUnit(1)),

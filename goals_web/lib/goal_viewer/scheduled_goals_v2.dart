@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:goals_core/model.dart';
 import 'package:goals_core/sync.dart'
     show GoalDelta, GoalStatus, SetParentLogEntry, StatusLogEntry;
+import 'package:goals_web/goal_viewer/goal_breadcrumb.dart';
 import 'package:goals_web/goal_viewer/goal_detail.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
