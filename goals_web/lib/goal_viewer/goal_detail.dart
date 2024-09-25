@@ -959,7 +959,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         if (goalSummary != null) ...[
           Text('Summary', style: textTheme.headlineSmall),
           SizedBox(height: uiUnit(1)),
-          GoalSummary(goal: widget.goal),
+          GoalSummary(goal: widget.goal, goalMap: widget.goalMap),
         ],
         Text('Subgoals', style: textTheme.headlineSmall),
         SizedBox(height: uiUnit(1)),
