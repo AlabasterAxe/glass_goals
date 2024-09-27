@@ -1,9 +1,11 @@
 import 'dart:html';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart'
     show
         Colors,
         Dialog,
+        Divider,
         Drawer,
         Icons,
         ListTile,
@@ -15,6 +17,7 @@ import 'package:flutter/material.dart'
         Tooltip,
         showDialog;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:goals_core/model.dart'
     show
         Goal,
@@ -22,6 +25,7 @@ import 'package:goals_core/model.dart'
         getGoalPriority,
         getGoalsForDateRange,
         getGoalsMatchingPredicate,
+        getPriorityComparator,
         getTransitiveSubGoals,
         isAnchor;
 import 'package:goals_core/sync.dart'
@@ -46,6 +50,7 @@ import 'package:goals_web/goal_viewer/pending_goal_viewer.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/scheduled_goals_v2.dart';
 import 'package:goals_web/intents.dart';
+import 'package:goals_web/widgets/gg_button.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
@@ -59,6 +64,7 @@ import 'goal_actions_context.dart';
 import 'goal_search_modal.dart';
 import 'goal_viewer_constants.dart';
 import 'hover_actions.dart';
+import 'package:collection/collection.dart' show IterableExtension;
 
 class GoalViewer extends StatefulHookConsumerWidget {
   final Map<String, Goal> goalMap;
@@ -283,13 +289,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   didUpdateWidget(GoalViewer oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.goalMap != widget.goalMap) {
-      setState(() {
-        _goalFilters = getGoalsMatchingPredicate(
-                widget.goalMap, (g) => isAnchor(g) != null)
-            .entries
-            .map((e) => GoalGoalFilter(e.key, widget.goalMap))
-            .toList();
-      });
+      _updateGoalFilters();
     }
   }
 
@@ -385,11 +385,19 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   void initState() {
     super.initState();
 
-    _goalFilters =
-        getGoalsMatchingPredicate(widget.goalMap, (g) => isAnchor(g) != null)
-            .entries
-            .map((e) => GoalGoalFilter(e.key, widget.goalMap))
-            .toList();
+    _updateGoalFilters();
+  }
+
+  _updateGoalFilters() {
+    setState(() {
+      _goalFilters = getGoalsMatchingPredicate(
+              widget.goalMap, (g) => isAnchor(g) != null)
+          .entries
+          .sorted((a, b) =>
+              getPriorityComparator(worldContextStream.value)(a.value, b.value))
+          .map((e) => GoalGoalFilter(e.key, widget.goalMap))
+          .toList();
+    });
   }
 
   _toggleDebug() {
@@ -425,30 +433,81 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final sidebarFilters = [
       PredefinedGoalFilter(GoalFilterType.pending_v2),
       PredefinedGoalFilter(GoalFilterType.all),
-      ..._goalFilters,
     ];
 
     return SizedBox(
       key: const ValueKey('viewSwitcher'),
       width: 200,
-      child: ListView(
-        padding: EdgeInsets.zero,
+      child: Column(
         children: [
-          for (final filter in sidebarFilters)
-            ListTile(
-              title: Text(filter.displayName),
-              selected: _filter == filter,
-              contentPadding: EdgeInsets.symmetric(horizontal: uiUnit(2)),
-              onTap: () {
-                this._onSwitchFilter(filter);
-
-                this._multiSplitViewController.resetSizes();
-
-                if (drawer) {
-                  Navigator.pop(context);
-                }
-              },
+          if (drawer)
+            Padding(
+              padding: EdgeInsets.all(uiUnit(3)),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: uiUnit(12),
+                    height: uiUnit(12),
+                    child: Padding(
+                      padding: EdgeInsets.all(uiUnit(2)),
+                      child: SvgPicture.asset(
+                        'assets/logo.svg',
+                      ),
+                    ),
+                  ),
+                  Text("Glass Goals", style: TextStyle(fontSize: uiUnit(6))),
+                ],
+              ),
             ),
+          if (drawer) Divider(),
+          SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final filter in sidebarFilters)
+                  ListTile(
+                    title: Text(filter.displayName),
+                    selected: _filter == filter,
+                    contentPadding: EdgeInsets.symmetric(horizontal: uiUnit(5)),
+                    onTap: () {
+                      this._onSwitchFilter(filter);
+
+                      this._multiSplitViewController.resetSizes();
+
+                      if (drawer) {
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+                Divider(),
+                for (final filter in this._goalFilters)
+                  ListTile(
+                    title: Text(filter.displayName),
+                    selected: _filter == filter,
+                    contentPadding: EdgeInsets.symmetric(horizontal: uiUnit(5)),
+                    onTap: () {
+                      this._onSwitchFilter(filter);
+
+                      this._multiSplitViewController.resetSizes();
+
+                      if (drawer) {
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+              ],
+            ),
+          ),
+          if (drawer) Spacer(),
+          if (drawer)
+            Padding(
+              padding: EdgeInsets.all(uiUnit(3)),
+              child: GlassGoalsButton(
+                  child: Text("SIGN OUT"),
+                  onPressed: () {
+                    FirebaseAuth.instance.signOut();
+                  }),
+            )
         ],
       ),
     );

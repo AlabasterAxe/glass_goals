@@ -17,17 +17,18 @@ GlassGoalsAppBar({
     surfaceTintColor: Colors.transparent,
     title: Row(
       children: [
-        SizedBox(
-          width: uiUnit(12),
-          height: uiUnit(12),
-          child: Padding(
-            padding: EdgeInsets.only(
-                top: uiUnit(2), right: uiUnit(2), bottom: uiUnit(2)),
-            child: SvgPicture.asset(
-              'assets/logo.svg',
+        if (!isNarrow)
+          SizedBox(
+            width: uiUnit(12),
+            height: uiUnit(12),
+            child: Padding(
+              padding: EdgeInsets.only(
+                  top: uiUnit(2), right: uiUnit(2), bottom: uiUnit(2)),
+              child: SvgPicture.asset(
+                'assets/logo.svg',
+              ),
             ),
           ),
-        ),
         Text(appBarTitle),
       ],
     ),
@@ -56,20 +57,21 @@ GlassGoalsAppBar({
               })
         : null,
     actions: [
-      Builder(builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(right: uiUnit(2)),
-          child: signedIn
-              ? GlassGoalsButton(
-                  child: Text("SIGN OUT"),
-                  onPressed: () {
-                    FirebaseAuth.instance.signOut();
-                  })
-              : GlassGoalsButton(
-                  child: Text("SIGN IN"),
-                  onPressed: () => Navigator.pushNamed(context, '/sign-in')),
-        );
-      }),
+      if (!isNarrow)
+        Builder(builder: (context) {
+          return Padding(
+            padding: EdgeInsets.only(right: uiUnit(2)),
+            child: signedIn
+                ? GlassGoalsButton(
+                    child: Text("SIGN OUT"),
+                    onPressed: () {
+                      FirebaseAuth.instance.signOut();
+                    })
+                : GlassGoalsButton(
+                    child: Text("SIGN IN"),
+                    onPressed: () => Navigator.pushNamed(context, '/sign-in')),
+          );
+        }),
     ],
   );
 }

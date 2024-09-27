@@ -98,7 +98,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
     final showAnchorOption = selectedGoals.isEmpty || selectedGoals.length == 1;
     final showClearAnchorOption =
         isAnchor(widget.goalMap[widget.goalId]) != null;
-    final goalHasSummary = hasSummary(widget.goalMap[widget.goalId]!) != null;
+    final goalHasSummary = hasSummary(widget.goalMap[widget.goalId]) != null;
     return Row(
       mainAxisSize: widget.mainAxisSize,
       mainAxisAlignment: MainAxisAlignment.spaceAround,
