@@ -104,17 +104,18 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   GoalFilter _filter = PredefinedGoalFilter(GoalFilterType.pending_v2);
   GoalViewMode _mode = GoalViewMode.tree;
   final FocusNode _focusNode = FocusNode();
-  bool _isDebug = false;
 
   List<GoalGoalFilter> _goalFilters = [];
 
   Future<void>? openBoxFuture;
   bool isInitted = false;
   late MultiSplitViewController _multiSplitViewController =
-      this._getMultiSplitViewController(false);
+      this._getMultiSplitViewController(ref.read(debugProvider));
   PendingGoalViewMode _pendingGoalViewMode = PendingGoalViewMode.schedule;
 
   final _addTimeSliceMenuController = MenuController();
+
+  bool _debugDebounce = false;
 
   _onSelected(String goalId) {
     setState(() {
@@ -389,15 +390,16 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             .entries
             .map((e) => GoalGoalFilter(e.key, widget.goalMap))
             .toList();
+  }
 
-    Future.delayed(Duration.zero, () {
-      if (ref.read(debugProvider)) {
-        this.setState(() {
-          this._multiSplitViewController =
-              this._getMultiSplitViewController(true);
-          this._isDebug = true;
-        });
-      }
+  _toggleDebug() {
+    if (this._debugDebounce) {
+      return;
+    }
+    this._debugDebounce = true;
+    ref.read(debugProvider.notifier).toggle();
+    Future.delayed(const Duration(milliseconds: 200), () {
+      this._debugDebounce = false;
     });
   }
 
@@ -699,10 +701,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         ref.watch(focusedGoalProvider).value ?? focusedGoalStream.value;
     final worldContext =
         ref.watch(worldContextProvider).value ?? worldContextStream.value;
+    final isDebug = ref.watch(debugProvider);
     ref.listen(focusedGoalProvider, _handleFocusedGoalChange);
     ref.listen(debugProvider, (_, isDebug) {
       setState(() {
-        _isDebug = isDebug;
         _multiSplitViewController = _getMultiSplitViewController(isDebug);
       });
     });
@@ -712,7 +714,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final singleScreen = MediaQuery.of(context).size.width < 600;
     final showHamburger = MediaQuery.of(context).size.width < 1000;
     if (!showHamburger) {
-      children.add(_viewSwitcher(false, worldContext, this._isDebug));
+      children.add(_viewSwitcher(false, worldContext, isDebug));
     }
 
     var appBarTitle = 'Glass Goals';
@@ -730,7 +732,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       }
     }
 
-    if (!singleScreen && this._isDebug)
+    if (!singleScreen && isDebug)
       children.add(DebugPanel(
         key: const ValueKey('debug'),
       ));
@@ -766,6 +768,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             RedoIntent: CallbackAction(onInvoke: (_) {
               AppContext.of(context).syncClient.redo();
             }),
+            ToggleDebugModeIntent:
+                CallbackAction(onInvoke: (_) => _toggleDebug()),
           },
           focusNode: _focusNode,
           child: FocusScope(
@@ -781,7 +785,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               ),
               drawer: showHamburger && focusedGoalId == null
                   ? Drawer(
-                      child: _viewSwitcher(true, worldContext, this._isDebug),
+                      child: _viewSwitcher(true, worldContext, isDebug),
                     )
                   : null,
               body: Stack(

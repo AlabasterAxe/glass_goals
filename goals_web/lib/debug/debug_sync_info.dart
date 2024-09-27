@@ -22,16 +22,23 @@ class DebugSyncInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Sync Info', style: Theme.of(context).textTheme.titleMedium),
-        Text('Undo Stack:'),
-        ...this.buildUndoStack(),
-        Text('Redo Stack:'),
-        ...this.buildRedoStack(),
-      ],
-    );
+    return StreamBuilder<void>(
+        stream: syncClient.syncSubject,
+        builder: (context, _) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Sync Info', style: Theme.of(context).textTheme.titleMedium),
+              Text('Cursor: ${syncClient.cursor}'),
+              Text('Last Sync Time: ${syncClient.lastSyncTime}'),
+              Text('Num Unsynced Ops: ${syncClient.numUnsyncedOps}'),
+              Text('Undo Stack:'),
+              ...this.buildUndoStack(),
+              Text('Redo Stack:'),
+              ...this.buildRedoStack(),
+            ],
+          );
+        });
   }
 }

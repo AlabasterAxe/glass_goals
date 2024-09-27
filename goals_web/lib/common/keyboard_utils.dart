@@ -29,6 +29,11 @@ bool isCtrlHeld() => CTRL_KEYS.any(isKeyPressed);
 bool isShiftHeld() => SHIFT_KEYS.any(isKeyPressed);
 bool isMetaHeld() => META_KEYS.any(isKeyPressed);
 
+final _PLATFORM_AGNOSTIC_SHORTCUTS = <ShortcutActivator, Intent>{
+  SingleActivator(LogicalKeyboardKey.escape): const CancelIntent(),
+  SingleActivator(LogicalKeyboardKey.enter): const AcceptIntent(),
+};
+
 final SHORTCUTS = <ShortcutActivator, Intent>{
   LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyK):
       const SearchIntent(),
@@ -37,9 +42,10 @@ final SHORTCUTS = <ShortcutActivator, Intent>{
   LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift,
       LogicalKeyboardKey.keyZ): const RedoIntent(),
   LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
-      const AcceptMultiLineText(),
-  SingleActivator(LogicalKeyboardKey.escape): const CancelIntent(),
-  SingleActivator(LogicalKeyboardKey.enter): const AcceptIntent(),
+      const AcceptMultiLineTextIntent(),
+  LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift,
+      LogicalKeyboardKey.keyD): const ToggleDebugModeIntent(),
+  ..._PLATFORM_AGNOSTIC_SHORTCUTS,
 };
 
 final MAC_SHORTCUTS = <ShortcutActivator, Intent>{
@@ -50,7 +56,8 @@ final MAC_SHORTCUTS = <ShortcutActivator, Intent>{
   LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.shift,
       LogicalKeyboardKey.keyZ): const RedoIntent(),
   LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter):
-      const AcceptMultiLineText(),
-  SingleActivator(LogicalKeyboardKey.escape): const CancelIntent(),
-  SingleActivator(LogicalKeyboardKey.enter): const AcceptIntent(),
+      const AcceptMultiLineTextIntent(),
+  LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.shift,
+      LogicalKeyboardKey.keyD): const ToggleDebugModeIntent(),
+  ..._PLATFORM_AGNOSTIC_SHORTCUTS,
 };

@@ -60,6 +60,8 @@ class _WebGoalsState extends ConsumerState<WebGoals>
 
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+  late final _appInitFuture = _appInit(context);
+
   void initState() {
     super.initState();
     this.userSubscription =
@@ -72,7 +74,7 @@ class _WebGoalsState extends ConsumerState<WebGoals>
     });
   }
 
-  Future<void> appInit(context) async {
+  Future<void> _appInit(context) async {
     await this.syncClient.init();
     refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       worldContextStream.add(WorldContext.now());
@@ -125,7 +127,7 @@ class _WebGoalsState extends ConsumerState<WebGoals>
                 settings.name!.startsWith('/home')) {
               return UnanimatedPageRoute(
                   builder: (context) => FutureBuilder<void>(
-                      future: appInit(context),
+                      future: _appInitFuture,
                       builder: (context, snapshot) {
                         if (snapshot.connectionState != ConnectionState.done) {
                           return const Center(

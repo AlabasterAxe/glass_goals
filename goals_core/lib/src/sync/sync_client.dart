@@ -4,7 +4,7 @@ import 'dart:developer';
 import 'package:collection/collection.dart';
 import 'package:hive/hive.dart' show Box, Hive;
 import 'package:hlc/hlc.dart';
-import 'package:rxdart/rxdart.dart' show BehaviorSubject;
+import 'package:rxdart/rxdart.dart' show BehaviorSubject, Subject;
 import 'package:uuid/uuid.dart';
 
 import 'package:goals_core/model.dart' show Goal;
@@ -20,6 +20,7 @@ import 'package:goals_types/goals_types.dart'
         Op,
         SetParentLogEntry;
 import 'persistence_service.dart' show PersistenceService;
+import 'package:logging/logging.dart' show Level;
 
 Map<String, Goal> initialGoalState() => {};
 
@@ -31,6 +32,7 @@ class SyncClient {
   late Box appBox;
   final PersistenceService? persistenceService;
   Future<void> syncFuture = Future.value();
+  Subject<void> syncSubject = BehaviorSubject.seeded(null);
 
   SyncClient({this.persistenceService});
 
@@ -54,6 +56,12 @@ class SyncClient {
   void modifyGoal(GoalDelta delta) {
     modifyGoals([delta]);
   }
+
+  int? get cursor => appBox.get('syncCursor');
+  DateTime? get lastSyncTime =>
+      DateTime.tryParse(appBox.get('lastSyncDateTime'));
+  int get numUnsyncedOps =>
+      (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>).length;
 
   void _computeStateOptimistic(Iterable<DeltaOp> ops) {
     Map<String, Goal> goals = {...stateSubject.value};
@@ -334,6 +342,7 @@ class SyncClient {
   }
 
   Future<void> sync() async {
+    log("syncing", level: Level.FINE.value);
     final currentSyncFuture = this.syncFuture;
     final syncCompleter = Completer<void>();
     this.syncFuture = syncCompleter.future;
@@ -342,6 +351,7 @@ class SyncClient {
       return;
     }
     final int? cursor = appBox.get('syncCursor');
+    log("sync cursor: $cursor", level: Level.FINE.value);
     final List<String> ops =
         (appBox.get('ops', defaultValue: []) as List<dynamic>).cast<String>();
     String? maxHlcTimestamp;
@@ -362,6 +372,7 @@ class SyncClient {
     }
 
     Iterable<Op> unsyncedOps = _getOpsFromBox('unsyncedOps');
+    log("num unsynced ops: ${unsyncedOps.length}", level: Level.FINE.value);
     if (unsyncedOps.isNotEmpty) {
       unsyncedOps = _reHlcOps(
           maxHlcTimestamp != null ? HLC.unpack(maxHlcTimestamp!) : null,
@@ -380,5 +391,6 @@ class SyncClient {
     if (result.ops.isNotEmpty) {
       _computeState();
     }
+    syncSubject.add(null);
   }
 }

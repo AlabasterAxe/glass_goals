@@ -115,8 +115,8 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
     });
     return Actions(
       actions: {
-        AcceptMultiLineText:
-            CallbackAction<AcceptMultiLineText>(onInvoke: (_) => _createNote()),
+        AcceptMultiLineTextIntent: CallbackAction<AcceptMultiLineTextIntent>(
+            onInvoke: (_) => _createNote()),
         CancelIntent: CallbackAction<CancelIntent>(
           onInvoke: (_) => _discardNote(),
         ),

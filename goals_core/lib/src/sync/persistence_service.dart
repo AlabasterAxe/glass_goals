@@ -44,7 +44,10 @@ class FirestorePersistenceService implements PersistenceService {
         .where('viewers', arrayContains: FirebaseAuth.instance.currentUser!.uid)
         .orderBy(FieldPath.documentId);
     if (cursor != null) {
-      rowQuery = rowQuery.startAfter(['00${cursor - 60000}']);
+      // look up to 90 seconds in the past
+      // the server allows ops to be up to 60 seconds in the past
+      // so we accommodate up to 30 seconds of clock drift
+      rowQuery = rowQuery.startAfter(['00${cursor - 90000}']);
     }
 
     final allRows = await rowQuery.get();

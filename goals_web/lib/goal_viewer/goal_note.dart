@@ -171,7 +171,7 @@ class _NoteCardState extends State<NoteCard> {
               ? IntrinsicHeight(
                   child: Actions(
                     actions: {
-                      AcceptMultiLineText:
+                      AcceptMultiLineTextIntent:
                           CallbackAction(onInvoke: (_) => _saveNote()),
                       CancelIntent:
                           CallbackAction(onInvoke: (_) => _discardEdit()),
