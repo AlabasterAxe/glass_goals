@@ -144,7 +144,7 @@ class _GoalSearchModalState extends State<GoalSearchModal> {
                           icon: Icon(Icons.clear),
                           onPressed: () {
                             _textController.clear();
-                            setState(() {});
+                            Navigator.pop(context);
                           },
                         )
                       : null,
