@@ -79,6 +79,9 @@ final manualTimeSliceProvider = StreamProvider<List<TimeSlice>>((_) =>
 final debugProvider = StateNotifierProvider<_BooleanStateNotifier, bool>(
     (ref) => _BooleanStateNotifier(false));
 
+final hasMouseProvider = StateNotifierProvider<_BooleanStateNotifier, bool>(
+    (ref) => _BooleanStateNotifier(false));
+
 final hoverEventStream = BehaviorSubject<List<String>?>.seeded(null);
 
 final textFocusStream = BehaviorSubject<List<String>?>.seeded(null);

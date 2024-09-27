@@ -112,6 +112,7 @@ class FlattenedGoalTree extends ConsumerWidget {
     final flattenedGoalItems =
         _getFlattenedGoalItems(worldContext, expandedGoalIds, textFocus);
     final isNarrow = MediaQuery.of(context).size.width < 600;
+    final hasMouse = ref.watch(hasMouseProvider);
 
     final goalItems = <Widget>[];
     final onDropGoal = GoalActionsContext.of(context).onDropGoal;
@@ -149,7 +150,7 @@ class FlattenedGoalTree extends ConsumerWidget {
                 hasRenderableChildren: flattenedGoal.hasRenderableChildren,
                 showExpansionArrow:
                     flattenedGoal.hasRenderableChildren || showAddGoal,
-                dragHandle: isNarrow
+                dragHandle: !hasMouse
                     ? GoalItemDragHandle.bullet
                     : GoalItemDragHandle.item,
                 path: flattenedGoal.goalPath,

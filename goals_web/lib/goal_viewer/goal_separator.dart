@@ -27,7 +27,33 @@ class GoalSeparator extends StatefulWidget {
 }
 
 class _GoalSeparatorState extends State<GoalSeparator> {
+  bool _hovered = false;
   bool _dragHovered = false;
+
+  bool _hoverUpdateSent = false;
+
+  @override
+  initState() {
+    super.initState();
+    hoverEventStream.stream.listen((event) {
+      if (pathsMatch(event, this.widget.nextGoalPath) ||
+          pathsMatch(event, this.widget.prevGoalPath)) {
+        if (!_hovered) {
+          setState(() {
+            _hovered = true;
+          });
+        }
+      } else {
+        _hoverUpdateSent = false;
+
+        if (_hovered) {
+          setState(() {
+            _hovered = false;
+          });
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,8 +84,9 @@ class _GoalSeparatorState extends State<GoalSeparator> {
               height: uiUnit(2),
               child: Center(
                 child: Container(
-                  color:
-                      this._dragHovered ? darkElementColor : Colors.transparent,
+                  color: this._hovered || this._dragHovered
+                      ? darkElementColor
+                      : Colors.transparent,
                   height: 2,
                 ),
               ),
@@ -67,26 +94,19 @@ class _GoalSeparatorState extends State<GoalSeparator> {
             if (!this.widget.isFirst)
               Positioned(
                 child: MouseRegion(
-                  onHover: (event) {
-                    if (this.widget.prevGoalPath.isNotEmpty &&
-                        this.widget.prevGoalPath.last != NEW_GOAL_PLACEHOLDER) {
-                      hoverEventStream.add(this.widget.prevGoalPath);
-                    }
-                  },
-                  child: StreamBuilder<List<String>?>(
-                      stream: hoverEventStream.stream,
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) {
-                          return Container();
-                        }
-                        return Container(
-                          color: pathsMatch(snapshot.requireData,
-                                  this.widget.prevGoalPath)
-                              ? emphasizedLightBackground
-                              : Colors.transparent,
-                        );
-                      }),
-                ),
+                    onHover: (event) {
+                      if (this.widget.prevGoalPath.isNotEmpty &&
+                          this.widget.prevGoalPath.last !=
+                              NEW_GOAL_PLACEHOLDER) {
+                        hoverEventStream.add(this.widget.prevGoalPath);
+                      }
+                    },
+                    child: Container(
+                      color: pathsMatch(
+                              hoverEventStream.value, this.widget.prevGoalPath)
+                          ? emphasizedLightBackground
+                          : Colors.transparent,
+                    )),
                 top: 0,
                 left: 0,
                 right: 0,
@@ -95,24 +115,18 @@ class _GoalSeparatorState extends State<GoalSeparator> {
             Positioned(
               child: MouseRegion(
                 onHover: (event) {
-                  if (this.widget.nextGoalPath.isNotEmpty &&
+                  if (!this._hoverUpdateSent &&
+                      this.widget.nextGoalPath.isNotEmpty &&
                       this.widget.nextGoalPath.last != NEW_GOAL_PLACEHOLDER) {
                     hoverEventStream.add(this.widget.nextGoalPath);
                   }
                 },
-                child: StreamBuilder<List<String>?>(
-                    stream: hoverEventStream.stream,
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return Container();
-                      }
-                      return Container(
-                        color: pathsMatch(
-                                snapshot.requireData, this.widget.nextGoalPath)
-                            ? emphasizedLightBackground
-                            : Colors.transparent,
-                      );
-                    }),
+                child: Container(
+                  color: pathsMatch(
+                          hoverEventStream.value, this.widget.nextGoalPath)
+                      ? emphasizedLightBackground
+                      : Colors.transparent,
+                ),
               ),
               bottom: 0,
               left: 0,

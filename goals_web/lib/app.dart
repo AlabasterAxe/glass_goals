@@ -1,4 +1,5 @@
 import 'dart:async' show StreamSubscription, Timer;
+import 'dart:ui';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
@@ -13,6 +14,7 @@ import 'package:flutter/widgets.dart'
         FutureBuilder,
         GlobalKey,
         Locale,
+        MouseRegion,
         NavigatorState,
         SingleTickerProviderStateMixin,
         SizedBox,
@@ -49,22 +51,24 @@ class WebGoals extends ConsumerStatefulWidget {
 
 class _WebGoalsState extends ConsumerState<WebGoals>
     with SingleTickerProviderStateMixin {
-  late SyncClient syncClient =
+  late SyncClient _syncClient =
       SyncClient(persistenceService: this.widget.persistenceService);
 
   // responsible for updating the world state so the UI updates according with the current time
-  late Timer refreshTimer;
+  late Timer _refreshTimer;
 
-  late StreamSubscription stateSubscription;
-  late StreamSubscription userSubscription;
+  late StreamSubscription _stateSubscription;
+  late StreamSubscription _userSubscription;
 
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   late final _appInitFuture = _appInit(context);
 
+  bool _hasMouse = false;
+
   void initState() {
     super.initState();
-    this.userSubscription =
+    this._userSubscription =
         FirebaseAuth.instance.authStateChanges().listen((User? user) {
       if (user == null && this.widget.shouldAuthenticate) {
         this.navigatorKey.currentState?.pushReplacementNamed('/');
@@ -75,12 +79,12 @@ class _WebGoalsState extends ConsumerState<WebGoals>
   }
 
   Future<void> _appInit(context) async {
-    await this.syncClient.init();
-    refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+    await this._syncClient.init();
+    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       worldContextStream.add(WorldContext.now());
     });
-    stateSubscription = this
-        .syncClient
+    _stateSubscription = this
+        ._syncClient
         .stateSubject
         .asBroadcastStream()
         .listen((Map<String, Goal> goalMap) {
@@ -91,16 +95,16 @@ class _WebGoalsState extends ConsumerState<WebGoals>
 
   @override
   void dispose() {
-    this.refreshTimer.cancel();
-    this.stateSubscription.cancel();
-    this.userSubscription.cancel();
+    this._refreshTimer.cancel();
+    this._stateSubscription.cancel();
+    this._userSubscription.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AppContext(
-      syncClient: syncClient,
+    final contents = AppContext(
+      syncClient: this._syncClient,
       child: MaterialApp(
           navigatorKey: this.navigatorKey,
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
@@ -142,6 +146,18 @@ class _WebGoalsState extends ConsumerState<WebGoals>
             }
           }),
     );
+    return this._hasMouse
+        ? contents
+        : MouseRegion(
+            onHover: (event) {
+              if (event.kind == PointerDeviceKind.mouse) {
+                ref.read(hasMouseProvider.notifier).set(true);
+                setState(() {
+                  this._hasMouse = true;
+                });
+              }
+            },
+            child: contents);
   }
 }
 

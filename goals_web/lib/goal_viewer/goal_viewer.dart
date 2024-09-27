@@ -335,6 +335,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
+    _focusNode.requestFocus();
+
     if (!isInitted) {
       window.addEventListener('popstate', _handlePopState);
       setState(() {
@@ -874,7 +876,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         bottom: 0,
                         left: 0,
                         right: 0,
-                        height: uiUnit(16),
+                        height: uiUnit(20),
                         child: Container(
                           color: lightBackground,
                           child: HoverActionsWidget(

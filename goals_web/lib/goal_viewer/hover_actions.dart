@@ -15,9 +15,10 @@ import 'package:flutter/material.dart'
         showDialog,
         showTimePicker;
 import 'package:flutter/painting.dart' show FractionalOffset;
-import 'package:flutter/rendering.dart' show MainAxisAlignment, MainAxisSize;
+import 'package:flutter/rendering.dart'
+    show CrossAxisAlignment, MainAxisAlignment, MainAxisSize;
 import 'package:flutter/widgets.dart'
-    show BuildContext, Icon, Row, StreamBuilder, Text, Widget;
+    show BuildContext, Expanded, Icon, Row, StreamBuilder, Text, Widget;
 import 'package:goals_core/model.dart'
     show Goal, getGoalStatus, getTransitiveSuperGoals, hasSummary, isAnchor;
 import 'package:goals_core/sync.dart'
@@ -101,7 +102,9 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
     final goalHasSummary = hasSummary(widget.goalMap[widget.goalId]) != null;
     return Row(
       mainAxisSize: widget.mainAxisSize,
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      crossAxisAlignment: widget.mainAxisSize == MainAxisSize.min
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.stretch,
       children: [
         Tooltip(
           waitDuration: _TOOLTIP_DELAY,
@@ -407,7 +410,11 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
             ),
           ),
         ),
-      ],
+      ]
+          .map((e) => this.widget.mainAxisSize == MainAxisSize.max
+              ? Expanded(child: e)
+              : e)
+          .toList(),
     );
   }
 }
