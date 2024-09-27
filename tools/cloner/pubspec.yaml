@@ -18,17 +18,17 @@ dependencies:
   goals_core:
     path: "../../goals_core"
 
-  firebase_auth: ^4.10.0
+  firebase_auth: ^5.3.1
   hive_flutter: ^1.1.0
   firebase_ui_auth: ^1.8.0
-  firebase_core: ^2.16.0
+  firebase_core: ^3.6.0
   firebase_ui_oauth_google: ^1.2.11
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^2.0.0
+  flutter_lints: ^5.0.0
 
 flutter:
 

@@ -19,7 +19,7 @@ import 'package:flutter/rendering.dart' show MainAxisAlignment, MainAxisSize;
 import 'package:flutter/widgets.dart'
     show BuildContext, Icon, Row, StreamBuilder, Text, Widget;
 import 'package:goals_core/model.dart'
-    show Goal, getGoalStatus, isAnchor, hasSummary;
+    show Goal, getGoalStatus, getTransitiveSuperGoals, hasSummary, isAnchor;
 import 'package:goals_core/sync.dart'
     show AddParentLogEntry, GoalDelta, GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
@@ -53,7 +53,7 @@ class HoverActionsWidget extends ConsumerStatefulWidget {
     this.path,
   });
 
-  get goalId => path?.last;
+  String? get goalId => path?.last;
 
   @override
   ConsumerState<HoverActionsWidget> createState() => _HoverActionsWidgetState();
@@ -223,16 +223,18 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
             ),
           ),
         ),
-        Tooltip(
-            waitDuration: _TOOLTIP_DELAY,
-            showDuration: Duration.zero,
-            message: 'Add Subgoal',
-            child: GlassGoalsIconButton(
-                icon: Icons.add,
-                onPressed: () {
-                  onExpanded(widget.goalId, expanded: true);
-                  textFocusStream.add([...widget.path!, NEW_GOAL_PLACEHOLDER]);
-                })),
+        if (this.widget.goalId != null)
+          Tooltip(
+              waitDuration: _TOOLTIP_DELAY,
+              showDuration: Duration.zero,
+              message: 'Add Subgoal',
+              child: GlassGoalsIconButton(
+                  icon: Icons.add,
+                  onPressed: () {
+                    onExpanded(widget.goalId!, expanded: true);
+                    textFocusStream
+                        .add([...widget.path!, NEW_GOAL_PLACEHOLDER]);
+                  })),
         Tooltip(
           waitDuration: _TOOLTIP_DELAY,
           showDuration: Duration.zero,
@@ -264,6 +266,16 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                                   for (final subGoalId
                                       in goal?.subGoalIds ?? <String>[]) {
                                     modalMap.remove(subGoalId);
+                                  }
+
+                                  if (this.widget.goalId != null) {
+                                    final goalsToRemove =
+                                        getTransitiveSuperGoals(
+                                            this.widget.goalMap,
+                                            this.widget.goalId!);
+                                    for (final goalId in goalsToRemove.keys) {
+                                      modalMap.remove(goalId);
+                                    }
                                   }
                                   return GoalSearchModal(
                                     goalMap: modalMap,
@@ -341,16 +353,16 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                 leadingIcon: Icon(Icons.hotel),
                 child: const Text('Snooze goal...'),
               ),
-              goalHasSummary
+              goalHasSummary && this.widget.goalId != null
                   ? MenuItemButton(
                       child: Text('Remove Summary'),
                       leadingIcon: Icon(Icons.clear),
-                      onPressed: () => onClearSummary(widget.goalId),
+                      onPressed: () => onClearSummary(this.widget.goalId!),
                     )
                   : MenuItemButton(
                       child: Text('Add Summary'),
                       leadingIcon: Icon(Icons.notes),
-                      onPressed: () => onAddSummary(widget.goalId),
+                      onPressed: () => onAddSummary(this.widget.goalId!),
                     ),
               allArchived
                   ? MenuItemButton(
@@ -363,24 +375,24 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                       leadingIcon: Icon(Icons.archive),
                       onPressed: () => onArchive(widget.goalId),
                     ),
-              showClearAnchorOption
+              showClearAnchorOption && this.widget.goalId != null
                   ? MenuItemButton(
                       child: Text('Clear Anchor'),
                       leadingIcon: Icon(Icons.anchor),
                       onPressed: !showAnchorOption
                           ? null
-                          : () => onClearAnchor(widget.goalId))
+                          : () => onClearAnchor(this.widget.goalId!))
                   : MenuItemButton(
                       child: Text('Make Anchor'),
                       leadingIcon: Icon(Icons.anchor),
                       onPressed: !showAnchorOption
                           ? null
-                          : () => onMakeAnchor(widget.goalId)),
+                          : () => onMakeAnchor(this.widget.goalId!)),
               if (onPrint != null)
                 MenuItemButton(
                   child: Text('Save as PDF'),
                   leadingIcon: Icon(Icons.picture_as_pdf),
-                  onPressed: () => onPrint(widget.goalId),
+                  onPressed: () => onPrint(this.widget.goalId),
                 ),
             ],
             child: GlassGoalsIconButton(

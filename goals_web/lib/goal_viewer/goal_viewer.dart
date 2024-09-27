@@ -335,8 +335,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    _focusNode.requestFocus();
-
     if (!isInitted) {
       window.addEventListener('popstate', _handlePopState);
       setState(() {
@@ -386,6 +384,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     super.initState();
 
     _updateGoalFilters();
+
+    FocusManager.instance.rootScope.addListener(this._returnFocus);
+  }
+
+  _returnFocus() {
+    _focusNode.requestFocus();
   }
 
   _updateGoalFilters() {
@@ -414,6 +418,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   @override
   dispose() {
     window.removeEventListener('popstate', _handlePopState);
+
+    FocusManager.instance.rootScope.removeListener(this._returnFocus);
+
     super.dispose();
   }
 
