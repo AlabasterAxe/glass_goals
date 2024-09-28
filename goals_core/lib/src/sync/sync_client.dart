@@ -29,7 +29,7 @@ class SyncClient {
       BehaviorSubject.seeded(initialGoalState());
   late HLC hlc;
   late String clientId;
-  late Box appBox;
+  late Box syncBox;
   final PersistenceService? persistenceService;
   Future<void> syncFuture = Future.value();
   Subject<void> syncSubject = BehaviorSubject.seeded(null);
@@ -43,8 +43,8 @@ class SyncClient {
   List<String> redoStack = [];
 
   init() async {
-    appBox = await Hive.openBox('glass_goals.sync');
-    clientId = appBox.get('clientId', defaultValue: const Uuid().v4());
+    syncBox = await Hive.openBox('glass_goals.sync');
+    clientId = syncBox.get('clientId', defaultValue: const Uuid().v4());
     hlc = HLC.now(clientId);
     _computeState();
     sync();
@@ -57,11 +57,15 @@ class SyncClient {
     modifyGoals([delta]);
   }
 
-  int? get cursor => appBox.get('syncCursor');
+  int? get cursor => syncBox.get('syncCursor');
+
+  /// The number of times we've had to do a full sync because we were missing ops; should be 0 in normal operation
+  int get fullSyncCount => syncBox.get('fullSyncCount', defaultValue: 0);
+
   DateTime? get lastSyncTime =>
-      DateTime.tryParse(appBox.get('lastSyncDateTime'));
+      DateTime.tryParse(syncBox.get('lastSyncDateTime'));
   int get numUnsyncedOps =>
-      (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>).length;
+      (syncBox.get('unsyncedOps', defaultValue: []) as List<dynamic>).length;
 
   void _computeStateOptimistic(Iterable<DeltaOp> ops) {
     Map<String, Goal> goals = {...stateSubject.value};
@@ -71,7 +75,7 @@ class SyncClient {
 
   void modifyGoals(List<GoalDelta> deltas) {
     List<String> unsyncedOps =
-        (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
+        (syncBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
             .cast<String>();
 
     final actionHlcs = <String>{};
@@ -87,7 +91,7 @@ class SyncClient {
     this.modificationMap[actionId] = actionHlcs;
     _computeStateOptimistic(deltaOps);
 
-    appBox.put('unsyncedOps', unsyncedOps);
+    syncBox.put('unsyncedOps', unsyncedOps);
     sync();
     undoStack.add(actionId);
     redoStack.clear();
@@ -117,14 +121,14 @@ class SyncClient {
       throw Exception('Action not found: $actionId');
     }
     List<String> unsyncedOps =
-        (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
+        (syncBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
             .cast<String>();
     for (final actionHlc in actionHlcs) {
       hlc = hlc.increment();
       final op = DisableOp(hlcTimestamp: hlc.pack(), hlcToDisable: actionHlc);
       unsyncedOps.add(Op.toJson(op));
     }
-    appBox.put('unsyncedOps', unsyncedOps);
+    syncBox.put('unsyncedOps', unsyncedOps);
     _computeState();
     sync();
   }
@@ -135,14 +139,14 @@ class SyncClient {
       throw Exception('Action not found: $actionId');
     }
     List<String> unsyncedOps =
-        (appBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
+        (syncBox.get('unsyncedOps', defaultValue: []) as List<dynamic>)
             .cast<String>();
     for (final actionHlc in actionHlcs) {
       hlc = hlc.increment();
       final op = EnableOp(hlcTimestamp: hlc.pack(), hlcToEnable: actionHlc);
       unsyncedOps.add(Op.toJson(op));
     }
-    appBox.put('unsyncedOps', unsyncedOps);
+    syncBox.put('unsyncedOps', unsyncedOps);
     _computeState();
     sync();
   }
@@ -265,7 +269,7 @@ class SyncClient {
   Iterable<Op> _getOpsFromBox(String fieldName) {
     final hlcs = <String>{};
     final boxContents =
-        appBox.get(fieldName, defaultValue: []) as List<dynamic>;
+        syncBox.get(fieldName, defaultValue: []) as List<dynamic>;
     final result = <Op>[];
     for (final String opString in boxContents.cast<String>()) {
       final op = Op.fromJson(opString);
@@ -350,10 +354,10 @@ class SyncClient {
     if (persistenceService == null) {
       return;
     }
-    int? cursor = appBox.get('syncCursor');
+    int? cursor = syncBox.get('syncCursor');
     log("sync cursor: $cursor", level: Level.FINE.value);
     final List<String> ops =
-        (appBox.get('ops', defaultValue: []) as List<dynamic>).cast<String>();
+        (syncBox.get('ops', defaultValue: []) as List<dynamic>).cast<String>();
     String? maxHlcTimestamp;
     final Set<String> localOps = Set.from(_getOpsFromBox('ops').map((op) {
       if (maxHlcTimestamp == null ||
@@ -368,6 +372,8 @@ class SyncClient {
       // in theory this should never happen, but if it does, do a full sync.
       final remoteOpCount = await persistenceService!.count(cursor: cursor);
       if (remoteOpCount > ops.length) {
+        int fullSyncCount = syncBox.get('fullSyncCount', defaultValue: 0);
+        syncBox.put('fullSyncCount', fullSyncCount + 1);
         log("we're missing ops, remote op count: $remoteOpCount, local op count: ${localOps.length}. Doing a full sync.",
             level: Level.SEVERE.value);
         cursor = null;
@@ -379,7 +385,7 @@ class SyncClient {
 
     final result = await persistenceService!.load(cursor: cursor);
 
-    appBox.put('syncCursor', result.cursor);
+    syncBox.put('syncCursor', result.cursor);
     for (Op op in result.ops) {
       if (!localOps.contains(op.hlcTimestamp)) {
         localOps.add(op.hlcTimestamp);
@@ -396,13 +402,13 @@ class SyncClient {
       try {
         await persistenceService!.save(unsyncedOps);
         ops.addAll(unsyncedOps.map(Op.toJson));
-        await appBox.put('unsyncedOps', []);
+        await syncBox.put('unsyncedOps', []);
       } catch (e) {
         log('Save failed', error: e);
       }
     }
-    await appBox.put('ops', ops);
-    await appBox.put('lastSyncDateTime', DateTime.now().toIso8601String());
+    await syncBox.put('ops', ops);
+    await syncBox.put('lastSyncDateTime', DateTime.now().toIso8601String());
     syncCompleter.complete();
     if (result.ops.isNotEmpty) {
       _computeState();

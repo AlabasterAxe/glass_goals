@@ -33,6 +33,7 @@ class DebugSyncInfo extends StatelessWidget {
               Text('Cursor: ${syncClient.cursor}'),
               Text('Last Sync Time: ${syncClient.lastSyncTime}'),
               Text('Num Unsynced Ops: ${syncClient.numUnsyncedOps}'),
+              Text('Num Full Syncs: ${syncClient.fullSyncCount}'),
               Text('Undo Stack:'),
               ...this.buildUndoStack(),
               Text('Redo Stack:'),

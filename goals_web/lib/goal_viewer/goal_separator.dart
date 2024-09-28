@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/widgets.dart';
 import 'package:goals_core/model.dart';
@@ -32,10 +34,13 @@ class _GoalSeparatorState extends State<GoalSeparator> {
 
   bool _hoverUpdateSent = false;
 
+  late StreamSubscription _hoverEventSubscription;
+
   @override
   initState() {
     super.initState();
-    hoverEventStream.stream.listen((event) {
+
+    this._hoverEventSubscription = hoverEventStream.listen((event) {
       if (pathsMatch(event, this.widget.nextGoalPath) ||
           pathsMatch(event, this.widget.prevGoalPath)) {
         if (!_hovered) {
@@ -56,6 +61,13 @@ class _GoalSeparatorState extends State<GoalSeparator> {
   }
 
   @override
+  dispose() {
+    this._hoverEventSubscription.cancel();
+
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return DragTarget<GoalDragDetails>(
       onAcceptWithDetails: (deets) {
@@ -65,15 +77,22 @@ class _GoalSeparatorState extends State<GoalSeparator> {
         });
       },
       onMove: (details) {
-        setState(() {
-          _dragHovered = true;
+        if (!_dragHovered) {
+          setState(() {
+            _dragHovered = true;
+          });
+        }
+
+        if (hoverEventStream.value != null) {
           hoverEventStream.add(null);
-        });
+        }
       },
       onLeave: (data) {
-        setState(() {
-          _dragHovered = false;
-        });
+        if (_dragHovered) {
+          setState(() {
+            _dragHovered = false;
+          });
+        }
       },
       builder: (_, __, ___) => Padding(
         padding:
