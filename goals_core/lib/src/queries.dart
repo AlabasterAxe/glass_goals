@@ -10,9 +10,36 @@ import 'util/date_utils.dart';
 Map<String, Goal> getTransitiveSubGoals(
     Map<String, Goal> goalMap, String rootGoalId,
     {bool Function(Goal)? predicate}) {
+  return _getTransitiveGoals(goalMap, rootGoalId,
+      predicate: predicate, direction: _TraversalDirection.down);
+}
+
+Map<String, Goal> getTransitiveSuperGoals(
+    Map<String, Goal> goalMap, String rootGoalId,
+    {bool Function(Goal)? predicate}) {
+  return _getTransitiveGoals(goalMap, rootGoalId,
+      predicate: predicate, direction: _TraversalDirection.up);
+}
+
+enum _TraversalDirection {
+  up,
+  down,
+}
+
+Map<String, Goal> _getTransitiveGoals(
+  Map<String, Goal> goalMap,
+  String rootGoalId, {
+  bool Function(Goal)? predicate,
+  required _TraversalDirection direction,
+}) {
   // don't apply the predicate to the root goal
   final result = <String, Goal>{rootGoalId: goalMap[rootGoalId]!};
-  final queue = <String>[...goalMap[rootGoalId]!.subGoalIds];
+
+  final getNextIds = direction == _TraversalDirection.up
+      ? (Goal goal) => goal.superGoalIds
+      : (Goal goal) => goal.subGoalIds;
+
+  final queue = <String>[...(getNextIds(goalMap[rootGoalId]!))];
   while (queue.isNotEmpty) {
     final goalId = queue.removeLast();
     final goal = goalMap[goalId];
@@ -21,7 +48,7 @@ Map<String, Goal> getTransitiveSubGoals(
       continue;
     }
     result[goalId] = goal;
-    queue.addAll(goal.subGoalIds);
+    queue.addAll(getNextIds(goal));
   }
   return result;
 }

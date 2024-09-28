@@ -31,7 +31,7 @@
             "program": "goals_web/lib/main_readonly.dart",
         },
         {
-            "name": "goals_web",
+            "name": "goals_web (profile)",
             "request": "launch",
             "type": "dart",
             "program": "goals_web/lib/main_readonly.dart",

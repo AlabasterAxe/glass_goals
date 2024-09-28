@@ -412,7 +412,7 @@ class _StatusCardState extends ConsumerState<StatusCard> {
                 ? IntrinsicHeight(
                     child: Actions(
                       actions: {
-                        AcceptMultiLineText: CallbackAction(
+                        AcceptMultiLineTextIntent: CallbackAction(
                             onInvoke: (_) => _saveNote(noteType)),
                         CancelIntent:
                             CallbackAction(onInvoke: (_) => _discardEdit()),

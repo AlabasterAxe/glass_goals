@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart'
-    show AppBarTheme, ColorScheme, Colors, ThemeData, Typography;
+    show ColorScheme, Colors, ThemeData, Typography;
 import 'dart:ui' show FontWeight;
 import 'package:flutter/widgets.dart' show Color, TextStyle;
 import 'package:google_fonts/google_fonts.dart';
@@ -50,7 +50,6 @@ final defaultTextTheme = Typography.material2021(colorScheme: colorScheme)
 
 final theme = ThemeData(
   useMaterial3: true,
-  // navy
   colorScheme: colorScheme,
   primaryTextTheme: defaultTextTheme,
   textTheme: defaultTextTheme,

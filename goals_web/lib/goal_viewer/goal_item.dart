@@ -17,6 +17,7 @@ import 'providers.dart'
     show
         expandedGoalsProvider,
         expandedGoalsStream,
+        hasMouseProvider,
         hoverEventStream,
         pathsMatch,
         selectedGoalsProvider,
@@ -133,6 +134,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     final isExpanded = expandedGoals.contains(widget.goal.id);
     final selectedGoals =
         ref.watch(selectedGoalsProvider).value ?? selectedGoalsStream.value;
+    final hasMouse = ref.watch(hasMouseProvider);
 
     final isSelected = selectedGoals.contains(widget.goal.id);
     final isNarrow = MediaQuery.of(context).size.width < 600;
@@ -141,7 +143,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     final onSelected = GoalActionsContext.of(context).onSelected;
     final bullet = SizedBox(
       width: uiUnit(10),
-      height: uiUnit(8),
+      height: uiUnit(hasMouse ? 8 : 12),
       child: Center(
           child: Container(
         width: uiUnit(),
@@ -155,12 +157,12 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     final content = MouseRegion(
       cursor: SystemMouseCursors.click,
       onHover: (event) {
-        setState(() {
-          if (!_hovering) {
+        if (!_hovering) {
+          hoverEventStream.add(this.widget.path);
+          setState(() {
             _hovering = true;
-            hoverEventStream.add(this.widget.path);
-          }
-        });
+          });
+        }
       },
       child: GestureDetector(
         onTap: _editing
@@ -217,7 +219,23 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                 child: MouseRegion(
                                   cursor: SystemMouseCursors.text,
                                   child: GestureDetector(
-                                    onTap: () {
+                                    onTap: hasMouse
+                                        ? () {
+                                            this._textController.text =
+                                                widget.goal.text;
+                                            _focusNode.requestFocus();
+                                            this._textController.selection =
+                                                TextSelection(
+                                                    baseOffset: 0,
+                                                    extentOffset:
+                                                        _textController
+                                                            .text.length);
+                                            setState(() {
+                                              _editing = true;
+                                            });
+                                          }
+                                        : null,
+                                    onLongPress: () {
                                       this._textController.text =
                                           widget.goal.text;
                                       _focusNode.requestFocus();
