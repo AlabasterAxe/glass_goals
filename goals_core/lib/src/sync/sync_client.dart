@@ -63,7 +63,7 @@ class SyncClient {
   int get fullSyncCount => syncBox.get('fullSyncCount', defaultValue: 0);
 
   DateTime? get lastSyncTime =>
-      DateTime.tryParse(syncBox.get('lastSyncDateTime'));
+      DateTime.tryParse(syncBox.get('lastSyncDateTime') ?? "");
   int get numUnsyncedOps =>
       (syncBox.get('unsyncedOps', defaultValue: []) as List<dynamic>).length;
 
