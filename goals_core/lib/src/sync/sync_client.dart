@@ -350,7 +350,7 @@ class SyncClient {
     if (persistenceService == null) {
       return;
     }
-    final int? cursor = appBox.get('syncCursor');
+    int? cursor = appBox.get('syncCursor');
     log("sync cursor: $cursor", level: Level.FINE.value);
     final List<String> ops =
         (appBox.get('ops', defaultValue: []) as List<dynamic>).cast<String>();
@@ -363,10 +363,26 @@ class SyncClient {
       return op.hlcTimestamp;
     }));
 
+    if (cursor != null) {
+      // this is a safeguard to check if we're missing any ops from the server
+      // in theory this should never happen, but if it does, do a full sync.
+      final remoteOpCount = await persistenceService!.count(cursor: cursor);
+      if (remoteOpCount > ops.length) {
+        log("we're missing ops, remote op count: $remoteOpCount, local op count: ${localOps.length}. Doing a full sync.",
+            level: Level.SEVERE.value);
+        cursor = null;
+      } else {
+        log("remote op count: $remoteOpCount, local op count: ${localOps.length}",
+            level: Level.FINE.value);
+      }
+    }
+
     final result = await persistenceService!.load(cursor: cursor);
+
     appBox.put('syncCursor', result.cursor);
     for (Op op in result.ops) {
       if (!localOps.contains(op.hlcTimestamp)) {
+        localOps.add(op.hlcTimestamp);
         ops.add(Op.toJson(op));
       }
     }

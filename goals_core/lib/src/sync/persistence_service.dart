@@ -24,6 +24,9 @@ class LoadOpsResp {
 abstract class PersistenceService {
   Future<void> save(Iterable<Op> ops);
   Future<LoadOpsResp> load({int? cursor});
+
+  // returns the total number of ops that the user has access to until cursor
+  Future<int> count({int? cursor});
 }
 
 class FirestorePersistenceService implements PersistenceService {
@@ -52,6 +55,7 @@ class FirestorePersistenceService implements PersistenceService {
 
     final allRows = await rowQuery.get();
 
+    var latestCursor = cursor;
     for (final row in allRows.docs) {
       final rowData = row.data();
       if (rowData['version'] < 5) {
@@ -59,9 +63,32 @@ class FirestorePersistenceService implements PersistenceService {
       } else {
         newOps.add(Op.fromJsonMap(rowData));
       }
+
+      final rowCursor = int.parse(row.id.split(":").first);
+      if (latestCursor == null || rowCursor > latestCursor) {
+        latestCursor = rowCursor;
+      }
     }
 
-    return LoadOpsResp(newOps, DateTime.now().millisecondsSinceEpoch);
+    return LoadOpsResp(newOps, latestCursor);
+  }
+
+  @override
+  Future<int> count({int? cursor}) async {
+    if (FirebaseAuth.instance.currentUser == null) {
+      return 0;
+    }
+
+    var rowQuery = db
+        .collection('ops')
+        .where('viewers', arrayContains: FirebaseAuth.instance.currentUser!.uid)
+        .orderBy(FieldPath.documentId);
+
+    if (cursor != null) {
+      rowQuery = rowQuery.endBefore(['00${cursor + 1}']);
+    }
+
+    return (await rowQuery.count().get()).count ?? 0;
   }
 
   Op fromPreV5Op(String rowId, Map<String, dynamic> previousOp) {
@@ -105,5 +132,10 @@ class InMemoryPersistenceService implements PersistenceService {
   @override
   Future<void> save(Iterable<Op> ops) async {
     this.ops.addAll(ops);
+  }
+
+  @override
+  Future<int> count({int? cursor}) async {
+    return ops.length;
   }
 }
