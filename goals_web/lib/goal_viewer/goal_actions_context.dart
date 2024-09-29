@@ -16,7 +16,7 @@ class GoalDragDetails {
 class GoalActionsContext extends InheritedWidget {
   final Function(String goalId) onSelected;
   final Function(String goalId) onFocused;
-  final Function(String goalId, {bool? expanded}) onExpanded;
+  final Function(List<String> goalId, {bool? expanded}) onExpanded;
   final Function(String? parentId, String text, [TimeSlice? slice]) onAddGoal;
   final Function(String?) onUnarchive;
   final Function(String?) onArchive;

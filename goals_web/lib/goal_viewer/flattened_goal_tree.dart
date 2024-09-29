@@ -1,12 +1,6 @@
 import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
-    show
-        Actions,
-        BuildContext,
-        CallbackAction,
-        Column,
-        FocusableActionDetector,
-        Widget;
+    show Actions, BuildContext, CallbackAction, Column, Widget;
 import 'package:goals_core/model.dart'
     show Goal, TraversalDecision, getPriorityComparator, traverseDown;
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
@@ -65,7 +59,7 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
   void _updateFlattenedGoalItems() {
     final context =
         ref.read(worldContextProvider).value ?? worldContextStream.value;
-    final expandedGoalIds =
+    final expandedGoalPaths =
         ref.read(expandedGoalsProvider).value ?? expandedGoalsStream.value;
     final textFocus =
         ref.read(textFocusProvider).value ?? textFocusStream.value;
@@ -82,13 +76,14 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
         this.widget.goalMap,
         goal.id,
         onVisit: (goalId, path) {
+          final fullGoalPath = [
+            this.widget.section,
+            ...this.widget.path,
+            ...path,
+            goalId
+          ];
           flattenedGoals.add((
-            goalPath: [
-              this.widget.section,
-              ...this.widget.path,
-              ...path,
-              goalId
-            ],
+            goalPath: fullGoalPath,
             hasRenderableChildren: this
                 .widget
                 .goalMap[goalId]!
@@ -97,7 +92,9 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
                 .isNotEmpty,
           ));
 
-          if (!expandedGoalIds.contains(goalId)) {
+          if (expandedGoalPaths
+                  .firstWhereOrNull((p) => pathsMatch(p, fullGoalPath)) ==
+              null) {
             return TraversalDecision.dontRecurse;
           }
         },

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart'
@@ -22,6 +21,8 @@ import 'providers.dart'
         pathsMatch,
         selectedGoalsProvider,
         selectedGoalsStream;
+
+import 'package:collection/collection.dart' show IterableExtension;
 
 enum GoalItemDragHandle {
   none,
@@ -137,7 +138,9 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
   Widget build(BuildContext context) {
     final expandedGoals =
         ref.watch(expandedGoalsProvider).value ?? expandedGoalsStream.value;
-    final isExpanded = expandedGoals.contains(widget.goal.id);
+    final isExpanded = expandedGoals
+            .firstWhereOrNull((p) => pathsMatch(p, this.widget.path)) !=
+        null;
     final selectedGoals =
         ref.watch(selectedGoalsProvider).value ?? selectedGoalsStream.value;
     final hasMouse = ref.watch(hasMouseProvider);
@@ -282,7 +285,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                               height: 32,
                               child: IconButton(
                                   padding: EdgeInsets.zero,
-                                  onPressed: () => onExpanded(widget.goal.id),
+                                  onPressed: () => onExpanded(widget.path),
                                   icon: Icon(
                                       size: 24,
                                       isExpanded

@@ -31,6 +31,5 @@ class GlassGoalsIconButton extends StatelessWidget {
         ),
       ),
     );
-    ;
   }
 }

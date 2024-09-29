@@ -148,19 +148,19 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
   }
 
-  _onExpanded(String goalId, {bool? expanded}) {
+  _onExpanded(List<String> goalPath, {bool? expanded}) {
     setState(() {
       if (expanded != null) {
         if (expanded) {
-          addId(expandedGoalsStream, goalId);
+          addPath(expandedGoalsStream, goalPath);
         } else {
-          removeId(expandedGoalsStream, goalId);
+          removePath(expandedGoalsStream, goalPath);
         }
       } else {
-        toggleId(expandedGoalsStream, goalId);
+        togglePath(expandedGoalsStream, goalPath);
       }
       Hive.box('goals_web.ui')
-          .put('expandedGoals', expandedGoalsStream.value.toList());
+          .put('expandedPaths', expandedGoalsStream.value.toList());
     });
   }
 
@@ -353,11 +353,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       as List<dynamic>)
                   .cast<String>()
             });
-            expandedGoalsStream.add({
-              ...(box.get('expandedGoals', defaultValue: <String>[])
+            expandedGoalsStream.add([
+              ...(box.get('expandedPaths', defaultValue: <List<String>>[])
                       as List<dynamic>)
-                  .cast<String>()
-            });
+                  .cast<List<String>>()
+            ]);
 
             final modeString = box.get('goalViewerDisplayMode',
                 defaultValue: GoalViewMode.tree.name);

@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 import 'package:rxdart/rxdart.dart' show BehaviorSubject, CombineLatestStream;
 
 import '../common/time_slice.dart';
+import 'package:collection/collection.dart' show IterableExtension;
 
 final selectedGoalsStream = BehaviorSubject<Set<String>>.seeded({});
 
@@ -33,9 +34,39 @@ removeId(BehaviorSubject<Set<String>> idSetSubject, String id) {
   idSetSubject.add(existingIdSet);
 }
 
-final expandedGoalsStream = BehaviorSubject<Set<String>>.seeded({});
+final expandedGoalsStream = BehaviorSubject<List<List<String>>>.seeded([]);
 
 final expandedGoalsProvider = StreamProvider((_) => expandedGoalsStream);
+
+togglePath(
+    BehaviorSubject<List<List<String>>> pathListSubject, List<String> path) {
+  final existingPathList = [...pathListSubject.value];
+  if (pathListSubject.value.firstWhereOrNull((p) => pathsMatch(p, path)) !=
+      null) {
+    existingPathList.removeWhere((p) => pathsMatch(p, path));
+  } else {
+    existingPathList.add(path);
+  }
+  pathListSubject.add(existingPathList);
+}
+
+addPath(
+    BehaviorSubject<List<List<String>>> pathListSubject, List<String> path) {
+  if (pathListSubject.value.firstWhereOrNull((p) => pathsMatch(p, path)) !=
+      null) return;
+  final existingPathList = [...pathListSubject.value];
+  existingPathList.add(path);
+  pathListSubject.add(existingPathList);
+}
+
+removePath(
+    BehaviorSubject<List<List<String>>> pathListSubject, List<String> path) {
+  if (pathListSubject.value.firstWhereOrNull((p) => pathsMatch(p, path)) ==
+      null) return;
+  final existingPathList = [...pathListSubject.value];
+  existingPathList.removeWhere((p) => pathsMatch(p, path));
+  pathListSubject.add(existingPathList);
+}
 
 final focusedGoalStream = BehaviorSubject<String?>.seeded(null);
 final focusedGoalProvider = StreamProvider((_) => focusedGoalStream);

@@ -15,8 +15,7 @@ import 'package:flutter/material.dart'
         showDialog,
         showTimePicker;
 import 'package:flutter/painting.dart' show FractionalOffset;
-import 'package:flutter/rendering.dart'
-    show CrossAxisAlignment, MainAxisAlignment, MainAxisSize;
+import 'package:flutter/rendering.dart' show CrossAxisAlignment, MainAxisSize;
 import 'package:flutter/widgets.dart'
     show BuildContext, Expanded, Icon, Row, StreamBuilder, Text, Widget;
 import 'package:goals_core/model.dart'
@@ -234,7 +233,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
               child: GlassGoalsIconButton(
                   icon: Icons.add,
                   onPressed: () {
-                    onExpanded(widget.goalId!, expanded: true);
+                    onExpanded(widget.path!, expanded: true);
                     textFocusStream
                         .add([...widget.path!, NEW_GOAL_PLACEHOLDER]);
                   })),
