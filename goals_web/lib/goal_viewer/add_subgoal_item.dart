@@ -1,7 +1,24 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart' show Colors, Icons, TextField;
+import 'package:flutter/services.dart' show SystemMouseCursors, TextSelection;
+import 'package:flutter/widgets.dart'
+    show
+        Actions,
+        BuildContext,
+        CallbackAction,
+        Center,
+        FocusNode,
+        GestureDetector,
+        Icon,
+        IntrinsicWidth,
+        MouseRegion,
+        Row,
+        SizedBox,
+        Text,
+        TextEditingController,
+        Widget;
 import 'package:goals_web/goal_viewer/providers.dart';
-import 'package:goals_web/intents.dart';
+import 'package:goals_web/intents.dart'
+    show AcceptIntent, ActivateIntent, CancelIntent;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
 

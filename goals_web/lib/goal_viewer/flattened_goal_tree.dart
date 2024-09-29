@@ -219,14 +219,6 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
           }
         },
       ),
-      ActivateIntent: CallbackAction(
-        onInvoke: (_) {
-          final goalId = hoverEventStream.value?.last;
-          if (goalId != null) {
-            GoalActionsContext.of(context).onFocused(goalId);
-          }
-        },
-      ),
     }, child: Column(children: goalItems));
   }
 }

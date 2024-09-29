@@ -1,6 +1,45 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'
+    show Colors, IconButton, Icons, TextField;
+import 'package:flutter/painting.dart'
+    show
+        BorderRadius,
+        BoxDecoration,
+        BoxShape,
+        EdgeInsets,
+        EdgeInsetsGeometry,
+        TextDecoration,
+        TextOverflow,
+        TextStyle;
+import 'package:flutter/rendering.dart'
+    show HitTestBehavior, MainAxisAlignment, MainAxisSize;
+import 'package:flutter/services.dart' show SystemMouseCursors, TextSelection;
+import 'package:flutter/widgets.dart'
+    show
+        Actions,
+        BuildContext,
+        CallbackAction,
+        Center,
+        Container,
+        DragTarget,
+        Draggable,
+        Flexible,
+        Focus,
+        FocusNode,
+        GestureDetector,
+        Icon,
+        IntrinsicWidth,
+        MediaQuery,
+        MouseRegion,
+        Padding,
+        Row,
+        SizedBox,
+        StreamBuilder,
+        Text,
+        TextEditingController,
+        Widget,
+        pointerDragAnchorStrategy;
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart'
@@ -321,6 +360,11 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
             this._updateGoal();
           },
         ),
+        if (!this._editing)
+          ActivateIntent:
+              CallbackAction<ActivateIntent>(onInvoke: (ActivateIntent intent) {
+            onFocused.call(widget.goal.id);
+          })
       },
       child: DragTarget<GoalDragDetails>(
         onAcceptWithDetails: (deets) =>
