@@ -469,6 +469,9 @@ SetSummaryEntry? hasSummary(Goal? goal) {
 
   for (final entry in goal.log) {
     if (entry is SetSummaryEntry) {
+      if (entry.text == null || entry.text!.isEmpty) {
+        return null;
+      }
       return entry;
     }
   }

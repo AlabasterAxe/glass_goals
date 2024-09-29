@@ -42,6 +42,7 @@ import 'package:goals_core/sync.dart'
         StatusLogEntry;
 import 'package:goals_web/app_bar.dart';
 import 'package:goals_web/app_context.dart';
+import 'package:goals_web/common/constants.dart';
 import 'package:goals_web/common/os_utils.dart';
 import 'package:goals_web/goal_viewer/debug_panel.dart';
 import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
@@ -752,7 +753,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         id: goalId,
         logEntry: SetSummaryEntry(
             id: Uuid().v4(),
-            text: "[Your Summary Here]",
+            text: DEFAULT_SUMMARY_TEXT,
             creationTime: DateTime.now())));
   }
 

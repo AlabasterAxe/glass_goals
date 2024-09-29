@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' show Icons, TextField;
+import 'package:flutter/material.dart' show Colors, Icons, TextField;
 import 'package:flutter/painting.dart'
     show EdgeInsets, TextBaseline, TextScaler, TextStyle;
 import 'package:flutter/widgets.dart'
@@ -30,6 +30,7 @@ import 'package:goals_core/sync.dart'
     show ArchiveNoteLogEntry, GoalDelta, NoteLogEntry, SetSummaryEntry;
 import 'package:goals_core/util.dart' show formatDate, formatTime;
 import 'package:goals_web/app_context.dart' show AppContext;
+import 'package:goals_web/common/constants.dart';
 import 'package:goals_web/goal_viewer/goal_breadcrumb.dart';
 import 'package:goals_web/intents.dart';
 import 'package:goals_web/styles.dart';
@@ -218,6 +219,12 @@ class _NoteCardState extends State<NoteCard> {
                   onTapText: () {
                     if (!widget.isChildGoal) {
                       setState(() {
+                        if (_textController.text == DEFAULT_SUMMARY_TEXT) {
+                          _textController.selection = TextSelection(
+                              baseOffset: 0,
+                              extentOffset: _textController.text.length);
+                        }
+
                         _editing = true;
                         _focusNode.requestFocus();
                       });
@@ -234,7 +241,10 @@ class _NoteCardState extends State<NoteCard> {
                     }
                   },
                   styleSheet: MarkdownStyleSheet(
-                    textScaler: TextScaler.linear(1.4),
+                    textScaler: TextScaler.linear(1.05),
+                    p: _textController.text == DEFAULT_SUMMARY_TEXT
+                        ? mainTextStyle.copyWith(color: Colors.black54)
+                        : mainTextStyle,
                   )),
         ),
       ],
