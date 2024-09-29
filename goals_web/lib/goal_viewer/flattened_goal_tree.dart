@@ -1,18 +1,20 @@
 import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
-    show BuildContext, Column, MediaQuery, Widget;
-import 'package:goals_core/model.dart'
     show
-        Goal,
-        TraversalDecision,
-        WorldContext,
-        getPriorityComparator,
-        traverseDown;
+        Actions,
+        BuildContext,
+        CallbackAction,
+        Column,
+        FocusableActionDetector,
+        Widget;
+import 'package:goals_core/model.dart'
+    show Goal, TraversalDecision, getPriorityComparator, traverseDown;
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart'
     show HoverActionsBuilder;
+import 'package:goals_web/intents.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show ConsumerWidget, WidgetRef;
+    show ConsumerState, ConsumerStatefulWidget;
 import '../styles.dart';
 import 'goal_actions_context.dart';
 import 'goal_item.dart';
@@ -26,7 +28,7 @@ typedef FlattenedGoalItem = ({
   bool hasRenderableChildren,
 });
 
-class FlattenedGoalTree extends ConsumerWidget {
+class FlattenedGoalTree extends ConsumerStatefulWidget {
   final Map<String, Goal> goalMap;
   final List<String> rootGoalIds;
   final int? depthLimit;
@@ -47,26 +49,51 @@ class FlattenedGoalTree extends ConsumerWidget {
     required this.section,
   });
 
-  List<FlattenedGoalItem> _getFlattenedGoalItems(WorldContext context,
-      Set<String> expandedGoalIds, List<String>? textFocus) {
+  @override
+  ConsumerState<FlattenedGoalTree> createState() => _FlattenedGoalTreeState();
+}
+
+class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
+  List<FlattenedGoalItem> _flattenedGoalItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _updateFlattenedGoalItems();
+  }
+
+  void _updateFlattenedGoalItems() {
+    final context =
+        ref.read(worldContextProvider).value ?? worldContextStream.value;
+    final expandedGoalIds =
+        ref.read(expandedGoalsProvider).value ?? expandedGoalsStream.value;
+    final textFocus =
+        ref.read(textFocusProvider).value ?? textFocusStream.value;
     final priorityComparator = getPriorityComparator(context);
     final List<FlattenedGoalItem> flattenedGoals = [];
     for (final Goal goal in this
+        .widget
         .rootGoalIds
-        .map((id) => this.goalMap[id])
+        .map((id) => this.widget.goalMap[id])
         .where((goal) => goal != null)
         .cast<Goal>()
         .sorted(priorityComparator)) {
       traverseDown(
-        this.goalMap,
+        this.widget.goalMap,
         goal.id,
         onVisit: (goalId, path) {
           flattenedGoals.add((
-            goalPath: [this.section, ...this.path, ...path, goalId],
+            goalPath: [
+              this.widget.section,
+              ...this.widget.path,
+              ...path,
+              goalId
+            ],
             hasRenderableChildren: this
+                .widget
                 .goalMap[goalId]!
                 .subGoalIds
-                .where((gId) => this.goalMap.containsKey(gId))
+                .where((gId) => this.widget.goalMap.containsKey(gId))
                 .isNotEmpty,
           ));
 
@@ -76,13 +103,13 @@ class FlattenedGoalTree extends ConsumerWidget {
         },
         onDepart: (String goalId, List<String> path) {
           final addGoalPath = [
-            this.section,
-            ...this.path,
+            this.widget.section,
+            ...this.widget.path,
             ...path,
             goalId,
             NEW_GOAL_PLACEHOLDER
           ];
-          if (this.showAddGoal && pathsMatch(addGoalPath, textFocus)) {
+          if (this.widget.showAddGoal && pathsMatch(addGoalPath, textFocus)) {
             flattenedGoals.add((
               goalPath: addGoalPath,
               hasRenderableChildren: false,
@@ -92,45 +119,58 @@ class FlattenedGoalTree extends ConsumerWidget {
         childTraversalComparator: priorityComparator,
       );
     }
-    if (this.showAddGoal) {
+    if (this.widget.showAddGoal) {
       flattenedGoals.add((
-        goalPath: [this.section, ...this.path, NEW_GOAL_PLACEHOLDER],
+        goalPath: [
+          this.widget.section,
+          ...this.widget.path,
+          NEW_GOAL_PLACEHOLDER
+        ],
         hasRenderableChildren: false,
       ));
     }
-    return flattenedGoals;
+    setState(() {
+      _flattenedGoalItems = flattenedGoals;
+    });
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final expandedGoalIds =
-        ref.watch(expandedGoalsProvider).value ?? expandedGoalsStream.value;
-    final worldContext =
-        ref.watch(worldContextProvider).value ?? worldContextStream.value;
-    final textFocus =
-        ref.watch(textFocusProvider).value ?? textFocusStream.value;
-    final flattenedGoalItems =
-        _getFlattenedGoalItems(worldContext, expandedGoalIds, textFocus);
-    final isNarrow = MediaQuery.of(context).size.width < 600;
+  void didUpdateWidget(FlattenedGoalTree oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.goalMap != this.widget.goalMap ||
+        oldWidget.rootGoalIds != this.widget.rootGoalIds ||
+        oldWidget.path != this.widget.path) {
+      _updateFlattenedGoalItems();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(expandedGoalsProvider, (_, __) => _updateFlattenedGoalItems());
+    ref.listen(worldContextProvider, (_, __) => _updateFlattenedGoalItems());
+    ref.listen(textFocusProvider, (_, __) => _updateFlattenedGoalItems());
+
     final hasMouse = ref.watch(hasMouseProvider);
 
     final goalItems = <Widget>[];
     final onDropGoal = GoalActionsContext.of(context).onDropGoal;
 
-    for (int i = 0; i < flattenedGoalItems.length; i++) {
-      final prevGoal = i > 0 ? flattenedGoalItems[i - 1] : null;
-      final flattenedGoal = flattenedGoalItems[i];
+    for (int i = 0; i < this._flattenedGoalItems.length; i++) {
+      final prevGoal = i > 0 ? this._flattenedGoalItems[i - 1] : null;
+      final flattenedGoal = this._flattenedGoalItems[i];
       final goalId = flattenedGoal.goalPath.last;
       goalItems.add(GoalSeparator(
           isFirst: i == 0,
-          prevGoalPath: prevGoal?.goalPath ?? [section, ...this.path],
+          prevGoalPath:
+              prevGoal?.goalPath ?? [widget.section, ...this.widget.path],
           nextGoalPath: flattenedGoal.goalPath,
-          path: this.path,
-          goalMap: this.goalMap,
+          path: this.widget.path,
+          goalMap: this.widget.goalMap,
           onDropGoal: (goalDragDetails) {
             onDropGoal(goalDragDetails.goalId,
                 sourcePath: goalDragDetails.sourcePath,
-                prevDropPath: prevGoal?.goalPath ?? [section, ...this.path],
+                prevDropPath:
+                    prevGoal?.goalPath ?? [widget.section, ...this.widget.path],
                 nextDropPath: flattenedGoal.goalPath);
           }));
       goalItems.add(goalId != NEW_GOAL_PLACEHOLDER
@@ -144,12 +184,13 @@ class FlattenedGoalTree extends ConsumerWidget {
               },
               padding: EdgeInsets.only(
                   left: uiUnit(4) *
-                      (flattenedGoal.goalPath.length - (2 + this.path.length))),
-              goal: this.goalMap[goalId]!,
-              hoverActionsBuilder: this.hoverActionsBuilder,
+                      (flattenedGoal.goalPath.length -
+                          (2 + this.widget.path.length))),
+              goal: this.widget.goalMap[goalId]!,
+              hoverActionsBuilder: this.widget.hoverActionsBuilder,
               hasRenderableChildren: flattenedGoal.hasRenderableChildren,
               showExpansionArrow:
-                  flattenedGoal.hasRenderableChildren || showAddGoal,
+                  flattenedGoal.hasRenderableChildren || widget.showAddGoal,
               dragHandle: !hasMouse
                   ? GoalItemDragHandle.bullet
                   : GoalItemDragHandle.item,
@@ -159,6 +200,36 @@ class FlattenedGoalTree extends ConsumerWidget {
               path: flattenedGoal.goalPath,
             ));
     }
-    return Column(children: goalItems);
+    return Actions(actions: {
+      NextIntent: CallbackAction(
+        onInvoke: (_) {
+          final hoveredIndex = _flattenedGoalItems.indexWhere(
+              (item) => pathsMatch(item.goalPath, hoverEventStream.value));
+          if (hoveredIndex != -1 &&
+              hoveredIndex < _flattenedGoalItems.length - 1) {
+            hoverEventStream
+                .add(_flattenedGoalItems[hoveredIndex + 1].goalPath);
+          }
+        },
+      ),
+      PreviousIntent: CallbackAction(
+        onInvoke: (_) {
+          final hoveredIndex = _flattenedGoalItems.indexWhere(
+              (item) => pathsMatch(item.goalPath, hoverEventStream.value));
+          if (hoveredIndex != -1 && hoveredIndex > 0) {
+            hoverEventStream
+                .add(_flattenedGoalItems[hoveredIndex - 1].goalPath);
+          }
+        },
+      ),
+      ActivateIntent: CallbackAction(
+        onInvoke: (_) {
+          final goalId = hoverEventStream.value?.last;
+          if (goalId != null) {
+            GoalActionsContext.of(context).onFocused(goalId);
+          }
+        },
+      ),
+    }, child: Column(children: goalItems));
   }
 }

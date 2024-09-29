@@ -32,6 +32,9 @@ bool isMetaHeld() => META_KEYS.any(isKeyPressed);
 final _PLATFORM_AGNOSTIC_SHORTCUTS = <ShortcutActivator, Intent>{
   SingleActivator(LogicalKeyboardKey.escape): const CancelIntent(),
   SingleActivator(LogicalKeyboardKey.enter): const AcceptIntent(),
+  SingleActivator(LogicalKeyboardKey.arrowDown): const NextIntent(),
+  SingleActivator(LogicalKeyboardKey.arrowUp): const PreviousIntent(),
+  SingleActivator(LogicalKeyboardKey.space): const ActivateIntent(),
 };
 
 final SHORTCUTS = <ShortcutActivator, Intent>{

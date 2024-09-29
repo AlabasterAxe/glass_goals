@@ -69,10 +69,14 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     super.initState();
 
     subscriptions.add(hoverEventStream.listen((id) {
-      if (id != widget.goal.id) {
+      if (id?.lastOrNull != widget.goal.id) {
         setState(() {
           _hovering = false;
         });
+      }
+
+      if (pathsMatch(id, this.widget.path)) {
+        this._focusNode.requestFocus();
       }
     }));
   }
@@ -220,48 +224,51 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                   ),
                                 )
                               : Flexible(
-                                  child: MouseRegion(
-                                    cursor: SystemMouseCursors.text,
-                                    child: GestureDetector(
-                                      onTap: hasMouse
-                                          ? () {
-                                              this._textController.text =
-                                                  widget.goal.text;
-                                              _focusNode.requestFocus();
-                                              this._textController.selection =
-                                                  TextSelection(
-                                                      baseOffset: 0,
-                                                      extentOffset:
-                                                          _textController
-                                                              .text.length);
-                                              setState(() {
-                                                _editing = true;
-                                              });
-                                            }
-                                          : null,
-                                      onLongPress: () {
-                                        this._textController.text =
-                                            widget.goal.text;
-                                        _focusNode.requestFocus();
-                                        this._textController.selection =
-                                            TextSelection(
-                                                baseOffset: 0,
-                                                extentOffset: _textController
-                                                    .text.length);
-                                        setState(() {
-                                          _editing = true;
-                                        });
-                                      },
-                                      child: Text(widget.goal.text,
-                                          style: (isSelected
-                                                  ? focusedFontStyle
-                                                      .merge(mainTextStyle)
-                                                  : mainTextStyle)
-                                              .copyWith(
-                                            decoration:
-                                                TextDecoration.underline,
-                                            overflow: TextOverflow.ellipsis,
-                                          )),
+                                  child: Focus(
+                                    focusNode: _focusNode,
+                                    child: MouseRegion(
+                                      cursor: SystemMouseCursors.text,
+                                      child: GestureDetector(
+                                        onTap: hasMouse
+                                            ? () {
+                                                this._textController.text =
+                                                    widget.goal.text;
+                                                _focusNode.requestFocus();
+                                                this._textController.selection =
+                                                    TextSelection(
+                                                        baseOffset: 0,
+                                                        extentOffset:
+                                                            _textController
+                                                                .text.length);
+                                                setState(() {
+                                                  _editing = true;
+                                                });
+                                              }
+                                            : null,
+                                        onLongPress: () {
+                                          this._textController.text =
+                                              widget.goal.text;
+                                          _focusNode.requestFocus();
+                                          this._textController.selection =
+                                              TextSelection(
+                                                  baseOffset: 0,
+                                                  extentOffset: _textController
+                                                      .text.length);
+                                          setState(() {
+                                            _editing = true;
+                                          });
+                                        },
+                                        child: Text(widget.goal.text,
+                                            style: (isSelected
+                                                    ? focusedFontStyle
+                                                        .merge(mainTextStyle)
+                                                    : mainTextStyle)
+                                                .copyWith(
+                                              decoration:
+                                                  TextDecoration.underline,
+                                              overflow: TextOverflow.ellipsis,
+                                            )),
+                                      ),
                                     ),
                                   ),
                                 ),

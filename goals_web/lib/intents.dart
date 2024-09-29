@@ -27,3 +27,15 @@ class AcceptIntent extends Intent {
 class RedoIntent extends Intent {
   const RedoIntent();
 }
+
+class NextIntent extends Intent {
+  const NextIntent();
+}
+
+class PreviousIntent extends Intent {
+  const PreviousIntent();
+}
+
+class ActivateIntent extends Intent {
+  const ActivateIntent();
+}
