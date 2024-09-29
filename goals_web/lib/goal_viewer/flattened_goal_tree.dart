@@ -125,6 +125,7 @@ class FlattenedGoalTree extends ConsumerWidget {
           isFirst: i == 0,
           prevGoalPath: prevGoal?.goalPath ?? [section, ...this.path],
           nextGoalPath: flattenedGoal.goalPath,
+          path: this.path,
           goalMap: this.goalMap,
           onDropGoal: (goalDragDetails) {
             onDropGoal(goalDragDetails.goalId,
@@ -132,33 +133,31 @@ class FlattenedGoalTree extends ConsumerWidget {
                 prevDropPath: prevGoal?.goalPath ?? [section, ...this.path],
                 nextDropPath: flattenedGoal.goalPath);
           }));
-      goalItems.add(Padding(
-        padding: EdgeInsets.only(
-            left: uiUnit(4) *
-                (flattenedGoal.goalPath.length - (2 + this.path.length))),
-        child: goalId != NEW_GOAL_PLACEHOLDER
-            ? GoalItemWidget(
-                onDropGoal: (details) {
-                  onDropGoal(
-                    details.goalId,
-                    sourcePath: details.sourcePath,
-                    dropPath: flattenedGoal.goalPath,
-                  );
-                },
-                goal: this.goalMap[goalId]!,
-                hoverActionsBuilder: this.hoverActionsBuilder,
-                hasRenderableChildren: flattenedGoal.hasRenderableChildren,
-                showExpansionArrow:
-                    flattenedGoal.hasRenderableChildren || showAddGoal,
-                dragHandle: !hasMouse
-                    ? GoalItemDragHandle.bullet
-                    : GoalItemDragHandle.item,
-                path: flattenedGoal.goalPath,
-              )
-            : AddSubgoalItemWidget(
-                path: flattenedGoal.goalPath,
-              ),
-      ));
+      goalItems.add(goalId != NEW_GOAL_PLACEHOLDER
+          ? GoalItemWidget(
+              onDropGoal: (details) {
+                onDropGoal(
+                  details.goalId,
+                  sourcePath: details.sourcePath,
+                  dropPath: flattenedGoal.goalPath,
+                );
+              },
+              padding: EdgeInsets.only(
+                  left: uiUnit(4) *
+                      (flattenedGoal.goalPath.length - (2 + this.path.length))),
+              goal: this.goalMap[goalId]!,
+              hoverActionsBuilder: this.hoverActionsBuilder,
+              hasRenderableChildren: flattenedGoal.hasRenderableChildren,
+              showExpansionArrow:
+                  flattenedGoal.hasRenderableChildren || showAddGoal,
+              dragHandle: !hasMouse
+                  ? GoalItemDragHandle.bullet
+                  : GoalItemDragHandle.item,
+              path: flattenedGoal.goalPath,
+            )
+          : AddSubgoalItemWidget(
+              path: flattenedGoal.goalPath,
+            ));
     }
     return Column(children: goalItems);
   }

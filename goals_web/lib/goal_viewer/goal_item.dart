@@ -38,6 +38,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
   final GoalItemDragHandle dragHandle;
   final Function(GoalDragDetails goalId)? onDropGoal;
   final List<String> path;
+  final EdgeInsetsGeometry padding;
 
   const GoalItemWidget({
     super.key,
@@ -48,6 +49,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
     this.dragHandle = GoalItemDragHandle.none,
     this.onDropGoal,
     this.path = const [],
+    this.padding = const EdgeInsets.all(0),
   });
 
   @override
@@ -185,109 +187,113 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                       ? emphasizedLightBackground
                       : Colors.transparent,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        widget.dragHandle == GoalItemDragHandle.bullet
-                            ? _dragWrapWidget(
-                                child: bullet,
-                                isSelected: isSelected,
-                                selectedGoals: selectedGoals)
-                            : bullet,
-                        _editing
-                            ? IntrinsicWidth(
-                                child: TextField(
-                                  autocorrect: false,
-                                  controller: _textController,
-                                  decoration: null,
+                child: Padding(
+                  padding: widget.padding,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          widget.dragHandle == GoalItemDragHandle.bullet
+                              ? _dragWrapWidget(
+                                  child: bullet,
+                                  isSelected: isSelected,
+                                  selectedGoals: selectedGoals)
+                              : bullet,
+                          _editing
+                              ? IntrinsicWidth(
+                                  child: TextField(
+                                    autocorrect: false,
+                                    controller: _textController,
+                                    decoration: null,
 
-                                  // NOTE: this is a workaround so that the text field doesn't
-                                  // auto-highlight when switching between windows.
-                                  maxLines: null,
-                                  style: mainTextStyle,
-                                  onEditingComplete: this._updateGoal,
-                                  onTapOutside: (_) {
-                                    _updateGoal();
-                                  },
-                                  focusNode: _focusNode,
-                                ),
-                              )
-                            : Flexible(
-                                child: MouseRegion(
-                                  cursor: SystemMouseCursors.text,
-                                  child: GestureDetector(
-                                    onTap: hasMouse
-                                        ? () {
-                                            this._textController.text =
-                                                widget.goal.text;
-                                            _focusNode.requestFocus();
-                                            this._textController.selection =
-                                                TextSelection(
-                                                    baseOffset: 0,
-                                                    extentOffset:
-                                                        _textController
-                                                            .text.length);
-                                            setState(() {
-                                              _editing = true;
-                                            });
-                                          }
-                                        : null,
-                                    onLongPress: () {
-                                      this._textController.text =
-                                          widget.goal.text;
-                                      _focusNode.requestFocus();
-                                      this._textController.selection =
-                                          TextSelection(
-                                              baseOffset: 0,
-                                              extentOffset:
-                                                  _textController.text.length);
-                                      setState(() {
-                                        _editing = true;
-                                      });
+                                    // NOTE: this is a workaround so that the text field doesn't
+                                    // auto-highlight when switching between windows.
+                                    maxLines: null,
+                                    style: mainTextStyle,
+                                    onEditingComplete: this._updateGoal,
+                                    onTapOutside: (_) {
+                                      _updateGoal();
                                     },
-                                    child: Text(widget.goal.text,
-                                        style: (isSelected
-                                                ? focusedFontStyle
-                                                    .merge(mainTextStyle)
-                                                : mainTextStyle)
-                                            .copyWith(
-                                          decoration: TextDecoration.underline,
-                                          overflow: TextOverflow.ellipsis,
-                                        )),
+                                    focusNode: _focusNode,
+                                  ),
+                                )
+                              : Flexible(
+                                  child: MouseRegion(
+                                    cursor: SystemMouseCursors.text,
+                                    child: GestureDetector(
+                                      onTap: hasMouse
+                                          ? () {
+                                              this._textController.text =
+                                                  widget.goal.text;
+                                              _focusNode.requestFocus();
+                                              this._textController.selection =
+                                                  TextSelection(
+                                                      baseOffset: 0,
+                                                      extentOffset:
+                                                          _textController
+                                                              .text.length);
+                                              setState(() {
+                                                _editing = true;
+                                              });
+                                            }
+                                          : null,
+                                      onLongPress: () {
+                                        this._textController.text =
+                                            widget.goal.text;
+                                        _focusNode.requestFocus();
+                                        this._textController.selection =
+                                            TextSelection(
+                                                baseOffset: 0,
+                                                extentOffset: _textController
+                                                    .text.length);
+                                        setState(() {
+                                          _editing = true;
+                                        });
+                                      },
+                                      child: Text(widget.goal.text,
+                                          style: (isSelected
+                                                  ? focusedFontStyle
+                                                      .merge(mainTextStyle)
+                                                  : mainTextStyle)
+                                              .copyWith(
+                                            decoration:
+                                                TextDecoration.underline,
+                                            overflow: TextOverflow.ellipsis,
+                                          )),
+                                    ),
                                   ),
                                 ),
-                              ),
-                        SizedBox(width: uiUnit(2)),
-                        // chip-like container widget around text status widget:
-                        CurrentStatusChip(goal: widget.goal),
-                        if (this.widget.showExpansionArrow &&
-                            widget.hasRenderableChildren)
-                          SizedBox(
-                            width: 32,
-                            height: 32,
-                            child: IconButton(
-                                padding: EdgeInsets.zero,
-                                onPressed: () => onExpanded(widget.goal.id),
-                                icon: Icon(
-                                    size: 24,
-                                    isExpanded
-                                        ? Icons.arrow_drop_down
-                                        : Icons.arrow_right)),
-                          ),
-                      ]),
-                    ),
-                    if (!isNarrow &&
-                        !_editing &&
-                        (isSelected ||
-                            _hovering ||
-                            hoveredGoalSnapshot.hasData &&
-                                pathsMatch(hoveredGoalSnapshot.requireData,
-                                    this.widget.path)))
-                      widget.hoverActionsBuilder([...this.widget.path])
-                  ],
+                          SizedBox(width: uiUnit(2)),
+                          // chip-like container widget around text status widget:
+                          CurrentStatusChip(goal: widget.goal),
+                          if (this.widget.showExpansionArrow &&
+                              widget.hasRenderableChildren)
+                            SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: IconButton(
+                                  padding: EdgeInsets.zero,
+                                  onPressed: () => onExpanded(widget.goal.id),
+                                  icon: Icon(
+                                      size: 24,
+                                      isExpanded
+                                          ? Icons.arrow_drop_down
+                                          : Icons.arrow_right)),
+                            ),
+                        ]),
+                      ),
+                      if (!isNarrow &&
+                          !_editing &&
+                          (isSelected ||
+                              _hovering ||
+                              hoveredGoalSnapshot.hasData &&
+                                  pathsMatch(hoveredGoalSnapshot.requireData,
+                                      this.widget.path)))
+                        widget.hoverActionsBuilder([...this.widget.path])
+                    ],
+                  ),
                 ),
               );
             }),
@@ -310,12 +316,12 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         onAcceptWithDetails: (deets) =>
             this.widget.onDropGoal?.call(deets.data),
         onMove: (details) {
-          setState(() {
-            if (!_hovering) {
+          if (!_hovering) {
+            hoverEventStream.add(this.widget.path);
+            setState(() {
               _hovering = true;
-              hoverEventStream.add(this.widget.path);
-            }
-          });
+            });
+          }
         },
         builder: (context, _, __) =>
             widget.dragHandle == GoalItemDragHandle.item

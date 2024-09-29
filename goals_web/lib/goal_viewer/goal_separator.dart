@@ -15,6 +15,7 @@ class GoalSeparator extends StatefulWidget {
   final List<String> nextGoalPath;
   final bool isFirst;
   final Function(GoalDragDetails)? onDropGoal;
+  final List<String> path;
   const GoalSeparator({
     super.key,
     required this.goalMap,
@@ -22,6 +23,7 @@ class GoalSeparator extends StatefulWidget {
     required this.nextGoalPath,
     this.onDropGoal,
     required this.isFirst,
+    this.path = const [],
   });
 
   @override
@@ -29,10 +31,9 @@ class GoalSeparator extends StatefulWidget {
 }
 
 class _GoalSeparatorState extends State<GoalSeparator> {
-  bool _hovered = false;
   bool _dragHovered = false;
 
-  bool _hoverUpdateSent = false;
+  bool _adjacentHover = false;
 
   late StreamSubscription _hoverEventSubscription;
 
@@ -40,20 +41,18 @@ class _GoalSeparatorState extends State<GoalSeparator> {
   initState() {
     super.initState();
 
-    this._hoverEventSubscription = hoverEventStream.listen((event) {
-      if (pathsMatch(event, this.widget.nextGoalPath) ||
-          pathsMatch(event, this.widget.prevGoalPath)) {
-        if (!_hovered) {
+    this._hoverEventSubscription = hoverEventStream.listen((newHoveredPath) {
+      if (pathsMatch(newHoveredPath, this.widget.nextGoalPath) ||
+          pathsMatch(newHoveredPath, this.widget.prevGoalPath)) {
+        if (!this._adjacentHover) {
           setState(() {
-            _hovered = true;
+            this._adjacentHover = true;
           });
         }
       } else {
-        _hoverUpdateSent = false;
-
-        if (_hovered) {
+        if (this._adjacentHover) {
           setState(() {
-            _hovered = false;
+            this._adjacentHover = false;
           });
         }
       }
@@ -95,15 +94,18 @@ class _GoalSeparatorState extends State<GoalSeparator> {
         }
       },
       builder: (_, __, ___) => Padding(
-        padding:
-            EdgeInsets.only(left: uiUnit(4) * (widget.nextGoalPath.length - 2)),
+        padding: EdgeInsets.only(
+            left: this._dragHovered
+                ? uiUnit(4) *
+                    (widget.nextGoalPath.length - (1 + this.widget.path.length))
+                : 0),
         child: Stack(
           children: [
             SizedBox(
               height: uiUnit(2),
               child: Center(
                 child: Container(
-                  color: this._hovered || this._dragHovered
+                  color: this._adjacentHover || this._dragHovered
                       ? darkElementColor
                       : Colors.transparent,
                   height: 2,
@@ -114,7 +116,9 @@ class _GoalSeparatorState extends State<GoalSeparator> {
               Positioned(
                 child: MouseRegion(
                     onHover: (event) {
-                      if (this.widget.prevGoalPath.isNotEmpty &&
+                      if (!pathsMatch(hoverEventStream.value,
+                              this.widget.prevGoalPath) &&
+                          this.widget.prevGoalPath.isNotEmpty &&
                           this.widget.prevGoalPath.last !=
                               NEW_GOAL_PLACEHOLDER) {
                         hoverEventStream.add(this.widget.prevGoalPath);
@@ -134,7 +138,8 @@ class _GoalSeparatorState extends State<GoalSeparator> {
             Positioned(
               child: MouseRegion(
                 onHover: (event) {
-                  if (!this._hoverUpdateSent &&
+                  if (!pathsMatch(
+                          hoverEventStream.value, this.widget.nextGoalPath) &&
                       this.widget.nextGoalPath.isNotEmpty &&
                       this.widget.nextGoalPath.last != NEW_GOAL_PLACEHOLDER) {
                     hoverEventStream.add(this.widget.nextGoalPath);
