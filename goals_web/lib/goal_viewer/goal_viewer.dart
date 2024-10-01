@@ -114,7 +114,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   List<GoalGoalFilter> _goalFilters = [];
 
-  Future<void>? openBoxFuture;
   bool isInitted = false;
   late MultiSplitViewController _multiSplitViewController =
       this._getMultiSplitViewController(ref.read(debugProvider));
@@ -336,50 +335,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
+    // TODO: do I need this?
     _focusNode.requestFocus();
-
-    if (!isInitted) {
-      window.addEventListener('popstate', _handlePopState);
-      setState(() {
-        openBoxFuture = Hive.openBox('goals_web.ui').then((box) {
-          if (mounted) {
-            final focusedGoalId = _parseUrlGoalId();
-            if (focusedGoalId != null) {
-              focusedGoalStream.add(focusedGoalId);
-              addId(selectedGoalsStream, focusedGoalId);
-            }
-            selectedGoalsStream.add({
-              ...(box.get('selectedGoals', defaultValue: <String>[])
-                      as List<dynamic>)
-                  .cast<String>()
-            });
-            expandedGoalsStream.add([
-              ...(box.get('expandedPaths', defaultValue: <List<String>>[])
-                      as List<dynamic>)
-                  .cast<List<String>>()
-            ]);
-
-            final modeString = box.get('goalViewerDisplayMode',
-                defaultValue: GoalViewMode.tree.name);
-            try {
-              _mode = GoalViewMode.values.byName(modeString);
-            } catch (_) {
-              _mode = GoalViewMode.tree;
-            }
-            final filterString = box.get('goalViewerFilter',
-                defaultValue: GoalFilterType.schedule_v2.name);
-
-            try {
-              _filter = PredefinedGoalFilter(
-                  GoalFilterType.values.byName(filterString));
-            } catch (_) {
-              _filter = PredefinedGoalFilter(GoalFilterType.schedule_v2);
-            }
-          }
-        });
-        isInitted = true;
-      });
-    }
   }
 
   @override
@@ -389,6 +346,40 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     _updateGoalFilters();
 
     FocusManager.instance.rootScope.addListener(this._returnFocus);
+    window.addEventListener('popstate', _handlePopState);
+    final focusedGoalId = _parseUrlGoalId();
+    if (focusedGoalId != null) {
+      focusedGoalStream.add(focusedGoalId);
+      addId(selectedGoalsStream, focusedGoalId);
+    }
+
+    final box = Hive.box(UI_STATE_BOX);
+    selectedGoalsStream.add({
+      ...(box.get('selectedGoals', defaultValue: <String>[]) as List<dynamic>)
+          .cast<String>()
+    });
+    expandedGoalsStream.add([
+      ...(box.get('expandedPaths', defaultValue: <List<String>>[])
+              as List<dynamic>)
+          .cast<List<String>>()
+    ]);
+
+    final modeString =
+        box.get('goalViewerDisplayMode', defaultValue: GoalViewMode.tree.name);
+    try {
+      _mode = GoalViewMode.values.byName(modeString);
+    } catch (_) {
+      _mode = GoalViewMode.tree;
+    }
+    final filterString = box.get('goalViewerFilter',
+        defaultValue: GoalFilterType.schedule_v2.name);
+
+    try {
+      _filter =
+          PredefinedGoalFilter(GoalFilterType.values.byName(filterString));
+    } catch (_) {
+      _filter = PredefinedGoalFilter(GoalFilterType.schedule_v2);
+    }
   }
 
   _returnFocus() {
@@ -1019,66 +1010,59 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             ),
           ),
         Expanded(
-          child: SingleChildScrollView(
-              child: FutureBuilder<void>(
-                  future: openBoxFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState != ConnectionState.done) {
-                      return const Text('Loading...');
-                    }
-                    var goalMap = widget.goalMap;
-                    switch (_filter) {
-                      case PredefinedGoalFilter filter:
-                        switch (filter.type) {
-                          case GoalFilterType.all:
-                            final goalIds = _mode == GoalViewMode.tree
-                                ? goalMap.values
-                                    .where((goal) {
-                                      for (final superGoalId
-                                          in goal.superGoalIds) {
-                                        if (goalMap.containsKey(superGoalId)) {
-                                          return false;
-                                        }
-                                      }
-                                      return true;
-                                    })
-                                    .map((e) => e.id)
-                                    .toList()
-                                : (goalMap.values.toList(growable: false)
-                                      ..sort((a, b) => a.text
-                                          .toLowerCase()
-                                          .compareTo(b.text.toLowerCase())))
-                                    .map((g) => g.id)
-                                    .toList();
-                            return FlattenedGoalTree(
-                              section: 'all-goals',
-                              goalMap: goalMap,
-                              rootGoalIds: goalIds,
-                              hoverActionsBuilder: (path) => HoverActionsWidget(
-                                path: path,
-                                goalMap: widget.goalMap,
-                              ),
-                              depthLimit: _mode == GoalViewMode.list ? 1 : null,
-                            );
-                          case GoalFilterType.schedule_v2:
-                            return ScheduledGoalsV2(goalMap: goalMap);
-                          case GoalFilterType.pending_v2:
-                            return PendingGoalViewer(
-                              goalMap: goalMap,
-                              viewKey: 'root',
-                              mode: this._pendingGoalViewMode,
-                            );
-                        }
-                      case GoalGoalFilter filter:
-                        return PendingGoalViewer(
-                          path: [filter.goalId],
-                          viewKey: '',
-                          goalMap: getTransitiveSubGoals(goalMap, filter.goalId)
-                            ..remove(filter.goalId),
-                          mode: this._pendingGoalViewMode,
-                        );
-                    }
-                  })),
+          child: SingleChildScrollView(child: Builder(builder: (context) {
+            var goalMap = widget.goalMap;
+            switch (_filter) {
+              case PredefinedGoalFilter filter:
+                switch (filter.type) {
+                  case GoalFilterType.all:
+                    final goalIds = _mode == GoalViewMode.tree
+                        ? goalMap.values
+                            .where((goal) {
+                              for (final superGoalId in goal.superGoalIds) {
+                                if (goalMap.containsKey(superGoalId)) {
+                                  return false;
+                                }
+                              }
+                              return true;
+                            })
+                            .map((e) => e.id)
+                            .toList()
+                        : (goalMap.values.toList(growable: false)
+                              ..sort((a, b) => a.text
+                                  .toLowerCase()
+                                  .compareTo(b.text.toLowerCase())))
+                            .map((g) => g.id)
+                            .toList();
+                    return FlattenedGoalTree(
+                      section: 'all-goals',
+                      goalMap: goalMap,
+                      rootGoalIds: goalIds,
+                      hoverActionsBuilder: (path) => HoverActionsWidget(
+                        path: path,
+                        goalMap: widget.goalMap,
+                      ),
+                      depthLimit: _mode == GoalViewMode.list ? 1 : null,
+                    );
+                  case GoalFilterType.schedule_v2:
+                    return ScheduledGoalsV2(goalMap: goalMap);
+                  case GoalFilterType.pending_v2:
+                    return PendingGoalViewer(
+                      goalMap: goalMap,
+                      viewKey: 'root',
+                      mode: this._pendingGoalViewMode,
+                    );
+                }
+              case GoalGoalFilter filter:
+                return PendingGoalViewer(
+                  path: [filter.goalId],
+                  viewKey: '',
+                  goalMap: getTransitiveSubGoals(goalMap, filter.goalId)
+                    ..remove(filter.goalId),
+                  mode: this._pendingGoalViewMode,
+                );
+            }
+          })),
         ),
       ],
     );

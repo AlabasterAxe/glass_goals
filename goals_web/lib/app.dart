@@ -25,8 +25,10 @@ import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalMaterialLocalizations;
 import 'package:goals_core/model.dart';
 import 'package:goals_core/sync.dart';
+import 'package:goals_web/common/constants.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/widgets/unanimated_route.dart';
+import 'package:hive/hive.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'app_context.dart';
@@ -80,6 +82,11 @@ class _WebGoalsState extends ConsumerState<WebGoals>
 
   Future<void> _appInit(context) async {
     await this._syncClient.init();
+    final uiState = await Hive.openBox(UI_STATE_BOX);
+
+    _hasMouse = uiState.get(UI_STATE_HAS_MOUSE_KEY, defaultValue: false);
+    ref.read(hasMouseProvider.notifier).set(_hasMouse);
+
     _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       worldContextStream.add(WorldContext.now());
     });
@@ -149,12 +156,14 @@ class _WebGoalsState extends ConsumerState<WebGoals>
     return this._hasMouse
         ? contents
         : MouseRegion(
-            onHover: (event) {
+            onHover: (event) async {
               if (event.kind == PointerDeviceKind.mouse) {
                 ref.read(hasMouseProvider.notifier).set(true);
                 setState(() {
                   this._hasMouse = true;
                 });
+                (await Hive.openBox(UI_STATE_BOX))
+                    .put(UI_STATE_HAS_MOUSE_KEY, true);
               }
             },
             child: contents);

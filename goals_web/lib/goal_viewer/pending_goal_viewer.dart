@@ -82,7 +82,8 @@ class PendingGoalViewer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, ref) {
-    final worldContext = ref.read(worldContextProvider).value!;
+    final worldContext =
+        ref.read(worldContextProvider).value ?? worldContextStream.value;
     return switch (this.mode) {
       // TODO: Handle this case.
       PendingGoalViewMode.schedule =>
