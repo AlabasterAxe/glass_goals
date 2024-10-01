@@ -174,6 +174,17 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     );
   }
 
+  _startEditing() {
+    this._textController.text = widget.goal.text;
+    this._focusNode.requestFocus();
+    this._textController.selection =
+        TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
+    textFocusStream.add([...this.widget.path]);
+    setState(() {
+      _editing = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final expandedGoals =
@@ -272,35 +283,9 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                                     child: MouseRegion(
                                       cursor: SystemMouseCursors.text,
                                       child: GestureDetector(
-                                        onTap: hasMouse
-                                            ? () {
-                                                this._textController.text =
-                                                    widget.goal.text;
-                                                _focusNode.requestFocus();
-                                                this._textController.selection =
-                                                    TextSelection(
-                                                        baseOffset: 0,
-                                                        extentOffset:
-                                                            _textController
-                                                                .text.length);
-                                                setState(() {
-                                                  _editing = true;
-                                                });
-                                              }
-                                            : null,
-                                        onLongPress: () {
-                                          this._textController.text =
-                                              widget.goal.text;
-                                          _focusNode.requestFocus();
-                                          this._textController.selection =
-                                              TextSelection(
-                                                  baseOffset: 0,
-                                                  extentOffset: _textController
-                                                      .text.length);
-                                          setState(() {
-                                            _editing = true;
-                                          });
-                                        },
+                                        onTap: hasMouse ? _startEditing : null,
+                                        onLongPress:
+                                            !hasMouse ? _startEditing : null,
                                         child: Text(widget.goal.text,
                                             style: (isSelected
                                                     ? focusedFontStyle
