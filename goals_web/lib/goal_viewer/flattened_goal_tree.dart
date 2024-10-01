@@ -195,6 +195,10 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
             )
           : AddSubgoalItemWidget(
               path: flattenedGoal.goalPath,
+              padding: EdgeInsets.only(
+                  left: uiUnit(4) *
+                      (flattenedGoal.goalPath.length -
+                          (2 + this.widget.path.length))),
             ));
     }
     return Actions(actions: {

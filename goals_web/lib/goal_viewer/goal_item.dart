@@ -59,7 +59,8 @@ import 'providers.dart'
         hoverEventStream,
         pathsMatch,
         selectedGoalsProvider,
-        selectedGoalsStream;
+        selectedGoalsStream,
+        textFocusStream;
 
 import 'package:collection/collection.dart' show IterableExtension;
 
@@ -115,7 +116,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         });
       }
 
-      if (pathsMatch(id, this.widget.path)) {
+      if (pathsMatch(id, this.widget.path) && textFocusStream.value == null) {
         this._focusNode.requestFocus();
       }
     }));

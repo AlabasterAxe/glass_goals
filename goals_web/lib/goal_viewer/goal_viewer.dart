@@ -183,9 +183,11 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   _onAddGoal(String? parentId, String text, [TimeSlice? timeSlice]) {
     final goalDeltas = <GoalDelta>[];
 
+    final goalId = const Uuid().v4();
+
     if (parentId != null) {
       goalDeltas.add(GoalDelta(
-          id: const Uuid().v4(),
+          id: goalId,
           text: text,
           logEntry: SetParentLogEntry(
               id: const Uuid().v4(),
@@ -193,14 +195,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               parentId: parentId)));
     } else {
       goalDeltas.add(GoalDelta(
-        id: const Uuid().v4(),
+        id: goalId,
         text: text,
       ));
     }
 
     if (timeSlice != null && timeSlice != TimeSlice.unscheduled) {
       goalDeltas.add(GoalDelta(
-          id: const Uuid().v4(),
+          id: goalId,
           logEntry: StatusLogEntry(
               id: const Uuid().v4(),
               creationTime: DateTime.now(),

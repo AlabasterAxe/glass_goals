@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' show Colors, Icons, TextField;
+import 'package:flutter/painting.dart' show EdgeInsets, EdgeInsetsGeometry;
 import 'package:flutter/services.dart' show SystemMouseCursors, TextSelection;
 import 'package:flutter/widgets.dart'
     show
@@ -11,14 +12,14 @@ import 'package:flutter/widgets.dart'
         Icon,
         IntrinsicWidth,
         MouseRegion,
+        Padding,
         Row,
         SizedBox,
         Text,
         TextEditingController,
         Widget;
 import 'package:goals_web/goal_viewer/providers.dart';
-import 'package:goals_web/intents.dart'
-    show AcceptIntent, ActivateIntent, CancelIntent;
+import 'package:goals_web/intents.dart' show AcceptIntent, CancelIntent;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
 
@@ -27,9 +28,11 @@ import 'goal_actions_context.dart';
 
 class AddSubgoalItemWidget extends ConsumerStatefulWidget {
   final List<String> path;
+  final EdgeInsetsGeometry padding;
   const AddSubgoalItemWidget({
     super.key,
     required this.path,
+    this.padding = const EdgeInsets.all(0),
   });
 
   @override
@@ -118,45 +121,48 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
       },
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
-        child: Row(
-          children: [
-            GestureDetector(
-              onTap: () {
-                textFocusStream.add(widget.path);
-              },
-              child: SizedBox(
-                width: uiUnit(10),
-                height: uiUnit(8),
-                child: const Center(child: Icon(Icons.add, size: 18)),
+        child: Padding(
+          padding: this.widget.padding,
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  textFocusStream.add(widget.path);
+                },
+                child: SizedBox(
+                  width: uiUnit(10),
+                  height: uiUnit(8),
+                  child: const Center(child: Icon(Icons.add, size: 18)),
+                ),
               ),
-            ),
-            _editing
-                ? IntrinsicWidth(
-                    child: TextField(
-                      autocorrect: false,
-                      controller: _textController,
-                      decoration: null,
-                      style: mainTextStyle,
-                      maxLines: null,
-                      onEditingComplete: _addGoal,
-                      onTapOutside: (_) {
-                        if (_textController.text != _defaultText &&
-                            _textController.text.isNotEmpty) {
-                          _addGoal();
-                        }
-                        textFocusStream.add(null);
+              _editing
+                  ? IntrinsicWidth(
+                      child: TextField(
+                        autocorrect: false,
+                        controller: _textController,
+                        decoration: null,
+                        style: mainTextStyle,
+                        maxLines: null,
+                        onEditingComplete: _addGoal,
+                        onTapOutside: (_) {
+                          if (_textController.text != _defaultText &&
+                              _textController.text.isNotEmpty) {
+                            _addGoal();
+                          }
+                          textFocusStream.add(null);
+                        },
+                        focusNode: _focusNode,
+                      ),
+                    )
+                  : GestureDetector(
+                      onTap: () {
+                        textFocusStream.add(widget.path);
                       },
-                      focusNode: _focusNode,
+                      child: Text(_textController.text,
+                          style: mainTextStyle.copyWith(color: Colors.black54)),
                     ),
-                  )
-                : GestureDetector(
-                    onTap: () {
-                      textFocusStream.add(widget.path);
-                    },
-                    child: Text(_textController.text,
-                        style: mainTextStyle.copyWith(color: Colors.black54)),
-                  ),
-          ],
+            ],
+          ),
         ),
       ),
     );
