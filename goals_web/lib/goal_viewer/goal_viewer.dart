@@ -89,12 +89,32 @@ enum GoalViewMode { tree, list, schedule }
 
 sealed class GoalFilter {
   get displayName;
+  String serialize();
+  static GoalFilter deserialize(String serialized, Map<String, Goal> goalMap) {
+    final parts = serialized.split(':');
+    // legacy format
+    if (parts.length != 2) {
+      return PredefinedGoalFilter(GoalFilterType.values.byName(parts[0]));
+    }
+    switch (parts[0]) {
+      case 'predefined':
+        return PredefinedGoalFilter(GoalFilterType.values.byName(parts[1]));
+      case 'goal':
+        return GoalGoalFilter(parts[1], goalMap);
+      default:
+        throw Exception('Invalid serialized goal filter: $serialized');
+    }
+  }
 }
 
 class PredefinedGoalFilter extends GoalFilter {
   final GoalFilterType type;
   PredefinedGoalFilter(this.type);
   get displayName => type.displayName;
+
+  serialize() {
+    return 'predefined:${this.type.name}';
+  }
 }
 
 class GoalGoalFilter extends GoalFilter {
@@ -105,6 +125,11 @@ class GoalGoalFilter extends GoalFilter {
     this.goalMap,
   );
   get displayName => this.goalMap[this.goalId]?.text ?? 'Untitled';
+
+  @override
+  String serialize() {
+    return 'goal:${this.goalId}';
+  }
 }
 
 class _GoalViewerState extends ConsumerState<GoalViewer> {
@@ -141,10 +166,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       focusedGoalStream.add(null);
       _filter = filter;
     });
-    // TODO: fix this
-    if (filter is PredefinedGoalFilter) {
-      Hive.box('goals_web.ui').put('goalViewerFilter', filter.type.name);
-    }
+    Hive.box('goals_web.ui').put('goalViewerFilter', filter.serialize());
   }
 
   _onExpanded(List<String> goalPath, {bool? expanded}) {
@@ -374,13 +396,13 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       _mode = GoalViewMode.tree;
     }
     final filterString = box.get('goalViewerFilter',
-        defaultValue: GoalFilterType.schedule_v2.name);
+        defaultValue:
+            PredefinedGoalFilter(GoalFilterType.pending_v2).serialize());
 
     try {
-      _filter =
-          PredefinedGoalFilter(GoalFilterType.values.byName(filterString));
+      _filter = GoalFilter.deserialize(filterString, widget.goalMap);
     } catch (_) {
-      _filter = PredefinedGoalFilter(GoalFilterType.schedule_v2);
+      _filter = PredefinedGoalFilter(GoalFilterType.pending_v2);
     }
   }
 
