@@ -23,6 +23,7 @@ import 'package:goals_core/model.dart'
         Goal,
         WorldContext,
         getGoalPriority,
+        getGoalStatus,
         getGoalsForDateRange,
         getGoalsMatchingPredicate,
         getPriorityComparator,
@@ -298,8 +299,21 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   }
 
   onActive(String? goalId, {DateTime? startTime, DateTime? endTime}) {
+    final goalStatus =
+        getGoalStatus(worldContextStream.value, widget.goalMap[goalId]!);
+
+    // This is for the special case where a goal has an active status with a specific end date
+    // and we're moving it into a smaller time slice (e.g. from This Month to This Week).
+    // In this case, we want to keep the end date the same.
+    final newEndTime = goalStatus.status == GoalStatus.active &&
+            (startTime == null ||
+                goalStatus.startTime?.isBefore(startTime) == true) &&
+            (endTime == null || goalStatus.endTime?.isBefore(endTime) == true)
+        ? goalStatus.endTime
+        : endTime;
+
     this._onSetStatus(goalId, GoalStatus.active,
-        startTime: startTime, endTime: endTime);
+        startTime: startTime, endTime: newEndTime);
   }
 
   _handlePopState(_) {
