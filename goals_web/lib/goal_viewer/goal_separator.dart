@@ -44,11 +44,9 @@ class _GoalSeparatorState extends State<GoalSeparator> {
     this._hoverEventSubscription = hoverEventStream.listen((newHoveredPath) {
       if (pathsMatch(newHoveredPath, this.widget.nextGoalPath) ||
           pathsMatch(newHoveredPath, this.widget.prevGoalPath)) {
-        if (!this._adjacentHover) {
-          setState(() {
-            this._adjacentHover = true;
-          });
-        }
+        setState(() {
+          this._adjacentHover = true;
+        });
       } else {
         if (this._adjacentHover) {
           setState(() {
