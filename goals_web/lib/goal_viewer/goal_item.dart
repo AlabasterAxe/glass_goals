@@ -35,7 +35,6 @@ import 'package:flutter/widgets.dart'
         Padding,
         Row,
         SizedBox,
-        StreamBuilder,
         Text,
         TextEditingController,
         Widget,
@@ -80,6 +79,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
   final Function(GoalDragDetails goalId)? onDropGoal;
   final GoalPath path;
   final EdgeInsetsGeometry padding;
+  final bool pendingShiftSelect;
 
   const GoalItemWidget({
     super.key,
@@ -91,6 +91,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
     this.onDropGoal,
     this.path = const GoalPath([]),
     this.padding = const EdgeInsets.all(0),
+    this.pendingShiftSelect = false,
   });
 
   @override
@@ -109,14 +110,19 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
   void initState() {
     super.initState();
 
-    subscriptions.add(hoverEventStream.listen((id) {
-      if (id?.lastOrNull != widget.goal.id) {
+    subscriptions.add(hoverEventStream.listen((hoveredPath) {
+      if (!pathsMatch(hoveredPath, widget.path) && _hovering) {
         setState(() {
           _hovering = false;
         });
+      } else if (pathsMatch(hoveredPath, widget.path) && !_hovering) {
+        setState(() {
+          _hovering = true;
+        });
       }
 
-      if (pathsMatch(id, this.widget.path) && textFocusStream.value == null) {
+      if (pathsMatch(hoveredPath, this.widget.path) &&
+          textFocusStream.value == null) {
         this._focusNode.requestFocus();
       }
     }));
@@ -138,6 +144,14 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     this.setState(() {
       this._editing = false;
     });
+  }
+
+  @override
+  didUpdateWidget(GoalItemWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pendingShiftSelect != widget.pendingShiftSelect) {
+      setState(() {});
+    }
   }
 
   _updateGoal() {
@@ -195,7 +209,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         ref.watch(selectedGoalsProvider).value ?? selectedGoalsStream.value;
     final hasMouse = ref.watch(hasMouseProvider);
 
-    final isSelected = selectedGoals.contains(widget.goal.id);
+    final isSelected = selectedGoals.contains(widget.path);
     final isNarrow = MediaQuery.of(context).size.width < 600;
     final onExpanded = GoalActionsContext.of(context).onExpanded;
     final onFocused = GoalActionsContext.of(context).onFocused;
@@ -227,114 +241,96 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         onTap: _editing
             ? null
             : () {
-                setState(() {
-                  onSelected.call(widget.path);
-                  onFocused.call(GoalPath(widget.path));
-                });
+                onSelected.call(widget.path);
+                onFocused.call(GoalPath(widget.path));
               },
-        child: StreamBuilder<List<String>?>(
-            stream: hoverEventStream.stream,
-            builder: (context, hoveredGoalSnapshot) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: (_hovering ||
-                          hoveredGoalSnapshot.hasData &&
-                              pathsMatch(hoveredGoalSnapshot.requireData,
-                                  this.widget.path))
-                      ? emphasizedLightBackground
-                      : Colors.transparent,
-                ),
-                child: Padding(
-                  padding: widget.padding,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          widget.dragHandle == GoalItemDragHandle.bullet
-                              ? _dragWrapWidget(
-                                  child: bullet,
-                                  isSelected: isSelected,
-                                  selectedGoals: selectedGoals)
-                              : bullet,
-                          _editing
-                              ? IntrinsicWidth(
-                                  child: TextField(
-                                    autocorrect: false,
-                                    controller: _textController,
-                                    decoration: null,
+        child: Container(
+          decoration: BoxDecoration(
+            color: _hovering || widget.pendingShiftSelect
+                ? emphasizedLightBackground
+                : Colors.transparent,
+          ),
+          child: Padding(
+            padding: widget.padding,
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    widget.dragHandle == GoalItemDragHandle.bullet
+                        ? _dragWrapWidget(
+                            child: bullet,
+                            isSelected: isSelected,
+                            selectedGoals: selectedGoals)
+                        : bullet,
+                    _editing
+                        ? IntrinsicWidth(
+                            child: TextField(
+                              autocorrect: false,
+                              controller: _textController,
+                              decoration: null,
 
-                                    // NOTE: this is a workaround so that the text field doesn't
-                                    // auto-highlight when switching between windows.
-                                    maxLines: null,
-                                    style: mainTextStyle,
-                                    onEditingComplete: this._updateGoal,
-                                    onTapOutside: (_) {
-                                      _updateGoal();
-                                    },
-                                    focusNode: _focusNode,
-                                  ),
-                                )
-                              : Flexible(
-                                  child: Focus(
-                                    focusNode: _focusNode,
-                                    child: MouseRegion(
-                                      cursor: SystemMouseCursors.text,
-                                      child: GestureDetector(
-                                        onTap: hasMouse ? _startEditing : null,
-                                        onLongPress:
-                                            !hasMouse ? _startEditing : null,
-                                        child: Text(widget.goal.text,
-                                            style: (isSelected
-                                                    ? focusedFontStyle
-                                                        .merge(mainTextStyle)
-                                                    : mainTextStyle)
-                                                .copyWith(
-                                              decoration:
-                                                  TextDecoration.underline,
-                                              overflow: TextOverflow.ellipsis,
-                                            )),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                          SizedBox(width: uiUnit(2)),
-                          // chip-like container widget around text status widget:
-                          CurrentStatusChip(goal: widget.goal),
-                          if (this.widget.showExpansionArrow &&
-                              widget.hasRenderableChildren)
-                            SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: IconButton(
-                                  padding: EdgeInsets.zero,
-                                  onPressed: () => onExpanded(widget.path),
-                                  icon: Icon(
-                                      size: 24,
-                                      isExpanded
-                                          ? Icons.arrow_drop_down
-                                          : Icons.arrow_right)),
+                              // NOTE: this is a workaround so that the text field doesn't
+                              // auto-highlight when switching between windows.
+                              maxLines: null,
+                              style: mainTextStyle,
+                              onEditingComplete: this._updateGoal,
+                              onTapOutside: (_) {
+                                _updateGoal();
+                              },
+                              focusNode: _focusNode,
                             ),
-                        ]),
+                          )
+                        : Flexible(
+                            child: Focus(
+                              focusNode: _focusNode,
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.text,
+                                child: GestureDetector(
+                                  onTap: hasMouse ? _startEditing : null,
+                                  onLongPress: !hasMouse ? _startEditing : null,
+                                  child: Text(widget.goal.text,
+                                      style: (isSelected
+                                              ? focusedFontStyle
+                                                  .merge(mainTextStyle)
+                                              : mainTextStyle)
+                                          .copyWith(
+                                        decoration: TextDecoration.underline,
+                                        overflow: TextOverflow.ellipsis,
+                                      )),
+                                ),
+                              ),
+                            ),
+                          ),
+                    SizedBox(width: uiUnit(2)),
+                    // chip-like container widget around text status widget:
+                    CurrentStatusChip(goal: widget.goal),
+                    if (this.widget.showExpansionArrow &&
+                        widget.hasRenderableChildren)
+                      SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: IconButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: () => onExpanded(widget.path),
+                            icon: Icon(
+                                size: 24,
+                                isExpanded
+                                    ? Icons.arrow_drop_down
+                                    : Icons.arrow_right)),
                       ),
-                      if (!isNarrow &&
-                          !_editing &&
-                          (isSelected ||
-                              _hovering ||
-                              hoveredGoalSnapshot.hasData &&
-                                  pathsMatch(hoveredGoalSnapshot.requireData,
-                                      this.widget.path)))
-                        Padding(
-                          padding: const EdgeInsets.only(right: 16.0),
-                          child:
-                              widget.hoverActionsBuilder([...this.widget.path]),
-                        )
-                    ],
-                  ),
+                  ]),
                 ),
-              );
-            }),
+                if (!isNarrow && !_editing && (isSelected || _hovering))
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16.0),
+                    child: widget.hoverActionsBuilder([...this.widget.path]),
+                  )
+              ],
+            ),
+          ),
+        ),
       ),
     );
     return Actions(

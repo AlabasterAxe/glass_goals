@@ -14,6 +14,7 @@ import 'package:flutter/widgets.dart'
         Widget;
 import 'package:goals_core/model.dart'
     show Goal, GoalPath, TraversalDecision, getPriorityComparator, traverseDown;
+import 'package:goals_web/common/keyboard_utils.dart';
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart'
     show HoverActionsBuilder;
@@ -61,10 +62,7 @@ class FlattenedGoalTree extends ConsumerStatefulWidget {
 class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
   List<FlattenedGoalItem> _flattenedGoalItems = [];
 
-  late StreamSubscription _hoverEventSubscription =
-      hoverEventStream.listen((_) {
-    this._updateShiftSelectionRange();
-  });
+  late StreamSubscription _hoverEventSubscription;
 
   int? _shiftHoverStartIndex;
   int? _shiftHoverEndIndex;
@@ -73,11 +71,7 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
     onKeyEvent: (node, event) {
       if (event.logicalKey == LogicalKeyboardKey.shiftLeft ||
           event.logicalKey == LogicalKeyboardKey.shiftRight) {
-        if (event is KeyDownEvent) {
-          _updateShiftSelectionRange();
-        } else if (event is KeyUpEvent) {
-          shiftHoverStartStream.add(null);
-        }
+        _updateShiftSelectionRange();
       }
 
       return KeyEventResult.ignored;
@@ -85,24 +79,42 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
   );
 
   _updateShiftSelectionRange() {
-    final lastSelectedGoalId = selectedGoalsStream.value.lastOrNull;
+    if (!isShiftHeld()) {
+      if ((_shiftHoverStartIndex != null || _shiftHoverEndIndex != null)) {
+        setState(() {
+          _shiftHoverStartIndex = null;
+          _shiftHoverEndIndex = null;
+        });
+      }
+      return;
+    }
+
+    final lastSelectedGoalPath = selectedGoalsStream.value.lastOrNull;
     final hoveredPath = hoverEventStream.value;
 
-    if (lastSelectedGoalId != null && hoveredPath != null) {
+    if (lastSelectedGoalPath != null && hoveredPath != null) {
       final lastSelectedGoalIndex = _flattenedGoalItems
-          .indexWhere((item) => item.path.goalId == lastSelectedGoalId);
+          .indexWhere((item) => pathsMatch(item.path, lastSelectedGoalPath));
       final hoveredGoalIndex = _flattenedGoalItems
           .indexWhere((item) => pathsMatch(item.path, hoveredPath));
-      if (lastSelectedGoalIndex != -1 && hoveredGoalIndex != -1) {
-        setState(() {
-          if (lastSelectedGoalIndex < hoveredGoalIndex) {
+      if (lastSelectedGoalIndex != -1 &&
+          hoveredGoalIndex != -1 &&
+          lastSelectedGoalIndex != hoveredGoalIndex) {
+        if (lastSelectedGoalIndex < hoveredGoalIndex &&
+            (_shiftHoverStartIndex != lastSelectedGoalIndex ||
+                _shiftHoverEndIndex != hoveredGoalIndex)) {
+          setState(() {
             _shiftHoverStartIndex = lastSelectedGoalIndex;
             _shiftHoverEndIndex = hoveredGoalIndex;
-          } else {
+          });
+        } else if (lastSelectedGoalIndex > hoveredGoalIndex &&
+            (_shiftHoverStartIndex != hoveredGoalIndex ||
+                _shiftHoverEndIndex != lastSelectedGoalIndex)) {
+          setState(() {
             _shiftHoverStartIndex = hoveredGoalIndex;
             _shiftHoverEndIndex = lastSelectedGoalIndex;
-          }
-        });
+          });
+        }
       }
     }
   }
@@ -111,6 +123,9 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
   void initState() {
     super.initState();
     _updateFlattenedGoalItems();
+    this._hoverEventSubscription = hoverEventStream.listen((_) {
+      this._updateShiftSelectionRange();
+    });
   }
 
   void _updateFlattenedGoalItems() {
@@ -242,6 +257,10 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
                       (flattenedGoal.path.length -
                           (2 + this.widget.path.length))),
               goal: this.widget.goalMap[goalId]!,
+              pendingShiftSelect: _shiftHoverStartIndex != null &&
+                  _shiftHoverEndIndex != null &&
+                  i >= _shiftHoverStartIndex! &&
+                  i <= _shiftHoverEndIndex!,
               hoverActionsBuilder: this.widget.hoverActionsBuilder,
               hasRenderableChildren: flattenedGoal.hasRenderableChildren,
               showExpansionArrow:
@@ -290,7 +309,7 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
                       this._shiftHoverEndIndex != null)
                   ? (goalId) {
                       final newSelectedGoals = [...selectedGoalsStream.value];
-                      for (int i = this._shiftHoverEndIndex!;
+                      for (int i = this._shiftHoverStartIndex!;
                           i <= this._shiftHoverEndIndex!;
                           i++) {
                         final goalPath = _flattenedGoalItems[i].path;

@@ -154,7 +154,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     setState(() {
       final List<GoalPath> selectedGoals =
           isCtrlHeld() ? selectedGoalsStream.value : [];
-      selectedGoals.add(GoalPath(goalPath));
+
+      if (!selectedGoals.contains(GoalPath(goalPath))) {
+        selectedGoals.add(GoalPath(goalPath));
+      }
 
       selectedGoalsStream.add(selectedGoals);
       Hive.box('goals_web.ui')
@@ -188,20 +191,17 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   }
 
   _onFocused(GoalPath? path) {
-    setState(() {
-      if (path != null) {
-        final List<GoalPath> selectedGoals =
-            isCtrlHeld() ? [...selectedGoalsStream.value] : [];
-        selectedGoals.add(path);
+    if (path != null) {
+      final List<GoalPath> selectedGoals =
+          isCtrlHeld() ? [...selectedGoalsStream.value, path] : [path];
 
-        selectedGoalsStream.add(selectedGoals);
-      }
+      selectedGoalsStream.add(selectedGoals);
+    }
 
-      if (!isCtrlHeld()) {
-        focusedGoalStream.add(path?.goalId);
-        Hive.box('goals_web.ui').put('focusedGoal', path?.goalId);
-      }
-    });
+    if (!isCtrlHeld()) {
+      focusedGoalStream.add(path?.goalId);
+      Hive.box('goals_web.ui').put('focusedGoal', path?.goalId);
+    }
   }
 
   _onAddGoal(String? parentId, String text, [TimeSlice? timeSlice]) {

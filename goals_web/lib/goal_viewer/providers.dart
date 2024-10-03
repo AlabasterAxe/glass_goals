@@ -91,10 +91,6 @@ final hasMouseProvider = StateNotifierProvider<_BooleanStateNotifier, bool>(
 
 final hoverEventStream = BehaviorSubject<List<String>?>.seeded(null);
 
-/// This emits a path that defines the other end of the hover range
-/// when the user is holding shift.
-final shiftHoverStartStream = BehaviorSubject<List<String>?>.seeded(null);
-
 final textFocusStream = BehaviorSubject<List<String>?>.seeded(null);
 final textFocusProvider = StreamProvider((_) => textFocusStream);
 
