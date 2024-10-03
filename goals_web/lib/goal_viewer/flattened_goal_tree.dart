@@ -1,6 +1,17 @@
+import 'dart:async';
+
+import 'package:flutter/services.dart';
 import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
-    show Actions, BuildContext, CallbackAction, Column, Widget;
+    show
+        Actions,
+        BuildContext,
+        CallbackAction,
+        Column,
+        Focus,
+        FocusNode,
+        KeyEventResult,
+        Widget;
 import 'package:goals_core/model.dart'
     show Goal, TraversalDecision, getPriorityComparator, traverseDown;
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
@@ -49,6 +60,52 @@ class FlattenedGoalTree extends ConsumerStatefulWidget {
 
 class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
   List<FlattenedGoalItem> _flattenedGoalItems = [];
+
+  late StreamSubscription _hoverEventSubscription =
+      hoverEventStream.listen((_) {
+    this._updateShiftSelectionRange();
+  });
+
+  int? _shiftHoverStartIndex;
+  int? _shiftHoverEndIndex;
+
+  late final FocusNode _focusNode = FocusNode(
+    onKeyEvent: (node, event) {
+      if (event.logicalKey == LogicalKeyboardKey.shiftLeft ||
+          event.logicalKey == LogicalKeyboardKey.shiftRight) {
+        if (event is KeyDownEvent) {
+          _updateShiftSelectionRange();
+        } else if (event is KeyUpEvent) {
+          shiftHoverStartStream.add(null);
+        }
+      }
+
+      return KeyEventResult.ignored;
+    },
+  );
+
+  _updateShiftSelectionRange() {
+    final lastSelectedGoalId = selectedGoalsStream.value.lastOrNull;
+    final hoveredPath = hoverEventStream.value;
+
+    if (lastSelectedGoalId != null && hoveredPath != null) {
+      final lastSelectedGoalIndex = _flattenedGoalItems
+          .indexWhere((item) => item.goalPath.last == lastSelectedGoalId);
+      final hoveredGoalIndex = _flattenedGoalItems
+          .indexWhere((item) => pathsMatch(item.goalPath, hoveredPath));
+      if (lastSelectedGoalIndex != -1 && hoveredGoalIndex != -1) {
+        setState(() {
+          if (lastSelectedGoalIndex < hoveredGoalIndex) {
+            _shiftHoverStartIndex = lastSelectedGoalIndex;
+            _shiftHoverEndIndex = hoveredGoalIndex;
+          } else {
+            _shiftHoverStartIndex = hoveredGoalIndex;
+            _shiftHoverEndIndex = lastSelectedGoalIndex;
+          }
+        });
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -142,6 +199,13 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
   }
 
   @override
+  void dispose() {
+    this._hoverEventSubscription.cancel();
+    this._focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     ref.listen(expandedGoalsProvider, (_, __) => _updateFlattenedGoalItems());
     ref.listen(worldContextProvider, (_, __) => _updateFlattenedGoalItems());
@@ -201,28 +265,50 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
                           (2 + this.widget.path.length))),
             ));
     }
-    return Actions(actions: {
-      NextIntent: CallbackAction(
-        onInvoke: (_) {
-          final hoveredIndex = _flattenedGoalItems.indexWhere(
-              (item) => pathsMatch(item.goalPath, hoverEventStream.value));
-          if (hoveredIndex != -1 &&
-              hoveredIndex < _flattenedGoalItems.length - 1) {
-            hoverEventStream
-                .add(_flattenedGoalItems[hoveredIndex + 1].goalPath);
-          }
+    return Actions(
+        actions: {
+          NextIntent: CallbackAction(
+            onInvoke: (_) {
+              final hoveredIndex = _flattenedGoalItems.indexWhere(
+                  (item) => pathsMatch(item.goalPath, hoverEventStream.value));
+              if (hoveredIndex != -1 &&
+                  hoveredIndex < _flattenedGoalItems.length - 1) {
+                hoverEventStream
+                    .add(_flattenedGoalItems[hoveredIndex + 1].goalPath);
+              }
+            },
+          ),
+          PreviousIntent: CallbackAction(
+            onInvoke: (_) {
+              final hoveredIndex = _flattenedGoalItems.indexWhere(
+                  (item) => pathsMatch(item.goalPath, hoverEventStream.value));
+              if (hoveredIndex != -1 && hoveredIndex > 0) {
+                hoverEventStream
+                    .add(_flattenedGoalItems[hoveredIndex - 1].goalPath);
+              }
+            },
+          ),
         },
-      ),
-      PreviousIntent: CallbackAction(
-        onInvoke: (_) {
-          final hoveredIndex = _flattenedGoalItems.indexWhere(
-              (item) => pathsMatch(item.goalPath, hoverEventStream.value));
-          if (hoveredIndex != -1 && hoveredIndex > 0) {
-            hoverEventStream
-                .add(_flattenedGoalItems[hoveredIndex - 1].goalPath);
-          }
-        },
-      ),
-    }, child: Column(children: goalItems));
+        child: Focus(
+          focusNode: this._focusNode,
+          child: GoalActionsContext.overrideWith(context,
+              onFocused: (this._shiftHoverEndIndex != null &&
+                      this._shiftHoverEndIndex != null)
+                  ? (goalId) {
+                      final newSelectedGoals = [...selectedGoalsStream.value];
+                      for (int i = this._shiftHoverEndIndex!;
+                          i <= this._shiftHoverEndIndex!;
+                          i++) {
+                        final goalPath = _flattenedGoalItems[i].goalPath;
+                        if (goalPath.last != NEW_GOAL_PLACEHOLDER &&
+                            !newSelectedGoals.contains(goalPath.last)) {
+                          newSelectedGoals.add(goalPath);
+                        }
+                      }
+                      selectedGoalsStream.add(newSelectedGoals);
+                    }
+                  : null,
+              child: Column(children: goalItems)),
+        ));
   }
 }

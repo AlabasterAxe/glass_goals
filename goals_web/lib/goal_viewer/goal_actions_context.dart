@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart'
     show BuildContext, InheritedWidget, Widget;
+import 'package:goals_core/model.dart';
 
 import '../common/time_slice.dart';
 
@@ -14,8 +15,8 @@ class GoalDragDetails {
 }
 
 class GoalActionsContext extends InheritedWidget {
-  final Function(String goalId) onSelected;
-  final Function(String goalId) onFocused;
+  final Function(List<String> goalId) onSelected;
+  final Function(GoalPath) onFocused;
   final Function(List<String> goalId, {bool? expanded}) onExpanded;
   final Function(String? parentId, String text, [TimeSlice? slice]) onAddGoal;
   final Function(String?) onUnarchive;
@@ -69,7 +70,7 @@ class GoalActionsContext extends InheritedWidget {
   static GoalActionsContext overrideWith(
     BuildContext context, {
     required Widget child,
-    Function(String goalId)? onFocused,
+    Function(GoalPath)? onFocused,
     Function(String? parentId, String text, [TimeSlice? slice])? onAddGoal,
     Function(String?)? onUnarchive,
     Function(String?)? onArchive,

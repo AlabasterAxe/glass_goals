@@ -6,33 +6,9 @@ import 'package:rxdart/rxdart.dart' show BehaviorSubject, CombineLatestStream;
 import '../common/time_slice.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 
-final selectedGoalsStream = BehaviorSubject<Set<String>>.seeded({});
+final selectedGoalsStream = BehaviorSubject<List<List<String>>>.seeded([]);
 
 final selectedGoalsProvider = StreamProvider((_) => selectedGoalsStream);
-
-toggleId(BehaviorSubject<Set<String>> idSetSubject, String id) {
-  final existingIdSet = {...idSetSubject.value};
-  if (existingIdSet.contains(id)) {
-    existingIdSet.remove(id);
-  } else {
-    existingIdSet.add(id);
-  }
-  idSetSubject.add(existingIdSet);
-}
-
-addId(BehaviorSubject<Set<String>> idSetSubject, String id) {
-  if (idSetSubject.value.contains(id)) return;
-  final existingIdSet = {...idSetSubject.value};
-  existingIdSet.add(id);
-  idSetSubject.add(existingIdSet);
-}
-
-removeId(BehaviorSubject<Set<String>> idSetSubject, String id) {
-  if (!idSetSubject.value.contains(id)) return;
-  final existingIdSet = {...idSetSubject.value};
-  existingIdSet.remove(id);
-  idSetSubject.add(existingIdSet);
-}
 
 final expandedGoalsStream = BehaviorSubject<List<List<String>>>.seeded([]);
 
@@ -114,6 +90,10 @@ final hasMouseProvider = StateNotifierProvider<_BooleanStateNotifier, bool>(
     (ref) => _BooleanStateNotifier(false));
 
 final hoverEventStream = BehaviorSubject<List<String>?>.seeded(null);
+
+/// This emits a path that defines the other end of the hover range
+/// when the user is holding shift.
+final shiftHoverStartStream = BehaviorSubject<List<String>?>.seeded(null);
 
 final textFocusStream = BehaviorSubject<List<String>?>.seeded(null);
 final textFocusProvider = StreamProvider((_) => textFocusStream);

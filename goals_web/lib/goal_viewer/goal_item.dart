@@ -40,7 +40,7 @@ import 'package:flutter/widgets.dart'
         TextEditingController,
         Widget,
         pointerDragAnchorStrategy;
-import 'package:goals_core/model.dart' show Goal;
+import 'package:goals_core/model.dart' show Goal, GoalPath;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart'
     show HoverActionsBuilder;
@@ -152,7 +152,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
   Widget _dragWrapWidget(
       {required Widget child,
       required bool isSelected,
-      required Set<String> selectedGoals}) {
+      required List<List<String>> selectedGoals}) {
     return Draggable<GoalDragDetails>(
       data:
           GoalDragDetails(goalId: widget.goal.id, sourcePath: this.widget.path),
@@ -229,8 +229,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
             ? null
             : () {
                 setState(() {
-                  onSelected.call(widget.goal.id);
-                  onFocused.call(widget.goal.id);
+                  onSelected.call(widget.path);
+                  onFocused.call(GoalPath(widget.path));
                 });
               },
         child: StreamBuilder<List<String>?>(
@@ -349,7 +349,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         if (!this._editing)
           ActivateIntent:
               CallbackAction<ActivateIntent>(onInvoke: (ActivateIntent intent) {
-            onFocused.call(widget.goal.id);
+            onFocused.call(GoalPath(widget.path));
           })
       },
       child: DragTarget<GoalDragDetails>(

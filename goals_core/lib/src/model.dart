@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:goals_types/goals_types.dart' show GoalLogEntry;
 
 class Goal {
@@ -61,4 +63,32 @@ class WorldContext {
   WorldContext({required this.time});
 
   static WorldContext now() => WorldContext(time: DateTime.now());
+}
+
+class GoalPath extends ListMixin<String> {
+  final List<String> _path;
+
+  const GoalPath(this._path);
+
+  @override
+  int get length => _path.length;
+
+  @override
+  set length(int newLength) {
+    _path.length = newLength;
+  }
+
+  @override
+  String operator [](int index) => _path[index];
+
+  @override
+  void operator []=(int index, String value) {
+    _path[index] = value;
+  }
+
+  String get goalId => _path.last;
+
+  String get parentId => _path[_path.length - 2];
+
+  GoalPath get parentPath => GoalPath(_path.sublist(0, _path.length - 1));
 }

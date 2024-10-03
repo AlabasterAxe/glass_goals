@@ -21,6 +21,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:goals_core/model.dart'
     show
         Goal,
+        GoalPath,
         WorldContext,
         getGoalPriority,
         getGoalStatus,
@@ -149,21 +150,21 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   bool _debugDebounce = false;
 
-  _onSelected(String goalId) {
+  _onSelected(List<String> goalPath) {
     setState(() {
-      final Set<String> selectedGoals =
-          isCtrlHeld() ? selectedGoalsStream.value : {};
-      selectedGoals.add(goalId);
+      final List<List<String>> selectedGoals =
+          isCtrlHeld() ? selectedGoalsStream.value : [];
+      selectedGoals.add(goalPath);
 
       selectedGoalsStream.add(selectedGoals);
       Hive.box('goals_web.ui')
-          .put('selectedGoals', selectedGoalsStream.value.toList());
+          .put('selectedPaths', selectedGoalsStream.value.toList());
     });
   }
 
   _onSwitchFilter(GoalFilter filter) {
     setState(() {
-      selectedGoalsStream.add({});
+      selectedGoalsStream.add([]);
       focusedGoalStream.add(null);
       _filter = filter;
     });
@@ -186,20 +187,20 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     });
   }
 
-  _onFocused(String? goalId) {
+  _onFocused(GoalPath? path) {
     setState(() {
-      if (goalId != null) {
-        final Set<String> selectedGoals =
-            isCtrlHeld() ? selectedGoalsStream.value : {};
-        selectedGoals.add(goalId);
+      if (path != null) {
+        final List<List<String>> selectedGoals =
+            isCtrlHeld() ? [...selectedGoalsStream.value] : [];
+        selectedGoals.add(path);
 
         selectedGoalsStream.add(selectedGoals);
       }
 
       if (!isCtrlHeld()) {
-        focusedGoalStream.add(goalId);
+        focusedGoalStream.add(path?.goalId);
+        Hive.box('goals_web.ui').put('focusedGoal', path?.goalId);
       }
-      Hive.box('goals_web.ui').put('focusedGoal', goalId);
     });
   }
 
@@ -248,9 +249,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final List<GoalDelta> goalDeltas = [];
     final selectedGoals = selectedGoalsStream.value;
     if (goalId == null || selectedGoals.contains(goalId)) {
-      for (final String selectedGoalId in selectedGoals) {
+      for (final List<String> selectedGoalPath in selectedGoals) {
         goalDeltas.add(GoalDelta(
-          id: selectedGoalId,
+          id: selectedGoalPath.last,
           logEntry: StatusLogEntry(
             id: const Uuid().v4(),
             creationTime: DateTime.now(),
@@ -274,7 +275,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    selectedGoalsStream.add({});
+    selectedGoalsStream.add([]);
   }
 
   _onUnarchive(String? goalId) {
@@ -288,7 +289,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   _onDone(String? goalId, DateTime? endDate) {
     var focusedGoalId = this.ref.read(focusedGoalProvider);
     if (focusedGoalId == goalId ||
-        selectedGoalsStream.value.containsAll([focusedGoalId, goalId])) {
+        [focusedGoalId, goalId]
+            .every((gId) => selectedGoalsStream.value.contains(gId))) {
       focusedGoalStream.add(null);
     }
     this._onSetStatus(goalId, GoalStatus.done, endTime: endDate);
@@ -388,14 +390,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     final focusedGoalId = _parseUrlGoalId();
     if (focusedGoalId != null) {
       focusedGoalStream.add(focusedGoalId);
-      addId(selectedGoalsStream, focusedGoalId);
     }
 
     final box = Hive.box(UI_STATE_BOX);
-    selectedGoalsStream.add({
-      ...(box.get('selectedGoals', defaultValue: <String>[]) as List<dynamic>)
-          .cast<String>()
-    });
+    selectedGoalsStream.add([
+      ...(box.get('selectedPaths', defaultValue: <List<String>>[])
+              as List<dynamic>)
+          .cast<List<String>>()
+    ]);
     expandedGoalsStream.add([
       ...(box.get('expandedPaths', defaultValue: <List<String>>[])
               as List<dynamic>)
@@ -716,16 +718,16 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     List<String>? prevDropPath,
     List<String>? nextDropPath,
   }) {
-    // TODO: update selected goals to include the full path
     final selectedGoals = selectedGoalsStream.value;
     Set<GoalDragDetails> goalsToUpdate = selectedGoals.contains(droppedGoalId)
         ? {
             ...selectedGoals.map(
               (e) {
-                if (e == droppedGoalId) {
-                  return GoalDragDetails(goalId: e, sourcePath: sourcePath);
+                if (e.last == droppedGoalId) {
+                  return GoalDragDetails(
+                      goalId: droppedGoalId, sourcePath: sourcePath);
                 }
-                return GoalDragDetails(goalId: e);
+                return GoalDragDetails(goalId: e.last, sourcePath: e);
               },
             )
           }
@@ -760,7 +762,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       nextDropPath: nextDropPath,
     );
     AppContext.of(context).syncClient.modifyGoals(goalDeltas);
-    selectedGoalsStream.add({});
+    selectedGoalsStream.add([]);
   }
 
   _onMakeAnchor(String goalId) {
