@@ -15,7 +15,6 @@ import 'package:flutter/widgets.dart'
         FocusNode,
         IntrinsicHeight,
         MainAxisAlignment,
-        Padding,
         Row,
         SizedBox,
         State,
@@ -27,7 +26,13 @@ import 'package:flutter/widgets.dart'
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:goals_core/model.dart' show Goal;
 import 'package:goals_core/sync.dart'
-    show ArchiveNoteLogEntry, GoalDelta, NoteLogEntry, SetSummaryEntry;
+    show
+        ArchiveNoteLogEntry,
+        GoalDelta,
+        NoteLogEntry,
+        ParentContextCommentEntry,
+        SetSummaryEntry,
+        TextGoalLogEntry;
 import 'package:goals_core/util.dart' show formatDate, formatTime;
 import 'package:goals_web/app_context.dart' show AppContext;
 import 'package:goals_web/common/constants.dart';
@@ -40,8 +45,7 @@ import 'package:uuid/uuid.dart';
 
 class NoteCard extends StatefulWidget {
   final Goal goal;
-  final NoteLogEntry? noteEntry;
-  final SetSummaryEntry? summaryEntry;
+  final TextGoalLogEntry textEntry;
   final Function() onRefresh;
   final bool isChildGoal;
   final bool showDate;
@@ -49,8 +53,7 @@ class NoteCard extends StatefulWidget {
   const NoteCard({
     super.key,
     required this.goal,
-    this.noteEntry,
-    this.summaryEntry,
+    required this.textEntry,
     required this.onRefresh,
     required this.isChildGoal,
     this.showDate = false,
@@ -62,8 +65,8 @@ class NoteCard extends StatefulWidget {
 }
 
 class _NoteCardState extends State<NoteCard> {
-  late TextEditingController _textController = TextEditingController(
-      text: widget.noteEntry?.text ?? widget.summaryEntry?.text);
+  late TextEditingController _textController =
+      TextEditingController(text: widget.textEntry.text);
   bool _editing = false;
   late final _focusNode = FocusNode();
 
@@ -79,21 +82,36 @@ class _NoteCardState extends State<NoteCard> {
     _textController.selection =
         TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
 
-    if (widget.noteEntry != null) {
-      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-          id: widget.goal.id,
-          logEntry: NoteLogEntry(
-              id: widget.noteEntry!.id,
-              creationTime: DateTime.now(),
-              text: _textController.text)));
-    } else {
-      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-          id: widget.goal.id,
-          logEntry: SetSummaryEntry(
-              id: Uuid().v4(),
-              creationTime: DateTime.now(),
-              text: _textController.text)));
+    switch (widget.textEntry) {
+      case NoteLogEntry():
+        AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+            id: widget.goal.id,
+            logEntry: NoteLogEntry(
+                id: widget.textEntry.id,
+                creationTime: DateTime.now(),
+                text: _textController.text)));
+        break;
+      case SetSummaryEntry():
+        AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+            id: widget.goal.id,
+            logEntry: SetSummaryEntry(
+                id: Uuid().v4(),
+                creationTime: DateTime.now(),
+                text: _textController.text)));
+        break;
+      case ParentContextCommentEntry entry:
+        AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+            id: widget.goal.id,
+            logEntry: ParentContextCommentEntry(
+                id: widget.textEntry.id,
+                creationTime: DateTime.now(),
+                parentId: entry.parentId,
+                text: _textController.text)));
+        break;
+      default:
+        throw Exception("Unknown text entry type: ${widget.textEntry}");
     }
+
     setState(() {
       _editing = false;
     });
@@ -102,14 +120,14 @@ class _NoteCardState extends State<NoteCard> {
   @override
   didUpdateWidget(NoteCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final text = widget.noteEntry?.text ?? widget.summaryEntry?.text;
+    final text = widget.textEntry.text;
     if (text != null && widget.goal.id != oldWidget.goal.id) {
       _textController.text = text;
     }
   }
 
   _discardEdit() {
-    final text = widget.noteEntry?.text ?? widget.summaryEntry?.text;
+    final text = widget.textEntry.text;
     if (text != null) {
       _textController.text = text;
     }
@@ -123,7 +141,7 @@ class _NoteCardState extends State<NoteCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (this.widget.noteEntry != null)
+        if (this.widget.textEntry is NoteLogEntry)
           ConstrainedBox(
             constraints: BoxConstraints(minHeight: uiUnit(8)),
             child: Row(
@@ -135,10 +153,9 @@ class _NoteCardState extends State<NoteCard> {
                     children: [
                       if (this.widget.showDate)
                         Text(
-                            '${formatDate(this.widget.noteEntry?.creationTime ?? this.widget.summaryEntry!.creationTime)} '),
+                            '${formatDate(this.widget.textEntry.creationTime)} '),
                       if (this.widget.showTime)
-                        Text(formatTime(widget.noteEntry?.creationTime ??
-                            widget.summaryEntry!.creationTime)),
+                        Text(formatTime(widget.textEntry.creationTime)),
                       if (widget.isChildGoal) ...[
                         Text(" - "),
                         Breadcrumb(goal: widget.goal),
@@ -157,7 +174,7 @@ class _NoteCardState extends State<NoteCard> {
                               GoalDelta(
                                   id: widget.goal.id,
                                   logEntry: ArchiveNoteLogEntry(
-                                      id: widget.noteEntry!.id,
+                                      id: widget.textEntry.id,
                                       creationTime: DateTime.now())));
                           widget.onRefresh();
                         },
@@ -166,87 +183,83 @@ class _NoteCardState extends State<NoteCard> {
               ],
             ),
           ),
-        Padding(
-          padding: EdgeInsets.only(bottom: uiUnit(4)),
-          child: _editing
-              ? IntrinsicHeight(
-                  child: Actions(
-                    actions: {
-                      AcceptMultiLineTextIntent:
-                          CallbackAction(onInvoke: (_) => _saveNote()),
-                      CancelIntent:
-                          CallbackAction(onInvoke: (_) => _discardEdit()),
-                    },
-                    child: TextField(
-                      autocorrect: false,
-                      controller: _textController,
-                      decoration: null,
-                      maxLines: null,
-                      style: mainTextStyle,
-                      onTapOutside: (_) {
-                        if (widget.noteEntry?.text != null &&
-                                _textController.text !=
-                                    widget.noteEntry!.text ||
-                            widget.summaryEntry?.text != null &&
-                                _textController.text !=
-                                    widget.summaryEntry?.text) {
-                          _saveNote();
-                        }
-                        setState(() {
-                          _editing = false;
-                        });
-                      },
-                      focusNode: _focusNode,
-                    ),
-                  ),
-                )
-              : MarkdownBody(
-                  data: _textController.text,
-                  selectable: true,
-                  listItemCrossAxisAlignment:
-                      MarkdownListItemCrossAxisAlignment.baseline,
-                  bulletBuilder: (params) {
-                    switch (params.style) {
-                      case BulletStyle.orderedList:
-                        return Text("${params.index + 1}.",
-                            style: TextStyle(
-                                fontSize: 20,
-                                textBaseline: TextBaseline.alphabetic));
-                      case BulletStyle.unorderedList:
-                        return Text("⬤", style: TextStyle(fontSize: 8));
-                    }
+        _editing
+            ? IntrinsicHeight(
+                child: Actions(
+                  actions: {
+                    AcceptMultiLineTextIntent:
+                        CallbackAction(onInvoke: (_) => _saveNote()),
+                    CancelIntent:
+                        CallbackAction(onInvoke: (_) => _discardEdit()),
                   },
-                  onTapText: () {
-                    if (!widget.isChildGoal) {
+                  child: TextField(
+                    autocorrect: false,
+                    controller: _textController,
+                    decoration: null,
+                    maxLines: null,
+                    style: mainTextStyle,
+                    onTapOutside: (_) {
+                      if (widget.textEntry.text != null &&
+                          _textController.text != widget.textEntry.text) {
+                        _saveNote();
+                      }
                       setState(() {
-                        if (_textController.text == DEFAULT_SUMMARY_TEXT) {
-                          _textController.selection = TextSelection(
-                              baseOffset: 0,
-                              extentOffset: _textController.text.length);
-                        }
-
-                        _editing = true;
-                        _focusNode.requestFocus();
+                        _editing = false;
                       });
-                    }
-                  },
-                  onTapLink: (text, href, title) async {
-                    if (href == null) {
-                      return;
-                    }
+                    },
+                    focusNode: _focusNode,
+                  ),
+                ),
+              )
+            : MarkdownBody(
+                data: _textController.text,
+                selectable: true,
+                listItemCrossAxisAlignment:
+                    MarkdownListItemCrossAxisAlignment.baseline,
+                bulletBuilder: (params) {
+                  switch (params.style) {
+                    case BulletStyle.orderedList:
+                      return Text("${params.index + 1}.",
+                          style: TextStyle(
+                              fontSize: 20,
+                              textBaseline: TextBaseline.alphabetic));
+                    case BulletStyle.unorderedList:
+                      return Text("⬤", style: TextStyle(fontSize: 8));
+                  }
+                },
+                onTapText: () {
+                  if (!widget.isChildGoal) {
+                    setState(() {
+                      if (_textController.text == DEFAULT_SUMMARY_TEXT ||
+                          _textController.text ==
+                              DEFAULT_CONTEXT_COMMENT_TEXT) {
+                        _textController.selection = TextSelection(
+                            baseOffset: 0,
+                            extentOffset: _textController.text.length);
+                      }
 
-                    final url = Uri.parse(href);
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(url);
-                    }
-                  },
-                  styleSheet: MarkdownStyleSheet(
-                    textScaler: TextScaler.linear(1.05),
-                    p: _textController.text == DEFAULT_SUMMARY_TEXT
-                        ? mainTextStyle.copyWith(color: Colors.black54)
-                        : mainTextStyle,
-                  )),
-        ),
+                      _editing = true;
+                      _focusNode.requestFocus();
+                    });
+                  }
+                },
+                onTapLink: (text, href, title) async {
+                  if (href == null) {
+                    return;
+                  }
+
+                  final url = Uri.parse(href);
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url);
+                  }
+                },
+                styleSheet: MarkdownStyleSheet(
+                  textScaler: TextScaler.linear(1.05),
+                  p: _textController.text == DEFAULT_SUMMARY_TEXT ||
+                          _textController.text == DEFAULT_CONTEXT_COMMENT_TEXT
+                      ? mainTextStyle.copyWith(color: Colors.black54)
+                      : mainTextStyle,
+                )),
       ],
     );
   }

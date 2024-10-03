@@ -478,3 +478,39 @@ SetSummaryEntry? hasSummary(Goal? goal) {
 
   return null;
 }
+
+ParentContextCommentEntry? hasParentContext(Goal? goal, String parentId) {
+  if (goal == null) {
+    return null;
+  }
+
+  for (final entry in goal.log) {
+    if (entry is ParentContextCommentEntry && entry.parentId == parentId) {
+      if (entry.text == null || entry.text!.isEmpty) {
+        return null;
+      }
+      return entry;
+    }
+  }
+
+  return null;
+}
+
+Map<String, ParentContextCommentEntry> getAllParentContext(Goal? goal) {
+  final result = <String, ParentContextCommentEntry>{};
+
+  if (goal == null) {
+    return result;
+  }
+
+  for (final entry in goal.log) {
+    if (entry is ParentContextCommentEntry &&
+        !result.containsKey(entry.parentId) &&
+        entry.text != null &&
+        entry.text!.isNotEmpty) {
+      result[entry.parentId] = entry;
+    }
+  }
+
+  return result;
+}

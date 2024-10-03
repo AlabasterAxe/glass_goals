@@ -590,12 +590,15 @@ class GoalHistoryWidget extends StatelessWidget {
                   ConstrainedBox(
                       constraints: BoxConstraints(minHeight: uiUnit(8)),
                       child: switch (item.entry) {
-                        NoteLogEntry entry => NoteCard(
-                            key: ValueKey(entry.id),
-                            goal: item.goal,
-                            noteEntry: entry,
-                            isChildGoal: item.goal.id != this.goalId,
-                            onRefresh: this.onRefresh,
+                        NoteLogEntry entry => Padding(
+                            padding: EdgeInsets.only(bottom: uiUnit(4)),
+                            child: NoteCard(
+                              key: ValueKey(entry.id),
+                              goal: item.goal,
+                              textEntry: entry,
+                              isChildGoal: item.goal.id != this.goalId,
+                              onRefresh: this.onRefresh,
+                            ),
                           ),
                         StatusLogEntry entry => StatusCard(
                             key: ValueKey(

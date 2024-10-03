@@ -77,6 +77,8 @@ abstract class GoalLogEntry extends Equatable {
         return ClearAnchorLogEntry.fromJsonMap(json, version);
       case 'summary':
         return SetSummaryEntry.fromJsonMap(json, version);
+      case 'parentContextComment':
+        return ParentContextCommentEntry.fromJsonMap(json, version);
       default:
         throw Exception('Invalid data: $json has unknown type: $type');
     }
@@ -104,6 +106,17 @@ abstract class GoalLogEntry extends Equatable {
       throw Exception('Unknown type: ${legacyEntry.runtimeType}');
     }
   }
+}
+
+// I absolutely hate this approach but dart doesn't have structural typing
+// so this is the best I can come up with for now.
+// The reason I'm doing this is so that we can pass in multiple
+// Log Entry Types to the goal summary renderer.
+abstract class TextGoalLogEntry extends GoalLogEntry {
+  final String? text;
+
+  const TextGoalLogEntry(
+      {required super.creationTime, required super.id, this.text});
 }
 
 class PriorityLogEntry extends GoalLogEntry {
@@ -154,13 +167,16 @@ class PriorityLogEntry extends GoalLogEntry {
   }
 }
 
-class NoteLogEntry extends GoalLogEntry {
+class NoteLogEntry extends TextGoalLogEntry {
   static const FIRST_VERSION = 3;
-  final String text;
+
+  @override
+  String get text => super.text!;
+
   const NoteLogEntry({
     required super.creationTime,
     required super.id,
-    required this.text,
+    required super.text,
   });
 
   @override
@@ -207,13 +223,12 @@ class NoteLogEntry extends GoalLogEntry {
   }
 }
 
-class SetSummaryEntry extends GoalLogEntry {
+class SetSummaryEntry extends TextGoalLogEntry {
   static const FIRST_VERSION = 5;
-  final String? text;
   const SetSummaryEntry({
     required super.creationTime,
     required super.id,
-    required this.text,
+    required super.text,
   });
 
   @override
@@ -717,6 +732,50 @@ class AddStatusReflectionLogEntry extends GoalLogEntry {
       'creationTime': this.creationTime.toUtc().toIso8601String(),
       'reflectionText': this.reflectionText,
       'statusId': this.statusId,
+    };
+  }
+}
+
+class ParentContextCommentEntry extends TextGoalLogEntry {
+  static const FIRST_VERSION = 5;
+
+  // The id of the parent goal this comment is being added to.
+  // TODO: should this just live on the add parent log entry?
+  final String parentId;
+  const ParentContextCommentEntry({
+    required super.id,
+    required super.creationTime,
+    required this.parentId,
+    super.text,
+  });
+
+  @override
+  List<Object?> get props => [id];
+
+  static ParentContextCommentEntry fromJsonMap(dynamic json, int? version) {
+    if (version != null && version > TYPES_VERSION) {
+      throw Exception('Unsupported version: $version');
+    }
+
+    if (version != null && version < FIRST_VERSION) {
+      throw Exception(
+          'Invalid data: $version is before first version: $FIRST_VERSION');
+    }
+    return ParentContextCommentEntry(
+      id: json['id'],
+      text: json['text'],
+      creationTime: DateTime.parse(json['creationTime']).toLocal(),
+      parentId: json['parentId'],
+    );
+  }
+
+  Map<String, dynamic> toJsonMap() {
+    return {
+      'type': 'parentContextComment',
+      'id': this.id,
+      'creationTime': this.creationTime.toUtc().toIso8601String(),
+      if (this.text != null) 'text': this.text,
+      'parentId': this.parentId,
     };
   }
 }
