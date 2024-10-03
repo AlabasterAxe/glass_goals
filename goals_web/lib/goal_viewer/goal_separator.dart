@@ -16,6 +16,9 @@ class GoalSeparator extends StatefulWidget {
   final bool isFirst;
   final Function(GoalDragDetails)? onDropGoal;
   final List<String> path;
+  final bool pendingShiftSelect;
+  final GoalPath? shiftSelectStartPath;
+  final GoalPath? shiftSelectEndPath;
   const GoalSeparator({
     super.key,
     required this.goalMap,
@@ -24,6 +27,9 @@ class GoalSeparator extends StatefulWidget {
     this.onDropGoal,
     required this.isFirst,
     this.path = const [],
+    this.pendingShiftSelect = false,
+    this.shiftSelectStartPath,
+    this.shiftSelectEndPath,
   });
 
   @override
@@ -103,7 +109,13 @@ class _GoalSeparatorState extends State<GoalSeparator> {
               height: uiUnit(2),
               child: Center(
                 child: Container(
-                  color: this._adjacentHover || this._dragHovered
+                  color: (this.widget.shiftSelectStartPath == null &&
+                                  this._adjacentHover ||
+                              this._dragHovered) ||
+                          (pathsMatch(this.widget.shiftSelectStartPath,
+                                  this.widget.nextGoalPath) ||
+                              pathsMatch(this.widget.shiftSelectEndPath,
+                                  this.widget.prevGoalPath))
                       ? darkElementColor
                       : Colors.transparent,
                   height: 2,
@@ -123,8 +135,11 @@ class _GoalSeparatorState extends State<GoalSeparator> {
                       }
                     },
                     child: Container(
-                      color: pathsMatch(
-                              hoverEventStream.value, this.widget.prevGoalPath)
+                      color: pathsMatch(hoverEventStream.value,
+                                  this.widget.prevGoalPath) ||
+                              this.widget.pendingShiftSelect ||
+                              pathsMatch(this.widget.shiftSelectStartPath,
+                                  this.widget.prevGoalPath)
                           ? emphasizedLightBackground
                           : Colors.transparent,
                     )),
@@ -144,8 +159,11 @@ class _GoalSeparatorState extends State<GoalSeparator> {
                   }
                 },
                 child: Container(
-                  color: pathsMatch(
-                          hoverEventStream.value, this.widget.nextGoalPath)
+                  color: pathsMatch(hoverEventStream.value,
+                              this.widget.nextGoalPath) ||
+                          this.widget.pendingShiftSelect ||
+                          pathsMatch(this.widget.shiftSelectStartPath,
+                              this.widget.prevGoalPath)
                       ? emphasizedLightBackground
                       : Colors.transparent,
                 ),

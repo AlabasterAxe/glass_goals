@@ -89,6 +89,10 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
       return;
     }
 
+    if (textFocusStream.value != null) {
+      return;
+    }
+
     final lastSelectedGoalPath = selectedGoalsStream.value.lastOrNull;
     final hoveredPath = hoverEventStream.value;
 
@@ -238,6 +242,16 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
           nextGoalPath: flattenedGoal.path,
           path: this.widget.path,
           goalMap: this.widget.goalMap,
+          pendingShiftSelect: _shiftHoverStartIndex != null &&
+              _shiftHoverEndIndex != null &&
+              i >= _shiftHoverStartIndex! &&
+              i <= _shiftHoverEndIndex!,
+          shiftSelectStartPath: _shiftHoverStartIndex != null
+              ? this._flattenedGoalItems[_shiftHoverStartIndex!].path
+              : null,
+          shiftSelectEndPath: _shiftHoverEndIndex != null
+              ? this._flattenedGoalItems[_shiftHoverEndIndex!].path
+              : null,
           onDropGoal: (goalDragDetails) {
             onDropGoal(goalDragDetails.path,
                 prevDropPath:
