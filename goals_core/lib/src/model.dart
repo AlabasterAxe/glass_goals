@@ -88,7 +88,21 @@ class GoalPath extends ListMixin<String> {
 
   String get goalId => _path.last;
 
-  String get parentId => _path[_path.length - 2];
+  String? get parentId => _path.length > 1 ? _path[_path.length - 2] : null;
 
   GoalPath get parentPath => GoalPath(_path.sublist(0, _path.length - 1));
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! GoalPath) return false;
+    if (other.length != length) return false;
+    for (int i = 0; i < length; i++) {
+      if (other[i] != this[i]) return false;
+    }
+    return true;
+  }
+
+  @override
+  int get hashCode => _path.hashCode;
 }

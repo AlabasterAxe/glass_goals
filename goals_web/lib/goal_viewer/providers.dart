@@ -1,4 +1,4 @@
-import 'package:goals_core/model.dart' show WorldContext;
+import 'package:goals_core/model.dart' show GoalPath, WorldContext;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show StateNotifier, StateNotifierProvider, StreamProvider;
 import 'package:rxdart/rxdart.dart' show BehaviorSubject, CombineLatestStream;
@@ -6,7 +6,7 @@ import 'package:rxdart/rxdart.dart' show BehaviorSubject, CombineLatestStream;
 import '../common/time_slice.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 
-final selectedGoalsStream = BehaviorSubject<List<List<String>>>.seeded([]);
+final selectedGoalsStream = BehaviorSubject<List<GoalPath>>.seeded([]);
 
 final selectedGoalsProvider = StreamProvider((_) => selectedGoalsStream);
 

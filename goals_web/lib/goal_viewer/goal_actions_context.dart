@@ -5,12 +5,10 @@ import 'package:goals_core/model.dart';
 import '../common/time_slice.dart';
 
 class GoalDragDetails {
-  final String goalId;
-  final List<String>? sourcePath;
+  final GoalPath path;
 
   const GoalDragDetails({
-    required this.goalId,
-    this.sourcePath,
+    required this.path,
   });
 }
 
@@ -28,8 +26,7 @@ class GoalActionsContext extends InheritedWidget {
   final Function(String) onAddSummary;
   final Function(String) onClearSummary;
   final Function(
-    String goalId, {
-    List<String>? sourcePath,
+    GoalPath, {
     List<String>? dropPath,
     List<String>? prevDropPath,
     List<String>? nextDropPath,
@@ -78,8 +75,7 @@ class GoalActionsContext extends InheritedWidget {
     Function(String?, DateTime?)? onSnooze,
     Function(String?, {DateTime startTime, DateTime? endTime})? onActive,
     Function(
-      String goalId, {
-      List<String>? sourcePath,
+      GoalPath, {
       List<String>? dropPath,
       List<String>? prevDropPath,
       List<String>? nextDropPath,

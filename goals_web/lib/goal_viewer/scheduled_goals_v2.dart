@@ -197,14 +197,12 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                         onAddGoal(parentId, text, slice),
                     onDropGoal: (
                       droppedGoalId, {
-                      List<String>? sourcePath,
                       List<String>? dropPath,
                       List<String>? prevDropPath,
                       List<String>? nextDropPath,
                     }) {
                       onDropGoal(
                         droppedGoalId,
-                        sourcePath: sourcePath,
                         dropPath: dropPath,
                         prevDropPath: prevDropPath,
                         nextDropPath: nextDropPath,
@@ -218,8 +216,8 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                           goalsToUpdate.every(sliceGoalMap.containsKey);
                       bool addStatus = goalsToUpdate
                           .every((goalId) => !sliceGoalMap.containsKey(goalId));
-                      for (final goalId in goalsToUpdate) {
-                        final goal = widget.goalMap[goalId];
+                      for (final path in goalsToUpdate) {
+                        final goal = widget.goalMap[path.goalId];
 
                         if (goal == null) {
                           continue;
@@ -251,7 +249,7 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                           AppContext.of(this.context)
                               .syncClient
                               .modifyGoal(GoalDelta(
-                                  id: goalId,
+                                  id: path.goalId,
                                   logEntry: StatusLogEntry(
                                     id: const Uuid().v4(),
                                     creationTime: DateTime.now(),
@@ -269,7 +267,7 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                                 nextDropPath?.length == 2)) {
                           AppContext.of(this.context).syncClient.modifyGoal(
                               GoalDelta(
-                                  id: goalId,
+                                  id: path.goalId,
                                   logEntry: SetParentLogEntry(
                                       id: const Uuid().v4(),
                                       parentId: null,

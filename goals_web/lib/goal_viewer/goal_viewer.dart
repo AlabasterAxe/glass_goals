@@ -152,9 +152,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
   _onSelected(List<String> goalPath) {
     setState(() {
-      final List<List<String>> selectedGoals =
+      final List<GoalPath> selectedGoals =
           isCtrlHeld() ? selectedGoalsStream.value : [];
-      selectedGoals.add(goalPath);
+      selectedGoals.add(GoalPath(goalPath));
 
       selectedGoalsStream.add(selectedGoals);
       Hive.box('goals_web.ui')
@@ -190,7 +190,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   _onFocused(GoalPath? path) {
     setState(() {
       if (path != null) {
-        final List<List<String>> selectedGoals =
+        final List<GoalPath> selectedGoals =
             isCtrlHeld() ? [...selectedGoalsStream.value] : [];
         selectedGoals.add(path);
 
@@ -397,6 +397,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       ...(box.get('selectedPaths', defaultValue: <List<String>>[])
               as List<dynamic>)
           .cast<List<String>>()
+          .map((e) => GoalPath(e))
     ]);
     expandedGoalsStream.add([
       ...(box.get('expandedPaths', defaultValue: <List<String>>[])
@@ -555,7 +556,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   }
 
   List<GoalDelta> _computeDropOnSeparatorEffects(
-      Set<GoalDragDetails> draggedGoalDetails,
+      Set<GoalPath> draggedGoalDetails,
       List<String> prevGoalPath,
       List<String> nextGoalPath) {
     final List<GoalDelta> goalDeltas = [];
@@ -622,10 +623,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       if (newParentId != null &&
           droppedGoal != null &&
           !droppedGoal.hasParent(newParentId)) {
-        final pathParentId =
-            details.sourcePath != null && details.sourcePath!.length > 1
-                ? details.sourcePath![details.sourcePath!.length - 2]
-                : null;
+        final pathParentId = details.parentId;
         final pathParent =
             pathParentId == null ? null : this.widget.goalMap[pathParentId];
         if (pathParent == null) {
@@ -667,25 +665,22 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   }
 
   List<GoalDelta> _computeDropOnGoalEffects(
-      Set<GoalDragDetails> draggedGoalDetails, List<String> targetGoalPath) {
+      Set<GoalPath> draggedGoalPaths, List<String> targetGoalPath) {
     final List<GoalDelta> goalDeltas = [];
-    for (final details in draggedGoalDetails) {
-      final droppedGoal = this.widget.goalMap[details.goalId];
+    for (final path in draggedGoalPaths) {
+      final droppedGoal = this.widget.goalMap[path.goalId];
 
-      if (droppedGoal == null || droppedGoal.hasParent(details.goalId)) {
+      if (droppedGoal == null || droppedGoal.hasParent(path.goalId)) {
         continue;
       }
 
-      final pathParentId =
-          details.sourcePath != null && details.sourcePath!.length > 1
-              ? details.sourcePath![details.sourcePath!.length - 2]
-              : null;
+      final pathParentId = path.parentId;
       final pathParent =
           pathParentId == null ? null : this.widget.goalMap[pathParentId];
       if (pathParent == null) {
         // if the source path is not provided or the parent is not found, do the legacy behavior of setting the parent to the exclusion of any prior parents.
         goalDeltas.add(GoalDelta(
-            id: details.goalId,
+            id: path.goalId,
             logEntry: SetParentLogEntry(
                 id: Uuid().v4(),
                 parentId: targetGoalPath.lastOrNull,
@@ -694,14 +689,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       }
 
       goalDeltas.add(GoalDelta(
-          id: details.goalId,
+          id: path.goalId,
           logEntry: RemoveParentLogEntry(
             id: Uuid().v4(),
             creationTime: DateTime.now(),
             parentId: pathParentId,
           )));
       goalDeltas.add(GoalDelta(
-          id: details.goalId,
+          id: path.goalId,
           logEntry: AddParentLogEntry(
             id: Uuid().v4(),
             creationTime: DateTime.now(),
@@ -712,26 +707,15 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   }
 
   List<GoalDelta> _computeDropGoalEffects(
-    String droppedGoalId, {
-    List<String>? sourcePath,
+    GoalPath path, {
     List<String>? dropPath,
     List<String>? prevDropPath,
     List<String>? nextDropPath,
   }) {
     final selectedGoals = selectedGoalsStream.value;
-    Set<GoalDragDetails> goalsToUpdate = selectedGoals.contains(droppedGoalId)
-        ? {
-            ...selectedGoals.map(
-              (e) {
-                if (e.last == droppedGoalId) {
-                  return GoalDragDetails(
-                      goalId: droppedGoalId, sourcePath: sourcePath);
-                }
-                return GoalDragDetails(goalId: e.last, sourcePath: e);
-              },
-            )
-          }
-        : {GoalDragDetails(goalId: droppedGoalId, sourcePath: sourcePath)};
+    Set<GoalPath> goalsToUpdate = selectedGoals.contains(path)
+        ? {...selectedGoals.map((goalPath) => GoalPath(goalPath))}
+        : {path};
 
     if (!((dropPath != null) ^
         (prevDropPath != null && nextDropPath != null))) {
@@ -748,15 +732,13 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   }
 
   _onDropGoal(
-    String droppedGoalId, {
-    List<String>? sourcePath,
+    GoalPath path, {
     List<String>? dropPath,
     List<String>? prevDropPath,
     List<String>? nextDropPath,
   }) {
     final goalDeltas = _computeDropGoalEffects(
-      droppedGoalId,
-      sourcePath: sourcePath,
+      path,
       dropPath: dropPath,
       prevDropPath: prevDropPath,
       nextDropPath: nextDropPath,

@@ -478,7 +478,7 @@ class GoalDetail extends ConsumerStatefulWidget {
   final Function(GoalPath) onFocused;
   final Function(String? parentId, String text) onAddGoal;
   final Function(
-    String goalId, {
+    GoalPath, {
     List<String>? dropPath,
     List<String>? prevDropPath,
     List<String>? nextDropPath,

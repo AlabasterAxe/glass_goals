@@ -78,7 +78,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
   final bool showExpansionArrow;
   final GoalItemDragHandle dragHandle;
   final Function(GoalDragDetails goalId)? onDropGoal;
-  final List<String> path;
+  final GoalPath path;
   final EdgeInsetsGeometry padding;
 
   const GoalItemWidget({
@@ -89,7 +89,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
     this.showExpansionArrow = true,
     this.dragHandle = GoalItemDragHandle.none,
     this.onDropGoal,
-    this.path = const [],
+    this.path = const GoalPath([]),
     this.padding = const EdgeInsets.all(0),
   });
 
@@ -154,8 +154,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
       required bool isSelected,
       required List<List<String>> selectedGoals}) {
     return Draggable<GoalDragDetails>(
-      data:
-          GoalDragDetails(goalId: widget.goal.id, sourcePath: this.widget.path),
+      data: GoalDragDetails(path: this.widget.path),
       hitTestBehavior: HitTestBehavior.opaque,
       dragAnchorStrategy: pointerDragAnchorStrategy,
       feedback: Container(
@@ -326,7 +325,11 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                               hoveredGoalSnapshot.hasData &&
                                   pathsMatch(hoveredGoalSnapshot.requireData,
                                       this.widget.path)))
-                        widget.hoverActionsBuilder([...this.widget.path])
+                        Padding(
+                          padding: const EdgeInsets.only(right: 16.0),
+                          child:
+                              widget.hoverActionsBuilder([...this.widget.path]),
+                        )
                     ],
                   ),
                 ),
