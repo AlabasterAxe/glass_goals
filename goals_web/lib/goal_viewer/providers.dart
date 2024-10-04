@@ -47,6 +47,16 @@ removePath(
 final focusedGoalStream = BehaviorSubject<String?>.seeded(null);
 final focusedGoalProvider = StreamProvider((_) => focusedGoalStream);
 
+enum DragEventType {
+  start,
+  cancel,
+  end,
+  none,
+}
+
+final dragEventStream =
+    BehaviorSubject<DragEventType>.seeded(DragEventType.none);
+
 final worldContextStream =
     BehaviorSubject<WorldContext>.seeded(WorldContext.now());
 final worldContextProvider = StreamProvider((_) => worldContextStream);

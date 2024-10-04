@@ -15,6 +15,7 @@ import 'package:flutter/painting.dart'
 import 'package:flutter/rendering.dart'
     show HitTestBehavior, MainAxisAlignment, MainAxisSize;
 import 'package:flutter/services.dart' show SystemMouseCursors, TextSelection;
+import 'package:flutter/src/widgets/async.dart';
 import 'package:flutter/widgets.dart'
     show
         Actions,
@@ -52,6 +53,8 @@ import '../styles.dart';
 import 'goal_actions_context.dart';
 import 'providers.dart'
     show
+        DragEventType,
+        dragEventStream,
         expandedGoalsProvider,
         expandedGoalsStream,
         hasMouseProvider,
@@ -100,9 +103,12 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
 
 class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
   final TextEditingController _textController = TextEditingController();
-  bool _editing = false;
   final FocusNode _focusNode = FocusNode();
+
+  // TODO: maybe this should be a state machine?
+  bool _editing = false;
   bool _hovering = false;
+  bool _dragging = false;
 
   List<StreamSubscription> subscriptions = [];
 
@@ -122,7 +128,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
       }
 
       if (pathsMatch(hoveredPath, this.widget.path) &&
-          textFocusStream.value == null) {
+          textFocusStream.value == null &&
+          dragEventStream.value != DragEventType.start) {
         this._focusNode.requestFocus();
       }
     }));
@@ -163,26 +170,60 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     });
   }
 
-  Widget _dragWrapWidget(
-      {required Widget child,
-      required bool isSelected,
-      required List<List<String>> selectedGoals}) {
+  Widget _dragWrapWidget({
+    required Widget child,
+    required bool isSelected,
+    required List<List<String>> selectedGoals,
+  }) {
     return Draggable<GoalDragDetails>(
       data: GoalDragDetails(path: this.widget.path),
       hitTestBehavior: HitTestBehavior.opaque,
       dragAnchorStrategy: pointerDragAnchorStrategy,
-      feedback: Container(
-        decoration:
-            const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text((isSelected ? selectedGoals.length : 1).toString(),
-              style: const TextStyle(
-                  fontSize: 20,
-                  decoration: TextDecoration.none,
-                  color: Colors.white)),
-        ),
-      ),
+      onDragStarted: () {
+        this._focusNode.requestFocus();
+        if (dragEventStream.value == DragEventType.start) {
+          dragEventStream.add(DragEventType.cancel);
+        }
+        dragEventStream.add(DragEventType.start);
+        setState(() {
+          this._dragging = true;
+        });
+      },
+      onDragCompleted: () {
+        if (dragEventStream.value == DragEventType.start) {
+          dragEventStream.add(DragEventType.end);
+        }
+        setState(() {
+          this._dragging = false;
+        });
+      },
+      onDraggableCanceled: (_, __) {
+        if (dragEventStream.value == DragEventType.start) {
+          dragEventStream.add(DragEventType.cancel);
+        }
+        setState(() {
+          this._dragging = false;
+        });
+      },
+      feedback: StreamBuilder<Object>(
+          stream: dragEventStream,
+          builder: (context, snapshot) {
+            if (snapshot.hasData && snapshot.data == DragEventType.cancel) {
+              return Container();
+            }
+            return Container(
+              decoration: const BoxDecoration(
+                  color: Colors.red, shape: BoxShape.circle),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text((isSelected ? selectedGoals.length : 1).toString(),
+                    style: const TextStyle(
+                        fontSize: 20,
+                        decoration: TextDecoration.none,
+                        color: Colors.white)),
+              ),
+            );
+          }),
       child: child,
     );
   }
@@ -262,7 +303,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                         ? _dragWrapWidget(
                             child: bullet,
                             isSelected: isSelected,
-                            selectedGoals: selectedGoals)
+                            selectedGoals: selectedGoals,
+                          )
                         : bullet,
                     _editing
                         ? IntrinsicWidth(
@@ -341,6 +383,15 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
               this._cancelEditing();
             },
           ),
+        if (this._dragging)
+          CancelIntent: CallbackAction<CancelIntent>(
+            onInvoke: (_) {
+              dragEventStream.add(DragEventType.cancel);
+              setState(() {
+                this._dragging = false;
+              });
+            },
+          ),
         AcceptIntent: CallbackAction<AcceptIntent>(
           onInvoke: (_) {
             this._updateGoal();
@@ -353,8 +404,11 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
           })
       },
       child: DragTarget<GoalDragDetails>(
-        onAcceptWithDetails: (deets) =>
-            this.widget.onDropGoal?.call(deets.data),
+        onAcceptWithDetails: (details) {
+          if (dragEventStream.value == DragEventType.start) {
+            this.widget.onDropGoal?.call(details.data);
+          }
+        },
         onMove: (details) {
           if (!_hovering) {
             hoverEventStream.add(this.widget.path);
