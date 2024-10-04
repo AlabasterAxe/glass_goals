@@ -120,7 +120,7 @@ class _NoteCardState extends State<NoteCard> {
   didUpdateWidget(NoteCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     final text = widget.textEntry.text;
-    if (text != null && text != _textController.text) {
+    if (text != null && text != oldWidget.textEntry.text) {
       _textController.text = text;
     }
   }
