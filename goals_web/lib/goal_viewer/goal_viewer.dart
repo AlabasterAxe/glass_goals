@@ -852,6 +852,9 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
             }),
             ToggleDebugModeIntent:
                 CallbackAction(onInvoke: (_) => _toggleDebug()),
+            CancelIntent: CallbackAction(onInvoke: (_) {
+              selectedGoalsStream.add([]);
+            }),
           },
           focusNode: _focusNode,
           child: FocusScope(

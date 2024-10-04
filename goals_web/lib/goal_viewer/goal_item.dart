@@ -335,11 +335,12 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     );
     return Actions(
       actions: {
-        CancelIntent: CallbackAction<CancelIntent>(
-          onInvoke: (_) {
-            this._cancelEditing();
-          },
-        ),
+        if (this._editing)
+          CancelIntent: CallbackAction<CancelIntent>(
+            onInvoke: (_) {
+              this._cancelEditing();
+            },
+          ),
         AcceptIntent: CallbackAction<AcceptIntent>(
           onInvoke: (_) {
             this._updateGoal();
