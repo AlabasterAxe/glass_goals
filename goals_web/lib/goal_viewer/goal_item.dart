@@ -397,6 +397,11 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
             this._updateGoal();
           },
         ),
+        AcceptMultiLineTextIntent: CallbackAction<AcceptMultiLineTextIntent>(
+          onInvoke: (_) {
+            this._updateGoal();
+          },
+        ),
         if (!this._editing)
           ActivateIntent:
               CallbackAction<ActivateIntent>(onInvoke: (ActivateIntent intent) {
