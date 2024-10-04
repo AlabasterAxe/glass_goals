@@ -214,8 +214,9 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                               : {droppedGoalId};
                       bool setNullParent =
                           goalsToUpdate.every(sliceGoalMap.containsKey);
-                      bool addStatus = goalsToUpdate
-                          .every((goalId) => !sliceGoalMap.containsKey(goalId));
+                      bool addStatus = goalsToUpdate.every(
+                              (goalId) => !sliceGoalMap.containsKey(goalId)) &&
+                          slice != TimeSlice.unscheduled;
                       for (final path in goalsToUpdate) {
                         final goal = widget.goalMap[path.goalId];
 

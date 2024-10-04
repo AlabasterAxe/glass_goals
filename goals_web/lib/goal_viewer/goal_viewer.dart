@@ -713,9 +713,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     List<String>? nextDropPath,
   }) {
     final selectedGoals = selectedGoalsStream.value;
-    Set<GoalPath> goalsToUpdate = selectedGoals.contains(path)
-        ? {...selectedGoals.map((goalPath) => GoalPath(goalPath))}
-        : {path};
+    Set<GoalPath> goalsToUpdate =
+        selectedGoals.contains(path) ? {...selectedGoals} : {path};
 
     if (!((dropPath != null) ^
         (prevDropPath != null && nextDropPath != null))) {
