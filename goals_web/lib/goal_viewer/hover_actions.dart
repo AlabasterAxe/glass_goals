@@ -88,8 +88,10 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
     bool allArchived = selectedGoals.isNotEmpty;
     for (final selectedGoalPath in selectedGoals) {
       final goal = widget.goalMap[selectedGoalPath.goalId];
-      if (goal != null) {
-        getGoalStatus(worldContext, goal).status != GoalStatus.archived;
+      if (goal != null &&
+          getGoalStatus(worldContext, goal).status != GoalStatus.archived) {
+        allArchived = false;
+        break;
       }
     }
 
