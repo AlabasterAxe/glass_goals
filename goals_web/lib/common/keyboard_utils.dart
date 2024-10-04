@@ -42,7 +42,7 @@ final SHORTCUTS = <ShortcutActivator, Intent>{
   SingleActivator(LogicalKeyboardKey.keyZ, control: true): const UndoIntent(),
   SingleActivator(LogicalKeyboardKey.keyZ, control: true, shift: true):
       const RedoIntent(),
-  SingleActivator(LogicalKeyboardKey.enter, control: true):
+  LogicalKeySet(LogicalKeyboardKey.enter, LogicalKeyboardKey.control):
       const AcceptMultiLineTextIntent(),
   SingleActivator(LogicalKeyboardKey.keyD, control: true, shift: true):
       const ToggleDebugModeIntent(),
@@ -54,7 +54,7 @@ final MAC_SHORTCUTS = <ShortcutActivator, Intent>{
   SingleActivator(LogicalKeyboardKey.keyZ, meta: true): const UndoIntent(),
   SingleActivator(LogicalKeyboardKey.keyZ, meta: true, shift: true):
       const RedoIntent(),
-  SingleActivator(LogicalKeyboardKey.enter, meta: true):
+  LogicalKeySet(LogicalKeyboardKey.enter, LogicalKeyboardKey.meta):
       const AcceptMultiLineTextIntent(),
   SingleActivator(LogicalKeyboardKey.keyD, meta: true, shift: true):
       const ToggleDebugModeIntent(),
