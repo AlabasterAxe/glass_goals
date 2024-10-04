@@ -399,8 +399,7 @@ StatusLogEntry getGoalStatus(WorldContext context, Goal goal) {
   final now = context.time;
 
   Set<String> archivedStatuses = {};
-  for (final entry in (goal.log
-    ..sort((a, b) => b.creationTime.compareTo(a.creationTime)))) {
+  for (final entry in goal.log) {
     if (entry is StatusLogEntry &&
         !archivedStatuses.contains(entry.id) &&
         (entry.startTime == null || entry.startTime!.isBefore(now)) &&

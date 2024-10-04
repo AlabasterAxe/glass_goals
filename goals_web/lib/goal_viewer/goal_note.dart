@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart' show Colors, Icons, TextField;
-import 'package:flutter/painting.dart'
-    show EdgeInsets, TextBaseline, TextScaler, TextStyle;
+import 'package:flutter/painting.dart' show TextBaseline, TextScaler, TextStyle;
 import 'package:flutter/widgets.dart'
     show
         Actions,
@@ -121,7 +120,7 @@ class _NoteCardState extends State<NoteCard> {
   didUpdateWidget(NoteCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     final text = widget.textEntry.text;
-    if (text != null && widget.goal.id != oldWidget.goal.id) {
+    if (text != null && text != _textController.text) {
       _textController.text = text;
     }
   }

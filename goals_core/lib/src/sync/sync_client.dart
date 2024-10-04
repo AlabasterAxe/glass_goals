@@ -253,7 +253,7 @@ class SyncClient {
     }
 
     if (op.delta.logEntry != null) {
-      goal.log.add(op.delta.logEntry!);
+      goal.log.insert(0, op.delta.logEntry!);
       _evaluateSuperGoals(goalMap, goal, op.delta.logEntry);
     }
   }

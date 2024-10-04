@@ -22,21 +22,22 @@ void main() {
     expect(
         json,
         equals(
-            '{"hlcTimestamp":"0","delta":{"id":"1","text":"foo","logEntry":{"type":"status","status":"active","creationTime":"2023-01-01T05:00:00.000Z","startTime":null,"endTime":null}},"version":4}'));
+            '{"hlcTimestamp":"0","delta":{"id":"1","text":"foo","logEntry":{"type":"status","id":"2","status":"active","creationTime":"2023-01-01T05:00:00.000Z","startTime":null,"endTime":null}},"version":5,"type":"delta"}'));
 
     final op2 = Op.fromJson(json);
 
     expect(op2, equals(op));
   });
   test('prev op to json works', () {
+    final entryId = const Uuid().v4();
     final op = prev_goal_types.Op(
       hlcTimestamp: '0',
       delta: prev_goal_types.GoalDelta(
           id: '1',
           text: 'foo',
           logEntry: prev_goal_types.SetParentLogEntry(
-            id: const Uuid().v4(),
-            creationTime: DateTime.now(),
+            id: entryId,
+            creationTime: DateTime(2023),
             parentId: '0',
           )),
     );
@@ -49,7 +50,7 @@ void main() {
     expect(
         json,
         equals(
-            '{"hlcTimestamp":"0","delta":{"id":"1","text":"foo","logEntry":{"type":"setParent","parentId":"0","creationTime":"2023-01-01T05:00:00.000Z"}},"version":4}'));
+            '{"hlcTimestamp":"0","delta":{"id":"1","text":"foo","logEntry":{"type":"setParent","id":"$entryId","parentId":"0","creationTime":"2023-01-01T05:00:00.000Z"}},"version":5,"type":"delta"}'));
 
     final op2 = Op.fromJson(json);
 
