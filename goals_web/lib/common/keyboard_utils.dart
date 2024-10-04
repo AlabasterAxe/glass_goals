@@ -38,29 +38,25 @@ final _PLATFORM_AGNOSTIC_SHORTCUTS = <ShortcutActivator, Intent>{
 };
 
 final SHORTCUTS = <ShortcutActivator, Intent>{
-  LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyK):
-      const SearchIntent(),
-  LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyZ):
-      const UndoIntent(),
-  LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift,
-      LogicalKeyboardKey.keyZ): const RedoIntent(),
-  LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
+  SingleActivator(LogicalKeyboardKey.keyK, control: true): const SearchIntent(),
+  SingleActivator(LogicalKeyboardKey.keyZ, control: true): const UndoIntent(),
+  SingleActivator(LogicalKeyboardKey.keyZ, control: true, shift: true):
+      const RedoIntent(),
+  SingleActivator(LogicalKeyboardKey.enter, control: true):
       const AcceptMultiLineTextIntent(),
-  LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift,
-      LogicalKeyboardKey.keyD): const ToggleDebugModeIntent(),
+  SingleActivator(LogicalKeyboardKey.keyD, control: true, shift: true):
+      const ToggleDebugModeIntent(),
   ..._PLATFORM_AGNOSTIC_SHORTCUTS,
 };
 
 final MAC_SHORTCUTS = <ShortcutActivator, Intent>{
-  LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyK):
-      const SearchIntent(),
-  LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyZ):
-      const UndoIntent(),
-  LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.shift,
-      LogicalKeyboardKey.keyZ): const RedoIntent(),
-  LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter):
+  SingleActivator(LogicalKeyboardKey.keyK, meta: true): const SearchIntent(),
+  SingleActivator(LogicalKeyboardKey.keyZ, meta: true): const UndoIntent(),
+  SingleActivator(LogicalKeyboardKey.keyZ, meta: true, shift: true):
+      const RedoIntent(),
+  SingleActivator(LogicalKeyboardKey.enter, meta: true):
       const AcceptMultiLineTextIntent(),
-  LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.shift,
-      LogicalKeyboardKey.keyD): const ToggleDebugModeIntent(),
+  SingleActivator(LogicalKeyboardKey.keyD, meta: true, shift: true):
+      const ToggleDebugModeIntent(),
   ..._PLATFORM_AGNOSTIC_SHORTCUTS,
 };
