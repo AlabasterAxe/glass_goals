@@ -81,7 +81,7 @@ class PendingGoalViewer extends ConsumerWidget {
       PendingGoalViewMode.info =>
         ScheduledGoalsV2(goalMap: this.goalMap, path: this.path),
       PendingGoalViewMode.tree => FlattenedGoalTree(
-          path: this.path,
+          path: [this.viewKey, ...this.path],
           goalMap: getGoalsMatchingPredicate(
               this.goalMap,
               (goal) => ![
@@ -111,7 +111,7 @@ class PendingGoalViewer extends ConsumerWidget {
               .toList(),
           hoverActionsBuilder: (path) =>
               HoverActionsWidget(path: path, goalMap: this.goalMap),
-          section: this.viewKey),
+        ),
     };
   }
 }

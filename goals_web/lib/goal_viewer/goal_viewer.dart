@@ -199,6 +199,13 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     if (!isCtrlHeld()) {
+      if (focusedGoalStream.value != null &&
+          (this._filter is! GoalGoalFilter ||
+              (this._filter as GoalGoalFilter).goalId != path?.goalId) &&
+          path?.contains("detail") == true) {
+        this._onSwitchFilter(
+            GoalGoalFilter(focusedGoalStream.value!, widget.goalMap));
+      }
       focusedGoalStream.add(path?.goalId);
       Hive.box('goals_web.ui').put('focusedGoal', path?.goalId);
     }
@@ -1040,13 +1047,13 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                             .map((g) => g.id)
                             .toList();
                     return FlattenedGoalTree(
-                      section: 'all-goals',
                       goalMap: goalMap,
                       rootGoalIds: goalIds,
                       hoverActionsBuilder: (path) => HoverActionsWidget(
                         path: path,
                         goalMap: widget.goalMap,
                       ),
+                      path: ['all-goals'],
                       depthLimit: _mode == GoalViewMode.list ? 1 : null,
                     );
                   case GoalFilterType.schedule_v2:
@@ -1067,6 +1074,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       goalMap: goalMap,
                     );
                   },
+                  path: ['list'],
                 );
             }
           })),
@@ -1092,6 +1100,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         goalMap: widget.goalMap,
         hoverActionsBuilder: (path) =>
             HoverActionsWidget(path: path, goalMap: widget.goalMap),
+        path: ['detail'],
       ),
     );
   }

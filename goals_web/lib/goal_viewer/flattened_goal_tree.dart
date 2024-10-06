@@ -41,7 +41,6 @@ class FlattenedGoalTree extends ConsumerStatefulWidget {
   final bool showParentName;
   final HoverActionsBuilder hoverActionsBuilder;
   final List<String> path;
-  final String section;
   final bool showAddGoal;
   const FlattenedGoalTree({
     super.key,
@@ -52,7 +51,6 @@ class FlattenedGoalTree extends ConsumerStatefulWidget {
     required this.hoverActionsBuilder,
     this.showAddGoal = true,
     this.path = const [],
-    required this.section,
   });
 
   @override
@@ -152,12 +150,7 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
         this.widget.goalMap,
         goal.id,
         onVisit: (goalId, path) {
-          final fullGoalPath = [
-            this.widget.section,
-            ...this.widget.path,
-            ...path,
-            goalId
-          ];
+          final fullGoalPath = [...this.widget.path, ...path, goalId];
           flattenedGoals.add((
             path: GoalPath(fullGoalPath),
             hasRenderableChildren: this
@@ -175,13 +168,8 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
           }
         },
         onDepart: (String goalId, List<String> path) {
-          final addGoalPath = GoalPath([
-            this.widget.section,
-            ...this.widget.path,
-            ...path,
-            goalId,
-            NEW_GOAL_PLACEHOLDER
-          ]);
+          final addGoalPath = GoalPath(
+              [...this.widget.path, ...path, goalId, NEW_GOAL_PLACEHOLDER]);
           if (this.widget.showAddGoal && pathsMatch(addGoalPath, textFocus)) {
             flattenedGoals.add((
               path: addGoalPath,
@@ -194,8 +182,7 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
     }
     if (this.widget.showAddGoal) {
       flattenedGoals.add((
-        path: GoalPath(
-            [this.widget.section, ...this.widget.path, NEW_GOAL_PLACEHOLDER]),
+        path: GoalPath([...this.widget.path, NEW_GOAL_PLACEHOLDER]),
         hasRenderableChildren: false,
       ));
     }
@@ -238,7 +225,7 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
       final goalId = flattenedGoal.path.goalId;
       goalItems.add(GoalSeparator(
           isFirst: i == 0,
-          prevGoalPath: prevGoal?.path ?? [widget.section, ...this.widget.path],
+          prevGoalPath: prevGoal?.path ?? [...this.widget.path],
           nextGoalPath: flattenedGoal.path,
           path: this.widget.path,
           goalMap: this.widget.goalMap,
@@ -254,8 +241,7 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
               : null,
           onDropGoal: (goalDragDetails) {
             onDropGoal(goalDragDetails.path,
-                prevDropPath:
-                    prevGoal?.path ?? [widget.section, ...this.widget.path],
+                prevDropPath: prevGoal?.path ?? [...this.widget.path],
                 nextDropPath: flattenedGoal.path);
           }));
       goalItems.add(goalId != NEW_GOAL_PLACEHOLDER
@@ -269,7 +255,7 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
               padding: EdgeInsets.only(
                   left: uiUnit(4) *
                       (flattenedGoal.path.length -
-                          (2 + this.widget.path.length))),
+                          (1 + this.widget.path.length))),
               goal: this.widget.goalMap[goalId]!,
               pendingShiftSelect: _shiftHoverStartIndex != null &&
                   _shiftHoverEndIndex != null &&
@@ -289,7 +275,7 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
               padding: EdgeInsets.only(
                   left: uiUnit(4) *
                       (flattenedGoal.path.length -
-                          (2 + this.widget.path.length))),
+                          (1 + this.widget.path.length))),
             ));
     }
     return Actions(

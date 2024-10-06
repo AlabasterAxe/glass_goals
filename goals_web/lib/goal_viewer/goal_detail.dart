@@ -3,7 +3,6 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:goals_core/model.dart'
     show
         Goal,
-        GoalPath,
         TraversalDecision,
         WorldContext,
         getGoalStatus,
@@ -487,11 +486,13 @@ class GoalDetail extends ConsumerStatefulWidget {
   final Goal goal;
   final Map<String, Goal> goalMap;
   final HoverActionsBuilder hoverActionsBuilder;
+  final List<String> path;
   const GoalDetail({
     super.key,
     required this.goal,
     required this.goalMap,
     required this.hoverActionsBuilder,
+    this.path = const [],
   });
 
   @override
@@ -843,7 +844,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
           ScheduledGoalsV2(
             goalMap: getTransitiveSubGoals(this.widget.goalMap, widget.goal.id)
               ..remove(widget.goal.id),
-            path: ['detail', this.widget.goal.id],
+            path: [...this.widget.path, this.widget.goal.id],
           )
         ];
       case PendingGoalViewMode.tree:
@@ -859,8 +860,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                 .where((g) => subgoalMap.containsKey(g))
                 .toList(),
             hoverActionsBuilder: widget.hoverActionsBuilder,
-            path: [widget.goal.id],
-            section: 'detail',
+            path: [...this.widget.path, this.widget.goal.id],
           ),
         ];
       case PendingGoalViewMode.info:
