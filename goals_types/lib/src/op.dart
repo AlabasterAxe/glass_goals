@@ -481,7 +481,7 @@ class AddParentLogEntry extends GoalLogEntry {
 
 class RemoveParentLogEntry extends GoalLogEntry {
   static const FIRST_VERSION = 5;
-  final String? parentId;
+  final String parentId;
   const RemoveParentLogEntry({
     required super.id,
     required super.creationTime,

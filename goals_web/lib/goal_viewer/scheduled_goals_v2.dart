@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:goals_core/model.dart';
 import 'package:goals_core/sync.dart'
     show GoalDelta, GoalStatus, SetParentLogEntry, StatusLogEntry;
-import 'package:goals_web/goal_viewer/goal_breadcrumb.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
@@ -16,7 +15,6 @@ import 'flattened_goal_tree.dart';
 import 'goal_actions_context.dart';
 import 'hover_actions.dart';
 import 'providers.dart';
-import 'package:collection/collection.dart' show IterableExtension;
 
 class ScheduledGoalsV2 extends ConsumerStatefulWidget {
   final Map<String, Goal> goalMap;
@@ -65,57 +63,104 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
   }
 
   Widget _smallSlice(WorldContext worldContext, TimeSlice slice,
-      Map<String, Goal> sliceGoalMap) {
-    final goalIds = sliceGoalMap.values
-        .where((goal) {
-          for (final superGoalId in goal.superGoalIds) {
-            if (sliceGoalMap.containsKey(superGoalId)) {
-              return false;
+      Map<String, Goal> sliceGoalMap, DragEventType? dragEventType) {
+    return Container(
+      child: DragTarget<GoalDragDetails>(
+        onAcceptWithDetails: (details) {
+          if (dragEventProvider.value == DragEventType.start &&
+              !sliceGoalMap.containsKey(details.data.path.goalId)) {
+            final goal = widget.goalMap[details.data.path.goalId];
+
+            if (goal == null) {
+              return;
             }
+
+            final goalStatus = getGoalStatus(worldContext, goal);
+
+            final sliceStartTime = slice.startTime(worldContext.time);
+            final sliceEndTime = slice.endTime(worldContext.time);
+
+            // This is for the special case where a goal has an active status with a specific end date
+            // and we're moving it into a smaller time slice (e.g. from This Month to This Week).
+            // In this case, we want to keep the end date the same.
+            final newEndTime = goalStatus.status == GoalStatus.active &&
+                    (sliceStartTime == null ||
+                        goalStatus.startTime?.isBefore(sliceStartTime) ==
+                            true) &&
+                    (sliceEndTime == null ||
+                        goalStatus.endTime?.isBefore(sliceEndTime) == true)
+                ? goalStatus.endTime
+                : sliceEndTime;
+
+            AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
+                id: details.data.path.goalId,
+                logEntry: StatusLogEntry(
+                  id: const Uuid().v4(),
+                  creationTime: DateTime.now(),
+                  status: GoalStatus.active,
+                  startTime: slice.startTime(worldContext.time),
+                  endTime: newEndTime,
+                )));
           }
-          return true;
-        })
-        .map((e) => e.id)
-        .toList();
-    return Wrap(
-      direction: Axis.horizontal,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(vertical: uiUnit())
-              .copyWith(left: uiUnit(2)),
-          child: Text(
-            slice.displayName,
-            style: Theme.of(context).textTheme.headlineSmall!.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-        ),
-        GlassGoalsIconButton(
-          icon: Icons.arrow_right,
-          onPressed: () {
-            this._toggleExpansion(slice);
-          },
-        ),
-        for (final goal in goalIds
-            .map((id) => sliceGoalMap[id])
-            .where((goal) => goal != null)
-            .cast<Goal>()
-            .sorted(getPriorityComparator(worldContext)))
-          if ([GoalStatus.active, null]
-              .contains(getGoalStatus(worldContext, goal).status)) ...[
-            Text("|"),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: uiUnit(2)),
-              child: Breadcrumb(goal: goal),
+        },
+        builder: (BuildContext context, List<Object?> candidateData,
+            List<dynamic> _) {
+          return Container(
+            decoration: BoxDecoration(
+              color:
+                  candidateData.isNotEmpty ? emphasizedLightBackground : null,
+              border: candidateData.isNotEmpty
+                  ? Border(
+                      top: BorderSide(
+                        color: darkElementColor,
+                        width: 2.0,
+                      ),
+                      bottom: BorderSide(
+                        color: darkElementColor,
+                        width: 2.0,
+                      ),
+                    )
+                  : null,
             ),
-          ]
-      ],
+            child: Row(
+              children: [
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                          vertical: candidateData.isNotEmpty
+                              ? uiUnit() - 2
+                              : uiUnit())
+                      .copyWith(left: uiUnit(2)),
+                  child: Text(
+                    slice.displayName,
+                    style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: sliceGoalMap.isNotEmpty ||
+                                  candidateData.isNotEmpty
+                              ? Theme.of(context).textTheme.headlineSmall!.color
+                              : Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall!
+                                  .color!
+                                  .withOpacity(0.5),
+                        ),
+                  ),
+                ),
+                GlassGoalsIconButton(
+                  icon: Icons.arrow_right,
+                  onPressed: () {
+                    this._toggleExpansion(slice);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
   List<Widget> _timeSlices(WorldContext worldContext, List<TimeSlice> slices,
-      [List<TimeSlice>? manualTimeSlices]) {
+      [List<TimeSlice>? manualTimeSlices, DragEventType? dragEventType]) {
     final Map<String, Goal> goalsAccountedFor = {};
     final List<Widget> result = [];
     Widget? unscheduledSlice;
@@ -155,11 +200,12 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
 
       if (goalIds.isEmpty &&
           (manualTimeSlices == null || !manualTimeSlices.contains(slice)) &&
-          slice != TimeSlice.unscheduled) {
+          slice != TimeSlice.unscheduled &&
+          dragEventType != DragEventType.start) {
         continue;
       }
 
-      if (_expandedTimeSlices.contains(slice)) {
+      if (_expandedTimeSlices.contains(slice) && goalIds.isNotEmpty) {
         final sliceWidget = Padding(
           padding: EdgeInsets.only(bottom: uiUnit(3)),
           child: Column(
@@ -196,22 +242,22 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                             [TimeSlice? _]) =>
                         onAddGoal(parentId, text, slice),
                     onDropGoal: (
-                      droppedGoalId, {
+                      droppedGoalPath, {
                       List<String>? dropPath,
                       List<String>? prevDropPath,
                       List<String>? nextDropPath,
                     }) {
                       onDropGoal(
-                        droppedGoalId,
+                        droppedGoalPath,
                         dropPath: dropPath,
                         prevDropPath: prevDropPath,
                         nextDropPath: nextDropPath,
                       );
                       final selectedGoals = selectedGoalsStream.value;
                       final goalsToUpdate =
-                          selectedGoals.contains(droppedGoalId)
+                          selectedGoals.contains(droppedGoalPath)
                               ? selectedGoals
-                              : {droppedGoalId};
+                              : {droppedGoalPath};
                       bool setNullParent =
                           goalsToUpdate.every(sliceGoalMap.containsKey);
                       bool addStatus = goalsToUpdate.every(
@@ -296,7 +342,8 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
           result.add(sliceWidget);
         }
       } else {
-        final sliceWidget = _smallSlice(worldContext, slice, sliceGoalMap);
+        final sliceWidget =
+            _smallSlice(worldContext, slice, sliceGoalMap, dragEventType);
         if (slice == TimeSlice.unscheduled) {
           unscheduledSlice = sliceWidget;
         } else {
@@ -315,21 +362,24 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
     final worldContext =
         ref.watch(worldContextProvider).value ?? worldContextStream.value;
     final manualTimeSlices = ref.watch(manualTimeSliceProvider);
+    final dragEventType = ref.watch(dragEventProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ..._timeSlices(
-            worldContext,
-            [
-              TimeSlice.today,
-              TimeSlice.this_week,
-              TimeSlice.this_month,
-              TimeSlice.this_quarter,
-              TimeSlice.this_year,
-              TimeSlice.long_term,
-              TimeSlice.unscheduled,
-            ],
-            manualTimeSlices.value)
+          worldContext,
+          [
+            TimeSlice.today,
+            TimeSlice.this_week,
+            TimeSlice.this_month,
+            TimeSlice.this_quarter,
+            TimeSlice.this_year,
+            TimeSlice.long_term,
+            TimeSlice.unscheduled,
+          ],
+          manualTimeSlices.value,
+          dragEventType,
+        )
       ],
     );
   }

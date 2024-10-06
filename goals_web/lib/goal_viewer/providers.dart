@@ -1,4 +1,5 @@
 import 'package:goals_core/model.dart' show GoalPath, WorldContext;
+import 'package:goals_web/common/behavior_provider.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show StateNotifier, StateNotifierProvider, StreamProvider;
 import 'package:rxdart/rxdart.dart' show BehaviorSubject, CombineLatestStream;
@@ -54,8 +55,7 @@ enum DragEventType {
   none,
 }
 
-final dragEventStream =
-    BehaviorSubject<DragEventType>.seeded(DragEventType.none);
+final dragEventProvider = BehaviorProvider(DragEventType.none);
 
 final worldContextStream =
     BehaviorSubject<WorldContext>.seeded(WorldContext.now());

@@ -6,19 +6,26 @@ import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/goal_viewer/scheduled_goals_v2.dart';
-import 'package:hive/hive.dart';
+import 'package:goals_web/styles.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 const PENDING_GOAL_VIEW_MODE_PREFIX = 'PendingGoalViewer.viewMode';
 
-final _boxKey =
+final viewModeBoxKey =
     (String viewKey) => '${PENDING_GOAL_VIEW_MODE_PREFIX}.${viewKey}';
 
 class PendingGoalViewModePicker extends StatefulWidget {
   final Function(PendingGoalViewMode) onModeChanged;
   final String viewKey;
-  const PendingGoalViewModePicker(
-      {super.key, required this.onModeChanged, required this.viewKey});
+  final PendingGoalViewMode mode;
+  final bool showInfo;
+  const PendingGoalViewModePicker({
+    super.key,
+    required this.onModeChanged,
+    required this.viewKey,
+    required this.mode,
+    this.showInfo = false,
+  });
 
   @override
   State<PendingGoalViewModePicker> createState() =>
@@ -26,42 +33,26 @@ class PendingGoalViewModePicker extends StatefulWidget {
 }
 
 class _PendingGoalViewModePickerState extends State<PendingGoalViewModePicker> {
-  PendingGoalViewMode _viewMode = PendingGoalViewMode.schedule;
-
-  @override
-  void initState() {
-    super.initState();
-
-    Hive.openBox('goals_web.ui').then((box) {
-      final viewModeString = box.get(_boxKey(this.widget.viewKey),
-          defaultValue: PendingGoalViewMode.schedule.name);
-
-      try {
-        _viewMode = PendingGoalViewMode.values.byName(viewModeString);
-        this.widget.onModeChanged(_viewMode);
-        setState(() {});
-      } catch (_) {
-        // use default value
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    return SegmentedButton<PendingGoalViewMode>(
-      segments: [
-        ButtonSegment<PendingGoalViewMode>(
-            label: Text('Schedule'), value: PendingGoalViewMode.schedule),
-        ButtonSegment<PendingGoalViewMode>(
-            label: Text('Tree'), value: PendingGoalViewMode.tree),
+    return DropdownButton<PendingGoalViewMode>(
+      items: [
+        DropdownMenuItem<PendingGoalViewMode>(
+            child: Text('Tree'), value: PendingGoalViewMode.tree),
+        DropdownMenuItem<PendingGoalViewMode>(
+            child: Text('Schedule'), value: PendingGoalViewMode.schedule),
+        if (widget.showInfo)
+          DropdownMenuItem<PendingGoalViewMode>(
+              child: Text('Info'), value: PendingGoalViewMode.info),
       ],
-      selected: {this._viewMode},
-      onSelectionChanged: (modes) {
-        this._viewMode = modes.first;
-        this.widget.onModeChanged(this._viewMode);
-        Hive.openBox('goals_web.ui').then((box) {
-          box.put(_boxKey(this.widget.viewKey), modes.first.name);
-        });
+      borderRadius: BorderRadius.circular(uiUnit(1)),
+      padding: EdgeInsets.symmetric(horizontal: uiUnit(2)),
+      value: this.widget.mode,
+      onChanged: (mode) {
+        if (mode == null) {
+          return;
+        }
+        this.widget.onModeChanged(mode);
       },
     );
   }
@@ -85,8 +76,9 @@ class PendingGoalViewer extends ConsumerWidget {
     final worldContext =
         ref.read(worldContextProvider).value ?? worldContextStream.value;
     return switch (this.mode) {
-      // TODO: Handle this case.
       PendingGoalViewMode.schedule =>
+        ScheduledGoalsV2(goalMap: this.goalMap, path: this.path),
+      PendingGoalViewMode.info =>
         ScheduledGoalsV2(goalMap: this.goalMap, path: this.path),
       PendingGoalViewMode.tree => FlattenedGoalTree(
           path: this.path,
@@ -125,6 +117,13 @@ class PendingGoalViewer extends ConsumerWidget {
 }
 
 enum PendingGoalViewMode {
+  // schedule view breaks the goals into sections based on their currently active status
   schedule,
+
+  // tree view just shows the goals in a tree format
   tree,
+
+  // summary shows information about the history of a goal and the summary of
+  // the goal and its subgoals
+  info,
 }

@@ -54,7 +54,7 @@ import 'goal_actions_context.dart';
 import 'providers.dart'
     show
         DragEventType,
-        dragEventStream,
+        dragEventProvider,
         expandedGoalsProvider,
         expandedGoalsStream,
         hasMouseProvider,
@@ -129,7 +129,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
 
       if (pathsMatch(hoveredPath, this.widget.path) &&
           textFocusStream.value == null &&
-          dragEventStream.value != DragEventType.start) {
+          dragEventProvider.value != DragEventType.start) {
         this._focusNode.requestFocus();
       }
     }));
@@ -181,32 +181,32 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
       dragAnchorStrategy: pointerDragAnchorStrategy,
       onDragStarted: () {
         this._focusNode.requestFocus();
-        if (dragEventStream.value == DragEventType.start) {
-          dragEventStream.add(DragEventType.cancel);
+        if (dragEventProvider.value == DragEventType.start) {
+          dragEventProvider.add(DragEventType.cancel);
         }
-        dragEventStream.add(DragEventType.start);
+        dragEventProvider.add(DragEventType.start);
         setState(() {
           this._dragging = true;
         });
       },
       onDragCompleted: () {
-        if (dragEventStream.value == DragEventType.start) {
-          dragEventStream.add(DragEventType.end);
+        if (dragEventProvider.value == DragEventType.start) {
+          dragEventProvider.add(DragEventType.end);
         }
         setState(() {
           this._dragging = false;
         });
       },
       onDraggableCanceled: (_, __) {
-        if (dragEventStream.value == DragEventType.start) {
-          dragEventStream.add(DragEventType.cancel);
+        if (dragEventProvider.value == DragEventType.start) {
+          dragEventProvider.add(DragEventType.cancel);
         }
         setState(() {
           this._dragging = false;
         });
       },
-      feedback: StreamBuilder<Object>(
-          stream: dragEventStream,
+      feedback: StreamBuilder(
+          stream: dragEventProvider.stream,
           builder: (context, snapshot) {
             if (snapshot.hasData && snapshot.data == DragEventType.cancel) {
               return Container();
@@ -386,7 +386,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         if (this._dragging)
           CancelIntent: CallbackAction<CancelIntent>(
             onInvoke: (_) {
-              dragEventStream.add(DragEventType.cancel);
+              dragEventProvider.add(DragEventType.cancel);
               setState(() {
                 this._dragging = false;
               });
@@ -410,7 +410,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
       },
       child: DragTarget<GoalDragDetails>(
         onAcceptWithDetails: (details) {
-          if (dragEventStream.value == DragEventType.start) {
+          if (dragEventProvider.value == DragEventType.start) {
             this.widget.onDropGoal?.call(details.data);
           }
         },

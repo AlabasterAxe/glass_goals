@@ -421,6 +421,16 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     } catch (_) {
       _filter = PredefinedGoalFilter(GoalFilterType.pending_v2);
     }
+
+    final pendingGoalViewModeString = box.get(viewModeBoxKey('root'),
+        defaultValue: PendingGoalViewMode.tree.name);
+
+    try {
+      _pendingGoalViewMode =
+          PendingGoalViewMode.values.byName(pendingGoalViewModeString);
+    } catch (_) {
+      _pendingGoalViewMode = PendingGoalViewMode.tree;
+    }
   }
 
   _returnFocus() {
@@ -637,13 +647,16 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
           continue;
         }
 
-        goalDeltas.add(GoalDelta(
-            id: details.goalId,
-            logEntry: RemoveParentLogEntry(
-              id: Uuid().v4(),
-              creationTime: DateTime.now(),
-              parentId: pathParentId,
-            )));
+        if (pathParentId != null) {
+          goalDeltas.add(GoalDelta(
+              id: details.goalId,
+              logEntry: RemoveParentLogEntry(
+                id: Uuid().v4(),
+                creationTime: DateTime.now(),
+                parentId: pathParentId,
+              )));
+        }
+
         goalDeltas.add(GoalDelta(
             id: details.goalId,
             logEntry: AddParentLogEntry(
@@ -688,13 +701,16 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         continue;
       }
 
-      goalDeltas.add(GoalDelta(
-          id: path.goalId,
-          logEntry: RemoveParentLogEntry(
-            id: Uuid().v4(),
-            creationTime: DateTime.now(),
-            parentId: pathParentId,
-          )));
+      if (pathParentId != null) {
+        goalDeltas.add(GoalDelta(
+            id: path.goalId,
+            logEntry: RemoveParentLogEntry(
+              id: Uuid().v4(),
+              creationTime: DateTime.now(),
+              parentId: pathParentId,
+            )));
+      }
+
       goalDeltas.add(GoalDelta(
           id: path.goalId,
           logEntry: AddParentLogEntry(
@@ -961,24 +977,12 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   Widget _listView(WorldContext worldContext) {
     final theme = Theme.of(context).textTheme;
     final isNarrow = MediaQuery.of(context).size.width < 600;
-    final manualTimeSlices = ref.watch(manualTimeSliceProvider);
-    final createTimeSliceOptions = this._computeCreateTimeSliceOptions(
-        worldContext,
-        [
-          TimeSlice.today,
-          TimeSlice.this_week,
-          TimeSlice.this_month,
-          TimeSlice.this_quarter,
-          TimeSlice.this_year,
-          TimeSlice.long_term,
-        ],
-        manualTimeSlices.value ?? []);
 
     return Column(
       key: const ValueKey('list'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (!isNarrow)
+        if (!isNarrow && _filter is! GoalGoalFilter)
           Padding(
             padding: EdgeInsets.all(uiUnit(2)),
             child: Row(
@@ -993,43 +997,20 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       _filter.displayName,
                       style: theme.headlineMedium,
                     ),
-                    if (_filter is PredefinedGoalFilter &&
-                            (_filter as PredefinedGoalFilter).type ==
-                                GoalFilterType.pending_v2 ||
-                        _filter is GoalGoalFilter)
-                      Tooltip(
-                        waitDuration: Duration(milliseconds: 200),
-                        showDuration: Duration.zero,
-                        message: 'Add a Time Slice',
-                        child: MenuAnchor(
-                          controller: this._addTimeSliceMenuController,
-                          menuChildren: [
-                            ...createTimeSliceOptions
-                                .map((slice) => MenuItemButton(
-                                      child: Text(slice.displayName),
-                                      onPressed: () =>
-                                          createManualTimeSlice(slice),
-                                    )),
-                          ],
-                          child: GlassGoalsIconButton(
-                              enabled: createTimeSliceOptions.isNotEmpty,
-                              iconWidget: const Icon(Icons.add),
-                              onPressed: () {
-                                this._addTimeSliceMenuController.open();
-                              }),
-                        ),
-                      ),
                   ],
                 ),
                 if (_filter is PredefinedGoalFilter &&
-                        (_filter as PredefinedGoalFilter).type ==
-                            GoalFilterType.pending_v2 ||
-                    _filter is GoalGoalFilter)
+                    (_filter as PredefinedGoalFilter).type ==
+                        GoalFilterType.pending_v2)
                   PendingGoalViewModePicker(
-                      onModeChanged: (mode) => this.setState(() {
-                            _pendingGoalViewMode = mode;
-                          }),
-                      viewKey: "root")
+                    onModeChanged: (mode) => this.setState(() {
+                      _pendingGoalViewMode = mode;
+                      Hive.box(UI_STATE_BOX)
+                          .put(viewModeBoxKey('root'), mode.name);
+                    }),
+                    viewKey: "root",
+                    mode: this._pendingGoalViewMode,
+                  )
               ],
             ),
           ),
@@ -1078,12 +1059,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                     );
                 }
               case GoalGoalFilter filter:
-                return PendingGoalViewer(
-                  path: [filter.goalId],
-                  viewKey: '',
-                  goalMap: getTransitiveSubGoals(goalMap, filter.goalId)
-                    ..remove(filter.goalId),
-                  mode: this._pendingGoalViewMode,
+                return GoalDetail(
+                  goal: goalMap[filter.goalId]!,
+                  goalMap: goalMap,
+                  hoverActionsBuilder: (goalId) {
+                    return HoverActionsWidget(
+                      goalMap: goalMap,
+                    );
+                  },
                 );
             }
           })),
@@ -1107,11 +1090,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       child: GoalDetail(
         goal: focusedGoal,
         goalMap: widget.goalMap,
-        onExpanded: this._onExpanded,
-        onFocused: this._onFocused,
-        onSelected: this._onSelected,
-        onAddGoal: this._onAddGoal,
-        onDropGoal: this._onDropGoal,
         hoverActionsBuilder: (path) =>
             HoverActionsWidget(path: path, goalMap: widget.goalMap),
       ),

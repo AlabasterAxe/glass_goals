@@ -74,7 +74,7 @@ class _GoalSeparatorState extends State<GoalSeparator> {
   Widget build(BuildContext context) {
     return DragTarget<GoalDragDetails>(
       onAcceptWithDetails: (details) {
-        if (dragEventStream.value == DragEventType.start) {
+        if (dragEventProvider.value == DragEventType.start) {
           this.widget.onDropGoal?.call(details.data);
         }
         setState(() {

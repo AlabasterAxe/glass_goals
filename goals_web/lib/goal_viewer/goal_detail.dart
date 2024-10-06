@@ -9,7 +9,9 @@ import 'package:goals_core/model.dart'
         getGoalStatus,
         getGoalsMatchingPredicate,
         getPriorityComparator,
+        getTransitiveSubGoals,
         hasSummary,
+        isAnchor,
         traverseDown;
 import 'package:goals_core/sync.dart'
     show
@@ -21,11 +23,13 @@ import 'package:goals_core/sync.dart'
         GoalLogEntry,
         GoalStatus,
         NoteLogEntry,
+        RemoveParentLogEntry,
         SetParentLogEntry,
         SetSummaryEntry,
         StatusLogEntry;
 import 'package:goals_core/util.dart' show formatTime;
 import 'package:goals_web/app_context.dart';
+import 'package:goals_web/common/constants.dart';
 import 'package:goals_web/goal_viewer/add_note_card.dart' show AddNoteCard;
 import 'package:goals_web/goal_viewer/goal_actions_context.dart';
 import 'package:goals_web/goal_viewer/goal_breadcrumb.dart';
@@ -34,12 +38,21 @@ import 'package:goals_web/goal_viewer/goal_search_modal.dart'
     show GoalSearchModal, GoalSelectedResult;
 import 'package:goals_web/goal_viewer/goal_summary.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart';
+import 'package:goals_web/goal_viewer/pending_goal_viewer.dart';
 import 'package:goals_web/goal_viewer/printed_goal.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
+import 'package:goals_web/goal_viewer/scheduled_goals_v2.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
 import 'package:goals_web/intents.dart';
 import 'package:goals_web/styles.dart'
-    show darkElementColor, lightBackground, mainTextStyle, uiUnit;
+    show
+        darkElementColor,
+        deepRedColor,
+        lightBackground,
+        mainTextStyle,
+        palePinkColor,
+        uiUnit;
+import 'package:hive/hive.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
 import 'package:htmltopdfwidgets/htmltopdfwidgets.dart' show HTMLToPdf;
@@ -473,27 +486,12 @@ class _StatusCardState extends ConsumerState<StatusCard> {
 class GoalDetail extends ConsumerStatefulWidget {
   final Goal goal;
   final Map<String, Goal> goalMap;
-  final Function(List<String> goalId) onSelected;
-  final Function(List<String> path, {bool? expanded}) onExpanded;
-  final Function(GoalPath) onFocused;
-  final Function(String? parentId, String text) onAddGoal;
-  final Function(
-    GoalPath, {
-    List<String>? dropPath,
-    List<String>? prevDropPath,
-    List<String>? nextDropPath,
-  }) onDropGoal;
   final HoverActionsBuilder hoverActionsBuilder;
   const GoalDetail({
     super.key,
     required this.goal,
     required this.goalMap,
-    required this.onSelected,
-    required this.onExpanded,
-    required this.onFocused,
     required this.hoverActionsBuilder,
-    required this.onAddGoal,
-    required this.onDropGoal,
   });
 
   @override
@@ -722,9 +720,24 @@ class GoalHistoryWidget extends StatelessWidget {
 }
 
 class _GoalDetailState extends ConsumerState<GoalDetail> {
-  var _editing = false;
+  bool _editing = false;
   late final _textController = TextEditingController(text: widget.goal.text);
   final FocusNode _focusNode = FocusNode();
+  PendingGoalViewMode _viewMode = PendingGoalViewMode.tree;
+
+  @override
+  void initState() {
+    super.initState();
+    final pendingGoalViewModeString = Hive.box(UI_STATE_BOX).get(
+        viewModeBoxKey(widget.goal.id),
+        defaultValue: PendingGoalViewMode.tree.name);
+
+    try {
+      _viewMode = PendingGoalViewMode.values.byName(pendingGoalViewModeString);
+    } catch (_) {
+      _viewMode = PendingGoalViewMode.tree;
+    }
+  }
 
   @override
   void didUpdateWidget(oldWidget) {
@@ -733,62 +746,177 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     if (widget.goal.text != oldWidget.goal.text) {
       _textController.text = widget.goal.text;
     }
+
+    final pendingGoalViewModeString = Hive.box(UI_STATE_BOX).get(
+        viewModeBoxKey(widget.goal.id),
+        defaultValue: PendingGoalViewMode.tree.name);
+
+    setState(() {
+      try {
+        _viewMode =
+            PendingGoalViewMode.values.byName(pendingGoalViewModeString);
+      } catch (_) {
+        _viewMode = PendingGoalViewMode.tree;
+      }
+    });
   }
 
-  Widget parentBreadcrumbs(Goal supergoal) {
-    Goal? curGoal = supergoal;
-    final widgets = <Widget>[];
-
-    while (curGoal != null) {
-      widgets.add(Breadcrumb(goal: curGoal));
-      widgets.add(const Icon(Icons.chevron_right));
-      curGoal = widget.goalMap[curGoal.superGoalIds.firstOrNull];
-    }
-    widgets.removeLast();
-
-    return Row(children: widgets.reversed.toList());
-  }
-
-  Widget breadcrumbs() {
+  Widget parentBreadcrumbs() {
     if (this.widget.goal.superGoalIds.isEmpty) {
       return Row(children: [AddParentBreadcrumb(goalId: widget.goal.id)]);
     }
 
     final List<Widget> widgets = [];
     for (final superGoalId in this.widget.goal.superGoalIds) {
-      widgets.add(parentBreadcrumbs(widget.goalMap[superGoalId]!));
+      widgets.add(ParentBreadcrumb(
+        goalId: superGoalId,
+        goalMap: widget.goalMap,
+        onRemove: () {
+          AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+              id: this.widget.goal.id,
+              logEntry: RemoveParentLogEntry(
+                  id: Uuid().v4(),
+                  creationTime: DateTime.now(),
+                  parentId: superGoalId)));
+        },
+      ));
     }
 
-    return Column(children: widgets);
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.start, children: widgets);
+  }
+
+  _printGoal(WorldContext worldContext) async {
+    printGoal((pw.Document doc) async {
+      final font = await PdfGoogleFonts.jostRegular();
+      final fontBold = await PdfGoogleFonts.jostBold();
+      final fontItalic = await PdfGoogleFonts.jostItalic();
+      final widgets = [
+        pw.Header(
+            level: 1,
+            text: widget.goal.text,
+            textStyle: pw.TextStyle(fontSize: 24, font: font)),
+        for (final item in _getFlattenedSummaryItems(
+            worldContext, this.widget.goalMap, this.widget.goal.id))
+          if (item.entry is SetSummaryEntry)
+            pw.Padding(
+              padding: pw.EdgeInsets.only(left: item.depth * 10.0),
+              child: pw.Column(
+                mainAxisSize: pw.MainAxisSize.min,
+                children: [
+                  if (item.goal.id != widget.goal.id)
+                    pw.Header(
+                        level: 2,
+                        margin: pw.EdgeInsets.zero,
+                        padding: pw.EdgeInsets.only(top: 18),
+                        text: item.goal.text,
+                        textStyle: pw.TextStyle(
+                            font: font,
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 18)),
+                  pw.Divider(),
+                  ...(await HTMLToPdf().convert(
+                      markdownToHtml(
+                          (item.entry as SetSummaryEntry).text ??
+                              "Something went wrong.",
+                          extensionSet: ExtensionSet.gitHubWeb),
+                      fontResolver: (_, bold, italic) {
+                    if (bold) return fontBold;
+                    if (italic) return fontItalic;
+                    return font;
+                  })),
+                ],
+              ),
+            ),
+      ];
+      doc.addPage(pw.MultiPage(
+        pageFormat: PdfPageFormat.letter,
+        build: (context) => widgets,
+      ));
+    });
+  }
+
+  List<Widget> getModeChildren(WorldContext worldContext) {
+    switch (this._viewMode) {
+      case PendingGoalViewMode.schedule:
+        return [
+          ScheduledGoalsV2(
+            goalMap: getTransitiveSubGoals(this.widget.goalMap, widget.goal.id)
+              ..remove(widget.goal.id),
+            path: ['detail', this.widget.goal.id],
+          )
+        ];
+      case PendingGoalViewMode.tree:
+        final subgoalMap = getGoalsMatchingPredicate(widget.goalMap, (goal) {
+          final status = getGoalStatus(worldContext, goal);
+          return status.status != GoalStatus.archived &&
+              status.status != GoalStatus.done;
+        });
+        return [
+          FlattenedGoalTree(
+            goalMap: subgoalMap,
+            rootGoalIds: widget.goal.subGoalIds
+                .where((g) => subgoalMap.containsKey(g))
+                .toList(),
+            hoverActionsBuilder: widget.hoverActionsBuilder,
+            path: [widget.goal.id],
+            section: 'detail',
+          ),
+        ];
+      case PendingGoalViewMode.info:
+        final isDebugMode = ref.watch(debugProvider);
+        final List<DetailViewLogEntryItem> logItems = [];
+        for (final goalId in [...widget.goal.subGoalIds, widget.goal.id]) {
+          final goal = widget.goalMap[goalId];
+          if (goal == null) {
+            continue;
+          }
+          logItems.addAll(goal.log.map((entry) => DetailViewLogEntryItem(
+              goal: goal, entry: entry, time: entry.creationTime)));
+        }
+        final historyLog =
+            _computeHistoryLog(worldContext, this.widget.goal.id, logItems);
+        final goalSummary = hasSummary(widget.goal);
+
+        final textTheme = Theme.of(context).textTheme;
+        return [
+          if (goalSummary != null) ...[
+            Text('Summary', style: textTheme.headlineSmall),
+            SizedBox(height: uiUnit(1)),
+            GoalSummary(goal: widget.goal, goalMap: widget.goalMap),
+          ],
+          SizedBox(height: uiUnit(2)),
+          Text('History', style: textTheme.headlineSmall),
+          SizedBox(height: uiUnit(1)),
+          AddNoteCard(goalId: this.widget.goal.id),
+          SizedBox(height: uiUnit()),
+          GoalHistoryWidget(
+              yearItems: historyLog,
+              goalId: this.widget.goal.id,
+              onRefresh: () => setState(() {})),
+          if (isDebugMode) ...[
+            SizedBox(height: uiUnit(2)),
+            Text('Debug Info', style: textTheme.headlineSmall),
+            SizedBox(height: uiUnit(2)),
+            Text('Goal ID: ${widget.goal.id}'),
+            SizedBox(height: uiUnit(2)),
+            for (final entry in widget.goal.log) Text(entry.toString())
+          ],
+        ];
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDebugMode = ref.watch(debugProvider);
     final worldContext =
         ref.watch(worldContextProvider).value ?? worldContextStream.value;
-    final List<DetailViewLogEntryItem> logItems = [];
-    for (final goalId in [...widget.goal.subGoalIds, widget.goal.id]) {
-      final goal = widget.goalMap[goalId];
-      if (goal == null) {
-        continue;
-      }
-      logItems.addAll(goal.log.map((entry) => DetailViewLogEntryItem(
-          goal: goal, entry: entry, time: entry.creationTime)));
-    }
+
     final textTheme = Theme.of(context).textTheme;
-    final historyLog =
-        _computeHistoryLog(worldContext, this.widget.goal.id, logItems);
-    final subgoalMap = getGoalsMatchingPredicate(widget.goalMap, (goal) {
-      final status = getGoalStatus(worldContext, goal);
-      return status.status != GoalStatus.archived &&
-          status.status != GoalStatus.done;
-    });
-    final goalSummary = hasSummary(widget.goal);
+
     final isNarrow = MediaQuery.of(context).size.width < 600;
     return Padding(
       padding: EdgeInsets.all(uiUnit(2)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (!isNarrow)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -798,140 +926,149 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     _editing
-                        ? IntrinsicWidth(
-                            child: TextField(
-                              autocorrect: false,
-                              controller: _textController,
-                              decoration: null,
-                              style: textTheme.headlineMedium,
-                              onEditingComplete: () {
-                                AppContext.of(context).syncClient.modifyGoal(
-                                    GoalDelta(
-                                        id: widget.goal.id,
-                                        text: _textController.text));
-                                setState(() {
-                                  _editing = false;
-                                });
-                              },
-                              onTapOutside: (_) {
-                                AppContext.of(context).syncClient.modifyGoal(
-                                    GoalDelta(
-                                        id: widget.goal.id,
-                                        text: _textController.text));
-                                setState(() {
-                                  _editing = false;
-                                });
-                              },
-                              focusNode: _focusNode,
+                        ? Actions(
+                            actions: {
+                              CancelIntent: CallbackAction(
+                                  onInvoke: (_) => setState(() {
+                                        _editing = false;
+                                      })),
+                            },
+                            child: IntrinsicWidth(
+                              child: TextField(
+                                autocorrect: false,
+                                controller: _textController,
+                                decoration: null,
+                                style: textTheme.headlineMedium,
+                                onEditingComplete: () {
+                                  AppContext.of(context).syncClient.modifyGoal(
+                                      GoalDelta(
+                                          id: widget.goal.id,
+                                          text: _textController.text));
+                                  setState(() {
+                                    _editing = false;
+                                  });
+                                },
+                                onTapOutside: (_) {
+                                  AppContext.of(context).syncClient.modifyGoal(
+                                      GoalDelta(
+                                          id: widget.goal.id,
+                                          text: _textController.text));
+                                  setState(() {
+                                    _editing = false;
+                                  });
+                                },
+                                focusNode: _focusNode,
+                              ),
                             ),
                           )
                         : Flexible(
-                            child: GestureDetector(
-                              onDoubleTap: _editing
-                                  ? null
-                                  : () => {
-                                        setState(() {
-                                          _editing = true;
-                                          _focusNode.requestFocus();
-                                        })
-                                      },
-                              child: Text(
-                                widget.goal.text,
-                                style: textTheme.headlineMedium,
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.text,
+                              child: GestureDetector(
+                                onTap: _editing
+                                    ? null
+                                    : () => {
+                                          setState(() {
+                                            _editing = true;
+                                            _focusNode.requestFocus();
+                                          })
+                                        },
+                                child: Text(
+                                  widget.goal.text,
+                                  style: textTheme.headlineMedium,
+                                ),
                               ),
                             ),
                           ),
                     SizedBox(width: uiUnit(2)),
-                    CurrentStatusChip(goal: widget.goal)
+                    CurrentStatusChip(goal: widget.goal),
+                    SizedBox(width: uiUnit(2)),
+                    GoalActionsContext.overrideWith(context,
+                        child: widget
+                            .hoverActionsBuilder(['detail', widget.goal.id]),
+                        onPrint: (_) {
+                      this._printGoal(worldContext);
+                    }),
                   ]),
-              GoalActionsContext.overrideWith(context,
-                  child: widget.hoverActionsBuilder(['detail', widget.goal.id]),
-                  onPrint: (_) {
-                printGoal((pw.Document doc) async {
-                  final font = await PdfGoogleFonts.jostRegular();
-                  final fontBold = await PdfGoogleFonts.jostBold();
-                  final fontItalic = await PdfGoogleFonts.jostItalic();
-                  final widgets = [
-                    pw.Header(
-                        level: 1,
-                        text: widget.goal.text,
-                        textStyle: pw.TextStyle(fontSize: 24, font: font)),
-                    for (final item in _getFlattenedSummaryItems(
-                        worldContext, this.widget.goalMap, this.widget.goal.id))
-                      if (item.entry is SetSummaryEntry)
-                        pw.Padding(
-                          padding: pw.EdgeInsets.only(left: item.depth * 10.0),
-                          child: pw.Column(
-                            mainAxisSize: pw.MainAxisSize.min,
-                            children: [
-                              if (item.goal.id != widget.goal.id)
-                                pw.Header(
-                                    level: 2,
-                                    margin: pw.EdgeInsets.zero,
-                                    padding: pw.EdgeInsets.only(top: 18),
-                                    text: item.goal.text,
-                                    textStyle: pw.TextStyle(
-                                        font: font,
-                                        fontWeight: pw.FontWeight.bold,
-                                        fontSize: 18)),
-                              pw.Divider(),
-                              ...(await HTMLToPdf().convert(
-                                  markdownToHtml(
-                                      (item.entry as SetSummaryEntry).text ??
-                                          "Something went wrong.",
-                                      extensionSet: ExtensionSet.gitHubWeb),
-                                  fontResolver: (_, bold, italic) {
-                                if (bold) return fontBold;
-                                if (italic) return fontItalic;
-                                return font;
-                              })),
-                            ],
-                          ),
-                        ),
-                  ];
-                  doc.addPage(pw.MultiPage(
-                    pageFormat: PdfPageFormat.letter,
-                    build: (context) => widgets,
-                  ));
-                });
-              }),
+              PendingGoalViewModePicker(
+                  onModeChanged: (mode) {
+                    Hive.box(UI_STATE_BOX)
+                        .put(viewModeBoxKey(widget.goal.id), mode.name);
+                    setState(() {
+                      this._viewMode = mode;
+                    });
+                  },
+                  viewKey: this.widget.goal.id,
+                  showInfo: true,
+                  mode: this._viewMode),
             ],
           ),
-        breadcrumbs(),
+        parentBreadcrumbs(),
         SizedBox(height: uiUnit(2)),
-        if (goalSummary != null) ...[
-          Text('Summary', style: textTheme.headlineSmall),
-          SizedBox(height: uiUnit(1)),
-          GoalSummary(goal: widget.goal, goalMap: widget.goalMap),
-        ],
-        Text('Subgoals', style: textTheme.headlineSmall),
-        SizedBox(height: uiUnit(1)),
-        FlattenedGoalTree(
-          goalMap: subgoalMap,
-          rootGoalIds: widget.goal.subGoalIds
-              .where((g) => subgoalMap.containsKey(g))
-              .toList(),
-          hoverActionsBuilder: widget.hoverActionsBuilder,
-          path: [widget.goal.id],
-          section: 'detail',
-        ),
-        SizedBox(height: uiUnit(2)),
-        Text('History', style: textTheme.headlineSmall),
-        SizedBox(height: uiUnit(1)),
-        AddNoteCard(goalId: this.widget.goal.id),
-        SizedBox(height: uiUnit()),
-        GoalHistoryWidget(
-            yearItems: historyLog,
-            goalId: this.widget.goal.id,
-            onRefresh: () => setState(() {})),
-        if (isDebugMode) ...[
-          SizedBox(height: uiUnit(2)),
-          Text('Debug Info', style: textTheme.headlineSmall),
-          SizedBox(height: uiUnit(2)),
-          Text('Goal ID: ${widget.goal.id}'),
-          SizedBox(height: uiUnit(2)),
-          for (final entry in widget.goal.log) Text(entry.toString())
-        ],
+        ...getModeChildren(worldContext),
+      ]),
+    );
+  }
+}
+
+class ParentBreadcrumb extends StatefulWidget {
+  final String goalId;
+  final Map<String, Goal> goalMap;
+  final VoidCallback? onRemove;
+  const ParentBreadcrumb({
+    super.key,
+    required this.goalId,
+    required this.goalMap,
+    this.onRemove,
+  });
+
+  @override
+  State<ParentBreadcrumb> createState() => _ParentBreadcrumbState();
+}
+
+class _ParentBreadcrumbState extends State<ParentBreadcrumb> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    Goal? curGoal = this.widget.goalMap[this.widget.goalId];
+    final widgets = <Widget>[];
+
+    while (curGoal != null) {
+      widgets.add(Breadcrumb(goal: curGoal));
+      widgets.add(const Icon(Icons.chevron_right));
+
+      if (isAnchor(curGoal) != null) {
+        break;
+      }
+      curGoal = widget.goalMap[curGoal.superGoalIds.firstOrNull];
+    }
+    if (widgets.isNotEmpty) widgets.removeLast();
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        ...widgets.reversed,
+        if (this.widget.onRemove != null) ...[
+          SizedBox(width: uiUnit(2)),
+          Ink(
+            decoration: ShapeDecoration(
+              color: this._hovered ? palePinkColor : Colors.transparent,
+              shape: CircleBorder(),
+            ),
+            child: SizedBox(
+              width: 18.0,
+              height: 18.0,
+              child: IconButton(
+                color: this._hovered ? deepRedColor : Colors.transparent,
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.close, size: 16.0),
+                onPressed: this.widget.onRemove,
+              ),
+            ),
+          ),
+        ]
       ]),
     );
   }
