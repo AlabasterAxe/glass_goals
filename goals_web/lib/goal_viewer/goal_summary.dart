@@ -56,35 +56,34 @@ class GoalSummary extends ConsumerWidget {
         .whereType<Goal>()
         .sorted(comparator)) {
       final childSummary = hasSummary(childGoal);
+      final parentContextComment = hasParentContext(childGoal, goal.id);
+      colChildren.add(
+        Padding(
+            padding: EdgeInsets.only(left: indent),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Breadcrumb(
+                    goal: childGoal,
+                    style: Theme.of(context).textTheme.headlineSmall),
+                if (parentContextComment == null)
+                  GlassGoalsIconButton(
+                    icon: Icons.add,
+                    onPressed: () {
+                      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+                          id: childGoal.id,
+                          logEntry: ParentContextCommentEntry(
+                            id: Uuid().v4(),
+                            creationTime: DateTime.now(),
+                            parentId: this.goal.id,
+                            text: DEFAULT_CONTEXT_COMMENT_TEXT,
+                          )));
+                    },
+                  )
+              ],
+            )),
+      );
       if (childSummary != null) {
-        final parentContextComment = hasParentContext(childGoal, goal.id);
-        colChildren.add(
-          Padding(
-              padding: EdgeInsets.only(left: indent),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Breadcrumb(
-                      goal: childGoal,
-                      style: Theme.of(context).textTheme.headlineSmall),
-                  if (parentContextComment == null)
-                    GlassGoalsIconButton(
-                      icon: Icons.add,
-                      onPressed: () {
-                        AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                            id: childGoal.id,
-                            logEntry: ParentContextCommentEntry(
-                              id: Uuid().v4(),
-                              creationTime: DateTime.now(),
-                              parentId: this.goal.id,
-                              text: DEFAULT_CONTEXT_COMMENT_TEXT,
-                            )));
-                      },
-                    )
-                ],
-              )),
-        );
-
         colChildren.add(Padding(
           padding: EdgeInsets.only(left: indent),
           child: NoteCard(
@@ -95,28 +94,31 @@ class GoalSummary extends ConsumerWidget {
             showTime: false,
           ),
         ));
+      }
 
-        if (parentContextComment != null) {
+      if (parentContextComment != null) {
+        if (childSummary != null) {
           colChildren.add(Padding(
               padding: EdgeInsets.only(left: indent),
               child: Container(
                 color: darkElementColor,
                 height: 2,
               )));
-          colChildren.add(Padding(
-            padding: EdgeInsets.only(left: indent),
-            child: NoteCard(
-              goal: childGoal,
-              textEntry: parentContextComment,
-              onRefresh: () => {},
-              isChildGoal: false,
-              showTime: false,
-            ),
-          ));
         }
 
-        colChildren.add(SizedBox(height: uiUnit(2)));
+        colChildren.add(Padding(
+          padding: EdgeInsets.only(left: indent),
+          child: NoteCard(
+            goal: childGoal,
+            textEntry: parentContextComment,
+            onRefresh: () => {},
+            isChildGoal: false,
+            showTime: false,
+          ),
+        ));
       }
+
+      colChildren.add(SizedBox(height: uiUnit(2)));
     }
 
     final parentContextComments = getAllParentContext(goal);
