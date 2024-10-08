@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:goals_core/model.dart'
-    show Goal, getGoalStatus, getGoalsMatchingPredicate;
+    show Goal, GoalPath, getGoalStatus, getGoalsMatchingPredicate;
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart';
@@ -16,13 +16,11 @@ final viewModeBoxKey =
 
 class PendingGoalViewModePicker extends StatefulWidget {
   final Function(PendingGoalViewMode) onModeChanged;
-  final String viewKey;
   final PendingGoalViewMode mode;
   final bool showInfo;
   const PendingGoalViewModePicker({
     super.key,
     required this.onModeChanged,
-    required this.viewKey,
     required this.mode,
     this.showInfo = false,
   });
@@ -60,16 +58,15 @@ class _PendingGoalViewModePickerState extends State<PendingGoalViewModePicker> {
 
 class PendingGoalViewer extends ConsumerWidget {
   final Map<String, Goal> goalMap;
-  final String viewKey;
   final PendingGoalViewMode mode;
-  final List<String> path;
+  final GoalPath path;
 
-  const PendingGoalViewer(
-      {super.key,
-      required this.goalMap,
-      required this.viewKey,
-      required this.mode,
-      this.path = const []});
+  const PendingGoalViewer({
+    super.key,
+    required this.goalMap,
+    required this.mode,
+    required this.path,
+  });
 
   @override
   Widget build(BuildContext context, ref) {
@@ -81,7 +78,7 @@ class PendingGoalViewer extends ConsumerWidget {
       PendingGoalViewMode.info =>
         ScheduledGoalsV2(goalMap: this.goalMap, path: this.path),
       PendingGoalViewMode.tree => FlattenedGoalTree(
-          path: [this.viewKey, ...this.path],
+          path: this.path,
           goalMap: getGoalsMatchingPredicate(
               this.goalMap,
               (goal) => ![

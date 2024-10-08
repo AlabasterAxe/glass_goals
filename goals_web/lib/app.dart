@@ -122,8 +122,10 @@ class _WebGoalsState extends ConsumerState<WebGoals>
             Locale('en', 'US'),
             Locale('en', 'GB'),
           ],
-          initialRoute:
-              FirebaseAuth.instance.currentUser == null ? '/' : '/home',
+          initialRoute: FirebaseAuth.instance.currentUser == null &&
+                  this.widget.shouldAuthenticate
+              ? '/'
+              : '/home',
           theme: theme,
           onGenerateRoute: (settings) {
             if (settings.name != null && settings.name == '/') {

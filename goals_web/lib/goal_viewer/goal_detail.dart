@@ -790,7 +790,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     final List<Widget> widgets = [];
     for (final superGoalId in this.widget.goal.superGoalIds) {
       widgets.add(ParentBreadcrumb(
-        path: GoalPath([...widget.path, 'breadcrumb', superGoalId]),
+        path: GoalPath([...widget.path, 'ui:breadcrumb', superGoalId]),
         goalMap: widget.goalMap,
         onRemove: () {
           AppContext.of(context).syncClient.modifyGoal(GoalDelta(
@@ -1008,7 +1008,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                     SizedBox(width: uiUnit(2)),
                     GoalActionsContext.overrideWith(context,
                         child: widget
-                            .hoverActionsBuilder(['detail', widget.goal.id]),
+                            .hoverActionsBuilder(['ui:detail', widget.goal.id]),
                         onPrint: (_) {
                       this._printGoal(worldContext);
                     }),
@@ -1021,7 +1021,6 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                       this._viewMode = mode;
                     });
                   },
-                  viewKey: this.widget.goal.id,
                   showInfo: true,
                   mode: this._viewMode),
             ],

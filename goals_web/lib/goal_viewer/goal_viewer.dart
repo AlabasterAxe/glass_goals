@@ -199,7 +199,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     if (!isCtrlHeld()) {
-      if (path?.contains("breadcrumb") == true) {
+      if (path?.contains("ui:breadcrumb") == true) {
         if (_filter is! GoalGoalFilter ||
             (path?.goalId != (this._filter as GoalGoalFilter).goalId)) {
           this._onSwitchFilter(GoalGoalFilter(path!.goalId, widget.goalMap));
@@ -210,7 +210,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       if (focusedGoalStream.value != null &&
           (this._filter is! GoalGoalFilter ||
               (this._filter as GoalGoalFilter).goalId != path?.goalId) &&
-          path?.contains("detail") == true) {
+          path?.contains("ui:detail") == true) {
         this._onSwitchFilter(
             GoalGoalFilter(focusedGoalStream.value!, widget.goalMap));
       }
@@ -1024,7 +1024,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       Hive.box(UI_STATE_BOX)
                           .put(viewModeBoxKey('root'), mode.name);
                     }),
-                    viewKey: "root",
                     mode: this._pendingGoalViewMode,
                   )
               ],
@@ -1070,7 +1069,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                   case GoalFilterType.pending_v2:
                     return PendingGoalViewer(
                       goalMap: goalMap,
-                      viewKey: 'root',
+                      path: GoalPath(['ui:list']),
                       mode: this._pendingGoalViewMode,
                     );
                 }
@@ -1082,7 +1081,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                       goalMap: goalMap,
                     );
                   },
-                  path: GoalPath(['list', filter.goalId]),
+                  path: GoalPath(['ui:list', filter.goalId]),
                 );
             }
           })),
@@ -1107,7 +1106,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         goalMap: widget.goalMap,
         hoverActionsBuilder: (path) =>
             HoverActionsWidget(path: path, goalMap: widget.goalMap),
-        path: GoalPath(['detail', focusedGoalId!]),
+        path: GoalPath(['ui:detail', focusedGoalId!]),
       ),
     );
   }

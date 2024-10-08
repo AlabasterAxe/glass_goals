@@ -18,6 +18,7 @@ import 'package:flutter/widgets.dart'
         Text,
         TextEditingController,
         Widget;
+import 'package:goals_core/model.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/intents.dart' show AcceptIntent, CancelIntent;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
@@ -27,7 +28,7 @@ import '../styles.dart';
 import 'goal_actions_context.dart';
 
 class AddSubgoalItemWidget extends ConsumerStatefulWidget {
-  final List<String> path;
+  final GoalPath path;
   final EdgeInsetsGeometry padding;
   const AddSubgoalItemWidget({
     super.key,
@@ -80,9 +81,9 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
     _textController.selection =
         TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
 
-    GoalActionsContext.of(context).onAddGoal.call(
-        widget.path.length >= 3 ? widget.path[widget.path.length - 2] : null,
-        newText);
+    GoalActionsContext.of(context)
+        .onAddGoal
+        .call(widget.path.parentId, newText);
   }
 
   @override
