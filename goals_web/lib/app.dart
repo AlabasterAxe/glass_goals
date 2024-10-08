@@ -35,6 +35,7 @@ import 'app_context.dart';
 import 'goal_viewer/goal_viewer.dart';
 import 'landing_page.dart';
 import 'styles.dart';
+import 'package:universal_html/html.dart';
 
 class WebGoals extends ConsumerStatefulWidget {
   final bool shouldAuthenticate;
@@ -78,6 +79,8 @@ class _WebGoalsState extends ConsumerState<WebGoals>
         this.navigatorKey.currentState?.pushReplacementNamed('/home');
       }
     });
+
+    document.onContextMenu.listen((event) => event.preventDefault());
   }
 
   Future<void> _appInit(context) async {

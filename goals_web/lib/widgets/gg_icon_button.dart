@@ -5,15 +5,18 @@ class GlassGoalsIconButton extends StatelessWidget {
   final IconData? icon;
   final VoidCallback onPressed;
   final VoidCallback? onLongPressed;
+  final VoidCallback? onRightClick;
   final Widget? iconWidget;
   final bool? enabled;
-  const GlassGoalsIconButton(
-      {super.key,
-      this.icon,
-      required this.onPressed,
-      this.onLongPressed,
-      this.iconWidget,
-      this.enabled});
+  const GlassGoalsIconButton({
+    super.key,
+    this.icon,
+    required this.onPressed,
+    this.onLongPressed,
+    this.onRightClick,
+    this.iconWidget,
+    this.enabled,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +25,7 @@ class GlassGoalsIconButton extends StatelessWidget {
       height: uiUnit(8),
       child: GestureDetector(
         onLongPress: onLongPressed,
+        onSecondaryTap: onRightClick,
         child: IconButton(
           padding: EdgeInsets.zero,
           icon: icon != null

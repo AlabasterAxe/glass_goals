@@ -222,6 +222,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
               icon: Icons.done_outline_rounded,
               onPressed: () => onDone(widget.goalId, null),
               onLongPressed: () => _doneMenuController.open(),
+              onRightClick: () => _doneMenuController.open(),
             ),
           ),
         ),
