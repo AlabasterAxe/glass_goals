@@ -93,12 +93,15 @@ class GoalPath extends ListMixin<String> {
       return null;
     }
 
-    final potentialParent = _path[_path.length - 2];
-
-    if (potentialParent.startsWith('ui:')) {
-      return null;
+    for (int i = _path.length - 2; i >= 0; i--) {
+      if (_path[i].startsWith('ui:')) {
+        return null;
+      } else if (_path[i].startsWith('slice:')) {
+        continue;
+      } else {
+        return _path[i];
+      }
     }
-    return potentialParent;
   }
 
   GoalPath get parentPath => GoalPath(_path.sublist(0, _path.length - 1));

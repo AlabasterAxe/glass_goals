@@ -77,6 +77,19 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
 
             final goalStatus = getGoalStatus(worldContext, goal);
 
+            if (slice == TimeSlice.unscheduled) {
+              AppContext.of(this.context).syncClient.modifyGoal(GoalDelta(
+                  id: details.data.path.goalId,
+                  logEntry: StatusLogEntry(
+                    id: const Uuid().v4(),
+                    creationTime: DateTime.now(),
+                    status: null,
+                    startTime: slice.startTime(worldContext.time),
+                    endTime: slice.endTime(worldContext.time),
+                  )));
+              return;
+            }
+
             final sliceStartTime = slice.startTime(worldContext.time);
             final sliceEndTime = slice.endTime(worldContext.time);
 
@@ -134,7 +147,8 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                     slice.displayName,
                     style: Theme.of(context).textTheme.headlineSmall!.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: sliceGoalMap.isNotEmpty ||
+                          color: dragEventType != DragEventType.start ||
+                                  sliceGoalMap.isNotEmpty ||
                                   candidateData.isNotEmpty
                               ? Theme.of(context).textTheme.headlineSmall!.color
                               : Theme.of(context)
@@ -205,7 +219,8 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
         continue;
       }
 
-      if (_expandedTimeSlices.contains(slice) && goalIds.isNotEmpty) {
+      if (_expandedTimeSlices.contains(slice) &&
+          (goalIds.isNotEmpty || slice == TimeSlice.unscheduled)) {
         final sliceWidget = Padding(
           padding: EdgeInsets.only(bottom: uiUnit(3)),
           child: Column(
@@ -325,7 +340,7 @@ class _ScheduledGoalsV2State extends ConsumerState<ScheduledGoalsV2> {
                     child: FlattenedGoalTree(
                       goalMap: sliceGoalMap,
                       rootGoalIds: goalIds,
-                      path: [...widget.path, slice.name],
+                      path: [...widget.path, "slice:${slice.name}"],
                       hoverActionsBuilder: (path) => HoverActionsWidget(
                         path: path,
                         goalMap: widget.goalMap,
