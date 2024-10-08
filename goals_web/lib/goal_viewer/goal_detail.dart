@@ -943,76 +943,83 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
         if (!isNarrow)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    _editing
-                        ? Actions(
-                            actions: {
-                              CancelIntent: CallbackAction(
-                                  onInvoke: (_) => setState(() {
-                                        _editing = false;
-                                      })),
-                            },
-                            child: IntrinsicWidth(
-                              child: TextField(
-                                autocorrect: false,
-                                controller: _textController,
-                                decoration: null,
-                                style: textTheme.headlineMedium,
-                                onEditingComplete: () {
-                                  AppContext.of(context).syncClient.modifyGoal(
-                                      GoalDelta(
-                                          id: widget.goal.id,
-                                          text: _textController.text));
-                                  setState(() {
-                                    _editing = false;
-                                  });
-                                },
-                                onTapOutside: (_) {
-                                  AppContext.of(context).syncClient.modifyGoal(
-                                      GoalDelta(
-                                          id: widget.goal.id,
-                                          text: _textController.text));
-                                  setState(() {
-                                    _editing = false;
-                                  });
-                                },
-                                focusNode: _focusNode,
-                              ),
-                            ),
-                          )
-                        : Flexible(
-                            child: MouseRegion(
-                              cursor: SystemMouseCursors.text,
-                              child: GestureDetector(
-                                onTap: _editing
-                                    ? null
-                                    : () => {
-                                          setState(() {
-                                            _editing = true;
-                                            _focusNode.requestFocus();
-                                          })
-                                        },
-                                child: Text(
-                                  widget.goal.text,
+              Flexible(
+                child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _editing
+                          ? Actions(
+                              actions: {
+                                CancelIntent: CallbackAction(
+                                    onInvoke: (_) => setState(() {
+                                          _editing = false;
+                                        })),
+                              },
+                              child: IntrinsicWidth(
+                                child: TextField(
+                                  autocorrect: false,
+                                  controller: _textController,
+                                  decoration: null,
                                   style: textTheme.headlineMedium,
+                                  onEditingComplete: () {
+                                    AppContext.of(context)
+                                        .syncClient
+                                        .modifyGoal(GoalDelta(
+                                            id: widget.goal.id,
+                                            text: _textController.text));
+                                    setState(() {
+                                      _editing = false;
+                                    });
+                                  },
+                                  onTapOutside: (_) {
+                                    AppContext.of(context)
+                                        .syncClient
+                                        .modifyGoal(GoalDelta(
+                                            id: widget.goal.id,
+                                            text: _textController.text));
+                                    setState(() {
+                                      _editing = false;
+                                    });
+                                  },
+                                  focusNode: _focusNode,
+                                ),
+                              ),
+                            )
+                          : Flexible(
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.text,
+                                child: GestureDetector(
+                                  onTap: _editing
+                                      ? null
+                                      : () => {
+                                            setState(() {
+                                              _editing = true;
+                                              _focusNode.requestFocus();
+                                            })
+                                          },
+                                  child: Text(
+                                    widget.goal.text,
+                                    style: textTheme.headlineMedium,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                    SizedBox(width: uiUnit(2)),
-                    CurrentStatusChip(goal: widget.goal),
-                    SizedBox(width: uiUnit(2)),
-                    GoalActionsContext.overrideWith(context,
-                        child: widget
-                            .hoverActionsBuilder(['ui:detail', widget.goal.id]),
-                        onPrint: (_) {
-                      this._printGoal(worldContext);
-                    }),
-                  ]),
+                      SizedBox(width: uiUnit(2)),
+                      Padding(
+                        padding: EdgeInsets.only(top: 6),
+                        child: CurrentStatusChip(goal: widget.goal),
+                      ),
+                      SizedBox(width: uiUnit(2)),
+                      GoalActionsContext.overrideWith(context,
+                          child: widget.hoverActionsBuilder(
+                              ['ui:detail', widget.goal.id]), onPrint: (_) {
+                        this._printGoal(worldContext);
+                      }),
+                    ]),
+              ),
               PendingGoalViewModePicker(
                   onModeChanged: (mode) {
                     Hive.box(UI_STATE_BOX)
