@@ -13,6 +13,7 @@ const emphasizedLightBackground = Color.fromARGB(10, 0, 0, 0);
 const paleGreenColor = Color(0xFFD0E7C5);
 const darkGreenColor = Color(0xFF17300B);
 const paleBlueColor = Color(0xFFCCD6EA);
+const palerBlueColor = Color.fromARGB(255, 237, 243, 255);
 const darkBlueColor = Color(0xFF0C1C60);
 const palePurpleColor = Color(0xFFD5CFEA);
 const darkPurpleColor = Color(0xFF18065A);

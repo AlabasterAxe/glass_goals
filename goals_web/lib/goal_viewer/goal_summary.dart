@@ -68,7 +68,7 @@ class GoalSummary extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Breadcrumb(
-                  path: this.path,
+                  path: GoalPath([...this.path, childGoal.id]),
                   style: Theme.of(context).textTheme.headlineSmall,
                   goalMap: this.goalMap,
                 ),
@@ -104,24 +104,29 @@ class GoalSummary extends ConsumerWidget {
       }
 
       if (parentContextComment != null) {
-        if (childSummary != null) {
-          colChildren.add(Padding(
-              padding: EdgeInsets.only(left: indent),
-              child: Container(
-                color: darkElementColor,
-                height: 2,
-              )));
-        }
-
         colChildren.add(Padding(
           padding: EdgeInsets.only(left: indent),
-          child: NoteCard(
-            path: this.path,
-            goalMap: this.goalMap,
-            textEntry: parentContextComment,
-            onRefresh: () => {},
-            isChildGoal: false,
-            showTime: false,
+          child: Container(
+            padding: EdgeInsets.symmetric(
+                vertical: uiUnit(1), horizontal: uiUnit(2)),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(2),
+              border: Border(
+                left: BorderSide(
+                  width: 2,
+                  color: darkElementColor,
+                ),
+              ),
+              color: palerBlueColor,
+            ),
+            child: NoteCard(
+              path: GoalPath([...this.path, childGoal.id]),
+              goalMap: this.goalMap,
+              textEntry: parentContextComment,
+              onRefresh: () {},
+              isChildGoal: false,
+              showTime: false,
+            ),
           ),
         ));
       }
