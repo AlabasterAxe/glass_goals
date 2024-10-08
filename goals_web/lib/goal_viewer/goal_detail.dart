@@ -3,6 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:goals_core/model.dart'
     show
         Goal,
+        GoalPath,
         TraversalDecision,
         WorldContext,
         getGoalStatus,
@@ -65,10 +66,14 @@ import 'package:pdf/pdf.dart' show PdfPageFormat;
 
 import 'flattened_goal_tree.dart' show FlattenedGoalTree;
 
-List<DetailViewLogEntryYear> _computeHistoryLog(WorldContext worldContext,
-    String rootGoalId, List<DetailViewLogEntryItem> log) {
+List<DetailViewLogEntryYear> _computeHistoryLog(
+    WorldContext worldContext,
+    Map<String, Goal> goalMap,
+    String rootGoalId,
+    List<DetailViewLogEntryItem> log) {
   final List<DetailViewLogEntryYear> result = [];
-  for (final item in _computeFlatHistoryLog(worldContext, rootGoalId, log)) {
+  for (final item
+      in _computeFlatHistoryLog(worldContext, rootGoalId, log, goalMap)) {
     final year = item.time.year;
     final month = item.time.month;
     final day = item.time.day;
@@ -98,22 +103,25 @@ List<DetailViewLogEntryYear> _computeHistoryLog(WorldContext worldContext,
   return result;
 }
 
-List<DetailViewLogEntryItem> _computeFlatHistoryLog(WorldContext worldContext,
-    String rootGoalId, List<DetailViewLogEntryItem> log) {
+List<DetailViewLogEntryItem> _computeFlatHistoryLog(
+    WorldContext worldContext,
+    String rootGoalId,
+    List<DetailViewLogEntryItem> log,
+    Map<String, Goal> goalMap) {
   Map<String, DetailViewLogEntryItem> items = {};
   log.sort((a, b) => a.entry.creationTime.compareTo(b.entry.creationTime));
   for (final item in log) {
     final entry = item.entry;
     switch (entry) {
       case NoteLogEntry():
-        if (item.goal.id != rootGoalId) {
+        if (item.path.goalId != rootGoalId) {
           continue;
         }
         final originalNoteDate = items[entry.id]?.entry.creationTime;
         items[entry.id] = DetailViewLogEntryItem(
             entry: entry,
             time: originalNoteDate ?? entry.creationTime,
-            goal: item.goal);
+            path: item.path);
         break;
       case ArchiveNoteLogEntry():
         items.remove(entry.id);
@@ -127,13 +135,13 @@ List<DetailViewLogEntryItem> _computeFlatHistoryLog(WorldContext worldContext,
             entry: archivedStatusEntry,
             time: entry.creationTime,
             archived: true,
-            goal: item.goal,
+            path: item.path,
           );
         }
       case StatusLogEntry():
         items["${entry.id}-creation"] = DetailViewLogEntryItem(
           entry: entry,
-          goal: item.goal,
+          path: item.path,
           time: entry.creationTime,
         );
 
@@ -143,12 +151,13 @@ List<DetailViewLogEntryItem> _computeFlatHistoryLog(WorldContext worldContext,
             entry.endTime!.isBefore(worldContext.time) &&
             entry.status == GoalStatus.active &&
             // If the goal is archived or done by the time the status ends, don't show the end entry.
-            ![GoalStatus.archived, GoalStatus.done].contains(
-                getGoalStatus(WorldContext(time: entry.endTime!), item.goal)
-                    .status)) {
+            ![GoalStatus.archived, GoalStatus.done].contains(getGoalStatus(
+                    WorldContext(time: entry.endTime!),
+                    goalMap[item.path.goalId]!)
+                .status)) {
           items["${entry.id}-end"] = DetailViewLogEntryItem(
             entry: entry,
-            goal: item.goal,
+            path: item.path,
             time: entry.endTime!,
           );
         }
@@ -159,7 +168,7 @@ List<DetailViewLogEntryItem> _computeFlatHistoryLog(WorldContext worldContext,
         if (existingItem != null && existingItem.entry is StatusLogEntry) {
           items["${entry.statusId}-creation"] = DetailViewLogEntryItem(
             entry: existingItem.entry,
-            goal: existingItem.goal,
+            path: existingItem.path,
             time: existingItem.time,
             statusNote: entry,
           );
@@ -190,7 +199,7 @@ List<DetailViewLogEntryItem> _computeFlatHistoryLog(WorldContext worldContext,
         if (existingItem != null && existingItem.entry is StatusLogEntry) {
           items[itemKey] = DetailViewLogEntryItem(
             entry: existingItem.entry,
-            goal: existingItem.goal,
+            path: existingItem.path,
             time: existingItem.time,
             statusNote: entry,
           );
@@ -219,7 +228,7 @@ List<DetailViewLogEntryItem> _getFlattenedSummaryItems(
       final summary = hasSummary(goalMap[goalId]!);
       if (summary != null) {
         flattenedGoals.add(DetailViewLogEntryItem(
-          goal: goalMap[goalId]!,
+          path: path,
           entry: summary,
           time: summary.creationTime,
           depth: path.length,
@@ -291,7 +300,8 @@ class _AddParentBreadcrumbState extends State<AddParentBreadcrumb> {
 }
 
 class StatusCard extends ConsumerStatefulWidget {
-  final Goal goal;
+  final GoalPath path;
+  final Map<String, Goal> goalMap;
   final StatusLogEntry entry;
   final bool archived;
   final bool isStatusEnd;
@@ -300,7 +310,8 @@ class StatusCard extends ConsumerStatefulWidget {
   final bool isChildGoal;
   const StatusCard({
     super.key,
-    required this.goal,
+    required this.path,
+    required this.goalMap,
     required this.entry,
     this.archived = false,
     this.isStatusEnd = false,
@@ -327,7 +338,7 @@ class _StatusCardState extends ConsumerState<StatusCard> {
     _textController.selection =
         TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
     AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-        id: widget.goal.id,
+        id: widget.path.goalId,
         logEntry: noteType == "reflection"
             ? AddStatusReflectionLogEntry(
                 id: Uuid().v4(),
@@ -357,15 +368,17 @@ class _StatusCardState extends ConsumerState<StatusCard> {
   Widget build(BuildContext context) {
     final worldContext =
         ref.watch(worldContextProvider).value ?? worldContextStream.value;
-    final noteType =
-        this.widget.isStatusEnd || this.widget.entry.status == GoalStatus.done
-            ? "reflection"
-            : [GoalStatus.pending, GoalStatus.active]
-                        .contains(this.widget.entry.status) &&
-                    this.widget.entry.id ==
-                        getGoalStatus(worldContext, widget.goal).id
-                ? "intention"
-                : null;
+    final noteType = this.widget.isStatusEnd ||
+            this.widget.entry.status == GoalStatus.done
+        ? "reflection"
+        : [GoalStatus.pending, GoalStatus.active]
+                    .contains(this.widget.entry.status) &&
+                this.widget.entry.id ==
+                    getGoalStatus(
+                            worldContext, widget.goalMap[widget.path.goalId]!)
+                        .id
+            ? "intention"
+            : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -378,7 +391,8 @@ class _StatusCardState extends ConsumerState<StatusCard> {
             if (this.widget.isChildGoal)
               Row(
                 children: [
-                  Breadcrumb(goal: this.widget.goal),
+                  Breadcrumb(
+                      path: this.widget.path, goalMap: this.widget.goalMap),
                   const Text(':'),
                   SizedBox(width: uiUnit(2)),
                 ],
@@ -389,7 +403,7 @@ class _StatusCardState extends ConsumerState<StatusCard> {
             ],
             StatusChip(
               entry: this.widget.entry,
-              goalId: this.widget.goal.id,
+              goalId: this.widget.path.goalId,
               showArchiveButton: false,
               until: !this.widget.isStatusEnd,
               since: this.widget.isStatusEnd,
@@ -483,20 +497,20 @@ class _StatusCardState extends ConsumerState<StatusCard> {
 }
 
 class GoalDetail extends ConsumerStatefulWidget {
-  final Goal goal;
   final Map<String, Goal> goalMap;
   final HoverActionsBuilder hoverActionsBuilder;
-  final List<String> path;
+  final GoalPath path;
   const GoalDetail({
     super.key,
-    required this.goal,
     required this.goalMap,
     required this.hoverActionsBuilder,
-    this.path = const [],
+    required this.path,
   });
 
   @override
   ConsumerState<GoalDetail> createState() => _GoalDetailState();
+
+  Goal get goal => this.goalMap[this.path.goalId]!;
 }
 
 class DetailViewLogEntryYear {
@@ -520,7 +534,7 @@ class DetailViewLogEntryDay {
 }
 
 class DetailViewLogEntryItem {
-  final Goal goal;
+  final GoalPath path;
   final DateTime time;
   final GoalLogEntry entry;
   final bool archived;
@@ -530,7 +544,7 @@ class DetailViewLogEntryItem {
   final GoalLogEntry? statusNote;
 
   const DetailViewLogEntryItem({
-    required this.goal,
+    required this.path,
     required this.entry,
     this.archived = false,
     required this.time,
@@ -541,13 +555,16 @@ class DetailViewLogEntryItem {
 
 class GoalHistoryWidget extends StatelessWidget {
   final List<DetailViewLogEntryYear> yearItems;
-  final String goalId;
+  final GoalPath path;
   final VoidCallback onRefresh;
-  const GoalHistoryWidget(
-      {super.key,
-      required this.yearItems,
-      required this.goalId,
-      required this.onRefresh});
+  final Map<String, Goal> goalMap;
+  const GoalHistoryWidget({
+    super.key,
+    required this.yearItems,
+    required this.path,
+    required this.onRefresh,
+    required this.goalMap,
+  });
 
   Widget _renderDay(
       DetailViewLogEntryYear yearItem,
@@ -585,7 +602,7 @@ class GoalHistoryWidget extends StatelessWidget {
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               for (final item in dayItem.logItems)
                 if (!(item.entry is NoteLogEntry) ||
-                    (item.goal.id == this.goalId))
+                    (item.path.goalId == this.path.goalId))
                   ConstrainedBox(
                       constraints: BoxConstraints(minHeight: uiUnit(8)),
                       child: switch (item.entry) {
@@ -593,18 +610,20 @@ class GoalHistoryWidget extends StatelessWidget {
                             padding: EdgeInsets.only(bottom: uiUnit(4)),
                             child: NoteCard(
                               key: ValueKey(entry.id),
-                              goal: item.goal,
+                              path: item.path,
+                              goalMap: goalMap,
                               textEntry: entry,
-                              isChildGoal: item.goal.id != this.goalId,
+                              isChildGoal: item.path.goalId != this.path.goalId,
                               onRefresh: this.onRefresh,
                             ),
                           ),
                         StatusLogEntry entry => StatusCard(
                             key: ValueKey(
                                 "${entry.id}${item.archived ? '-archive' : entry.endTime == item.time ? '-end' : '-creation'}"),
-                            goal: item.goal,
+                            path: item.path,
                             entry: entry,
-                            isChildGoal: item.goal.id != this.goalId,
+                            isChildGoal: item.path.goalId != this.path.goalId,
+                            goalMap: goalMap,
                             archived: item.archived,
                             time: item.time,
                             isStatusEnd: entry.endTime == item.time,
@@ -722,7 +741,8 @@ class GoalHistoryWidget extends StatelessWidget {
 
 class _GoalDetailState extends ConsumerState<GoalDetail> {
   bool _editing = false;
-  late final _textController = TextEditingController(text: widget.goal.text);
+  late final _textController =
+      TextEditingController(text: widget.goalMap[widget.path.goalId]!.text);
   final FocusNode _focusNode = FocusNode();
   PendingGoalViewMode _viewMode = PendingGoalViewMode.tree;
 
@@ -730,7 +750,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
   void initState() {
     super.initState();
     final pendingGoalViewModeString = Hive.box(UI_STATE_BOX).get(
-        viewModeBoxKey(widget.goal.id),
+        viewModeBoxKey(widget.path.goalId),
         defaultValue: PendingGoalViewMode.tree.name);
 
     try {
@@ -770,7 +790,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     final List<Widget> widgets = [];
     for (final superGoalId in this.widget.goal.superGoalIds) {
       widgets.add(ParentBreadcrumb(
-        goalId: superGoalId,
+        path: GoalPath([...widget.path, 'breadcrumb', superGoalId]),
         goalMap: widget.goalMap,
         onRemove: () {
           AppContext.of(context).syncClient.modifyGoal(GoalDelta(
@@ -805,12 +825,12 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
               child: pw.Column(
                 mainAxisSize: pw.MainAxisSize.min,
                 children: [
-                  if (item.goal.id != widget.goal.id)
+                  if (item.path.goalId != widget.path.goalId)
                     pw.Header(
                         level: 2,
                         margin: pw.EdgeInsets.zero,
                         padding: pw.EdgeInsets.only(top: 18),
-                        text: item.goal.text,
+                        text: widget.goalMap[item.path.goalId]!.text,
                         textStyle: pw.TextStyle(
                             font: font,
                             fontWeight: pw.FontWeight.bold,
@@ -872,10 +892,12 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
             continue;
           }
           logItems.addAll(goal.log.map((entry) => DetailViewLogEntryItem(
-              goal: goal, entry: entry, time: entry.creationTime)));
+              path: GoalPath([...widget.path, goal.id]),
+              entry: entry,
+              time: entry.creationTime)));
         }
-        final historyLog =
-            _computeHistoryLog(worldContext, this.widget.goal.id, logItems);
+        final historyLog = _computeHistoryLog(
+            worldContext, widget.goalMap, this.widget.goal.id, logItems);
         final goalSummary = hasSummary(widget.goal);
 
         final textTheme = Theme.of(context).textTheme;
@@ -883,7 +905,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
           if (goalSummary != null) ...[
             Text('Summary', style: textTheme.headlineSmall),
             SizedBox(height: uiUnit(1)),
-            GoalSummary(goal: widget.goal, goalMap: widget.goalMap),
+            GoalSummary(path: widget.path, goalMap: widget.goalMap),
           ],
           SizedBox(height: uiUnit(2)),
           Text('History', style: textTheme.headlineSmall),
@@ -892,7 +914,8 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
           SizedBox(height: uiUnit()),
           GoalHistoryWidget(
               yearItems: historyLog,
-              goalId: this.widget.goal.id,
+              path: this.widget.path,
+              goalMap: this.widget.goalMap,
               onRefresh: () => setState(() {})),
           if (isDebugMode) ...[
             SizedBox(height: uiUnit(2)),
@@ -1012,12 +1035,12 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
 }
 
 class ParentBreadcrumb extends StatefulWidget {
-  final String goalId;
+  final GoalPath path;
   final Map<String, Goal> goalMap;
   final VoidCallback? onRemove;
   const ParentBreadcrumb({
     super.key,
-    required this.goalId,
+    required this.path,
     required this.goalMap,
     this.onRemove,
   });
@@ -1031,11 +1054,14 @@ class _ParentBreadcrumbState extends State<ParentBreadcrumb> {
 
   @override
   Widget build(BuildContext context) {
-    Goal? curGoal = this.widget.goalMap[this.widget.goalId];
+    Goal? curGoal = this.widget.goalMap[this.widget.path.goalId];
+    GoalPath parentPath = this.widget.path.parentPath;
     final widgets = <Widget>[];
 
     while (curGoal != null) {
-      widgets.add(Breadcrumb(goal: curGoal));
+      widgets.add(Breadcrumb(
+          path: GoalPath([...parentPath, curGoal.id]),
+          goalMap: this.widget.goalMap));
       widgets.add(const Icon(Icons.chevron_right));
 
       if (isAnchor(curGoal) != null) {

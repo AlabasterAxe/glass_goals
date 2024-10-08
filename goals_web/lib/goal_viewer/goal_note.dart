@@ -23,7 +23,7 @@ import 'package:flutter/widgets.dart'
         TextSelection,
         Widget;
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:goals_core/model.dart' show Goal;
+import 'package:goals_core/model.dart' show Goal, GoalPath;
 import 'package:goals_core/sync.dart'
     show
         ArchiveNoteLogEntry,
@@ -43,7 +43,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
 class NoteCard extends StatefulWidget {
-  final Goal goal;
+  final GoalPath path;
+  final Map<String, Goal> goalMap;
   final TextGoalLogEntry textEntry;
   final Function() onRefresh;
   final bool isChildGoal;
@@ -51,7 +52,8 @@ class NoteCard extends StatefulWidget {
   final bool showTime;
   const NoteCard({
     super.key,
-    required this.goal,
+    required this.path,
+    required this.goalMap,
     required this.textEntry,
     required this.onRefresh,
     required this.isChildGoal,
@@ -84,7 +86,7 @@ class _NoteCardState extends State<NoteCard> {
     switch (widget.textEntry) {
       case NoteLogEntry():
         AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-            id: widget.goal.id,
+            id: widget.path.goalId,
             logEntry: NoteLogEntry(
                 id: widget.textEntry.id,
                 creationTime: DateTime.now(),
@@ -92,7 +94,7 @@ class _NoteCardState extends State<NoteCard> {
         break;
       case SetSummaryEntry():
         AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-            id: widget.goal.id,
+            id: widget.path.goalId,
             logEntry: SetSummaryEntry(
                 id: Uuid().v4(),
                 creationTime: DateTime.now(),
@@ -100,7 +102,7 @@ class _NoteCardState extends State<NoteCard> {
         break;
       case ParentContextCommentEntry entry:
         AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-            id: widget.goal.id,
+            id: widget.path.goalId,
             logEntry: ParentContextCommentEntry(
                 id: widget.textEntry.id,
                 creationTime: DateTime.now(),
@@ -157,7 +159,7 @@ class _NoteCardState extends State<NoteCard> {
                         Text(formatTime(widget.textEntry.creationTime)),
                       if (widget.isChildGoal) ...[
                         Text(" - "),
-                        Breadcrumb(goal: widget.goal),
+                        Breadcrumb(path: widget.path, goalMap: widget.goalMap),
                         SizedBox(width: uiUnit(2)),
                         Expanded(
                             child: Container(
@@ -171,7 +173,7 @@ class _NoteCardState extends State<NoteCard> {
                         onPressed: () {
                           AppContext.of(context).syncClient.modifyGoal(
                               GoalDelta(
-                                  id: widget.goal.id,
+                                  id: widget.path.goalId,
                                   logEntry: ArchiveNoteLogEntry(
                                       id: widget.textEntry.id,
                                       creationTime: DateTime.now())));

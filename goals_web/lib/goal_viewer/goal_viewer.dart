@@ -199,6 +199,14 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     }
 
     if (!isCtrlHeld()) {
+      if (path?.contains("breadcrumb") == true) {
+        if (_filter is! GoalGoalFilter ||
+            (path?.goalId != (this._filter as GoalGoalFilter).goalId)) {
+          this._onSwitchFilter(GoalGoalFilter(path!.goalId, widget.goalMap));
+        }
+        return;
+      }
+
       if (focusedGoalStream.value != null &&
           (this._filter is! GoalGoalFilter ||
               (this._filter as GoalGoalFilter).goalId != path?.goalId) &&
@@ -945,7 +953,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                   builder: (context, snapshot) => GoalSearchModal(
                       goalMap: snapshot.data ?? Map(),
                       onGoalSelected: (focusedGoalId) {
-                        focusedGoalStream.add(focusedGoalId);
+                        _onSwitchFilter(
+                            GoalGoalFilter(focusedGoalId, widget.goalMap));
                         return GoalSelectedResult.close;
                       })),
             ));
@@ -1067,14 +1076,13 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                 }
               case GoalGoalFilter filter:
                 return GoalDetail(
-                  goal: goalMap[filter.goalId]!,
                   goalMap: goalMap,
                   hoverActionsBuilder: (goalId) {
                     return HoverActionsWidget(
                       goalMap: goalMap,
                     );
                   },
-                  path: ['list'],
+                  path: GoalPath(['list', filter.goalId]),
                 );
             }
           })),
@@ -1096,11 +1104,10 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     return SingleChildScrollView(
       key: const ValueKey('detail'),
       child: GoalDetail(
-        goal: focusedGoal,
         goalMap: widget.goalMap,
         hoverActionsBuilder: (path) =>
             HoverActionsWidget(path: path, goalMap: widget.goalMap),
-        path: ['detail'],
+        path: GoalPath(['detail', focusedGoalId!]),
       ),
     );
   }

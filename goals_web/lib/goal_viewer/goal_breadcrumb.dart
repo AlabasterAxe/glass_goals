@@ -2,18 +2,20 @@ import 'package:flutter/painting.dart' show TextDecoration, TextStyle;
 import 'package:flutter/services.dart' show SystemMouseCursors;
 import 'package:flutter/widgets.dart'
     show BuildContext, GestureDetector, MouseRegion, Text, Widget;
-import 'package:goals_core/model.dart' show Goal;
-import 'package:goals_web/goal_viewer/providers.dart' show focusedGoalStream;
+import 'package:goals_core/model.dart' show Goal, GoalPath;
+import 'package:goals_web/goal_viewer/goal_actions_context.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
 
 class Breadcrumb extends ConsumerWidget {
-  final Goal goal;
+  final Map<String, Goal> goalMap;
   final TextStyle? style;
+  final GoalPath path;
   const Breadcrumb({
     super.key,
-    required this.goal,
+    required this.goalMap,
     this.style,
+    required this.path,
   });
 
   @override
@@ -21,12 +23,12 @@ class Breadcrumb extends ConsumerWidget {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-          child: Text(goal.text,
+          child: Text(goalMap[path.goalId]!.text,
               style: this.style != null
                   ? this.style!.copyWith(decoration: TextDecoration.underline)
                   : TextStyle(decoration: TextDecoration.underline)),
           onTap: () {
-            focusedGoalStream.add(goal.id);
+            GoalActionsContext.of(context).onFocused(path);
           }),
     );
   }

@@ -4,7 +4,7 @@ import 'package:goals_types/goals_types.dart';
 import 'package:collection/collection.dart'
     show IterableExtension, IterableNullableExtension, IterableZip;
 
-import '../model.dart' show Goal, WorldContext;
+import '../model.dart' show Goal, GoalPath, WorldContext;
 import 'util/date_utils.dart';
 
 Map<String, Goal> getTransitiveSubGoals(
@@ -133,9 +133,9 @@ enum TraversalDecision {
 bool _traverseDown(
   Map<String, Goal> goalMap,
   String? rootGoalId, {
-  required TraversalDecision? Function(String, List<String> path) onVisit,
-  Function(String goalId, List<String> path)? onDepart,
-  required List<String> tail,
+  required TraversalDecision? Function(String, GoalPath path) onVisit,
+  Function(String goalId, GoalPath path)? onDepart,
+  required GoalPath tail,
   int Function(Goal goalA, Goal goalB)? childTraversalComparator,
 }) {
   if (rootGoalId == null) {
@@ -156,7 +156,7 @@ bool _traverseDown(
     onDepart?.call(headGoal.id, tail);
     return true;
   }
-  final newTail = [...tail, rootGoalId];
+  final newTail = GoalPath([...tail, rootGoalId]);
   for (final subGoalIds in childTraversalComparator != null
       ? headGoal.subGoalIds
           .map((e) => goalMap[e])
@@ -184,8 +184,7 @@ traverseDown(
   /// continue but traversing the children can be stopped by returning
   /// [TraversalDecision.dontRecurse] and the entire traversal can be stopped by
   /// returning [TraversalDecision.stopTraversal]
-  required TraversalDecision? Function(String goalId, List<String> path)
-      onVisit,
+  required TraversalDecision? Function(String goalId, GoalPath path) onVisit,
 
   /// callback for after a goals children have been visited
   Function(String goalId, List<String> path)? onDepart,
@@ -194,7 +193,7 @@ traverseDown(
   _traverseDown(goalMap, rootGoalId,
       onVisit: onVisit,
       onDepart: onDepart,
-      tail: [],
+      tail: GoalPath([]),
       childTraversalComparator: childTraversalComparator);
 }
 

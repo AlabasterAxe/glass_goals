@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart' show BuildContext, Container, Widget;
 import 'package:goals_core/model.dart'
     show
         Goal,
+        GoalPath,
         getAllParentContext,
         getPriorityComparator,
         hasParentContext,
@@ -24,9 +25,11 @@ import 'package:collection/collection.dart' show IterableExtension;
 import 'package:uuid/uuid.dart';
 
 class GoalSummary extends ConsumerWidget {
-  final Goal goal;
+  final GoalPath path;
   final Map<String, Goal> goalMap;
-  const GoalSummary({super.key, required this.goal, required this.goalMap});
+  const GoalSummary({super.key, required this.path, required this.goalMap});
+
+  Goal get goal => goalMap[path.goalId]!;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,11 +44,12 @@ class GoalSummary extends ConsumerWidget {
       colChildren.add(Padding(
         padding: EdgeInsets.only(bottom: uiUnit(2)),
         child: NoteCard(
-          goal: this.goal,
+          path: this.path,
           textEntry: goalSummary,
           onRefresh: () => {},
           isChildGoal: false,
           showTime: false,
+          goalMap: this.goalMap,
         ),
       ));
     }
@@ -64,8 +68,10 @@ class GoalSummary extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Breadcrumb(
-                    goal: childGoal,
-                    style: Theme.of(context).textTheme.headlineSmall),
+                  path: this.path,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  goalMap: this.goalMap,
+                ),
                 if (parentContextComment == null)
                   GlassGoalsIconButton(
                     icon: Icons.add,
@@ -87,7 +93,8 @@ class GoalSummary extends ConsumerWidget {
         colChildren.add(Padding(
           padding: EdgeInsets.only(left: indent),
           child: NoteCard(
-            goal: childGoal,
+            path: this.path,
+            goalMap: this.goalMap,
             textEntry: childSummary,
             onRefresh: () => {},
             isChildGoal: true,
@@ -109,7 +116,8 @@ class GoalSummary extends ConsumerWidget {
         colChildren.add(Padding(
           padding: EdgeInsets.only(left: indent),
           child: NoteCard(
-            goal: childGoal,
+            path: this.path,
+            goalMap: this.goalMap,
             textEntry: parentContextComment,
             onRefresh: () => {},
             isChildGoal: false,
@@ -136,14 +144,16 @@ class GoalSummary extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Breadcrumb(
-                  goal: parentGoal,
+                  path: GoalPath([...this.path, parentGoal.id]),
+                  goalMap: this.goalMap,
                   style: Theme.of(context).textTheme.headlineSmall),
             ],
           )));
       colChildren.add(Padding(
         padding: EdgeInsets.only(left: indent),
         child: NoteCard(
-          goal: goal,
+          path: path,
+          goalMap: goalMap,
           textEntry: parentContextComment.value,
           onRefresh: () => {},
           isChildGoal: true,
