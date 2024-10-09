@@ -884,48 +884,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
           ),
         ];
       case PendingGoalViewMode.info:
-        final isDebugMode = ref.watch(debugProvider);
-        final List<DetailViewLogEntryItem> logItems = [];
-        for (final goalId in [...widget.goal.subGoalIds, widget.goal.id]) {
-          final goal = widget.goalMap[goalId];
-          if (goal == null) {
-            continue;
-          }
-          logItems.addAll(goal.log.map((entry) => DetailViewLogEntryItem(
-              path: GoalPath([...widget.path, goal.id]),
-              entry: entry,
-              time: entry.creationTime)));
-        }
-        final historyLog = _computeHistoryLog(
-            worldContext, widget.goalMap, this.widget.goal.id, logItems);
-        final goalSummary = hasSummary(widget.goal);
-
-        final textTheme = Theme.of(context).textTheme;
-        return [
-          if (goalSummary != null) ...[
-            Text('Summary', style: textTheme.headlineSmall),
-            SizedBox(height: uiUnit(1)),
-            GoalSummary(path: widget.path, goalMap: widget.goalMap),
-          ],
-          SizedBox(height: uiUnit(2)),
-          Text('History', style: textTheme.headlineSmall),
-          SizedBox(height: uiUnit(1)),
-          AddNoteCard(goalId: this.widget.goal.id),
-          SizedBox(height: uiUnit()),
-          GoalHistoryWidget(
-              yearItems: historyLog,
-              path: this.widget.path,
-              goalMap: this.widget.goalMap,
-              onRefresh: () => setState(() {})),
-          if (isDebugMode) ...[
-            SizedBox(height: uiUnit(2)),
-            Text('Debug Info', style: textTheme.headlineSmall),
-            SizedBox(height: uiUnit(2)),
-            Text('Goal ID: ${widget.goal.id}'),
-            SizedBox(height: uiUnit(2)),
-            for (final entry in widget.goal.log) Text(entry.toString())
-          ],
-        ];
+        throw UnimplementedError();
     }
   }
 
@@ -937,6 +896,23 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
     final textTheme = Theme.of(context).textTheme;
 
     final isNarrow = MediaQuery.of(context).size.width < 600;
+
+    final isDebugMode = ref.watch(debugProvider);
+    final List<DetailViewLogEntryItem> logItems = [];
+    for (final goalId in [...widget.goal.subGoalIds, widget.goal.id]) {
+      final goal = widget.goalMap[goalId];
+      if (goal == null) {
+        continue;
+      }
+      logItems.addAll(goal.log.map((entry) => DetailViewLogEntryItem(
+          path: GoalPath([...widget.path, goal.id]),
+          entry: entry,
+          time: entry.creationTime)));
+    }
+    final historyLog = _computeHistoryLog(
+        worldContext, widget.goalMap, this.widget.goal.id, logItems);
+    final goalSummary = hasSummary(widget.goal);
+
     return Padding(
       padding: EdgeInsets.all(uiUnit(2)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1028,13 +1004,35 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                       this._viewMode = mode;
                     });
                   },
-                  showInfo: true,
                   mode: this._viewMode),
             ],
           ),
         parentBreadcrumbs(),
         SizedBox(height: uiUnit(2)),
+        if (goalSummary != null) ...[
+          Text('Summary', style: textTheme.headlineSmall),
+          SizedBox(height: uiUnit(1)),
+          GoalSummary(path: widget.path, goalMap: widget.goalMap),
+        ],
         ...getModeChildren(worldContext),
+        SizedBox(height: uiUnit(2)),
+        Text('History', style: textTheme.headlineSmall),
+        SizedBox(height: uiUnit(1)),
+        AddNoteCard(goalId: this.widget.goal.id),
+        SizedBox(height: uiUnit()),
+        GoalHistoryWidget(
+            yearItems: historyLog,
+            path: this.widget.path,
+            goalMap: this.widget.goalMap,
+            onRefresh: () => setState(() {})),
+        if (isDebugMode) ...[
+          SizedBox(height: uiUnit(2)),
+          Text('Debug Info', style: textTheme.headlineSmall),
+          SizedBox(height: uiUnit(2)),
+          Text('Goal ID: ${widget.goal.id}'),
+          SizedBox(height: uiUnit(2)),
+          for (final entry in widget.goal.log) Text(entry.toString())
+        ],
       ]),
     );
   }
