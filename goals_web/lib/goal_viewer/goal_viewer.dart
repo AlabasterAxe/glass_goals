@@ -16,6 +16,7 @@ import 'package:goals_core/model.dart'
         getGoalsMatchingPredicate,
         getPriorityComparator,
         getTransitiveSubGoals,
+        getTransitiveSuperGoals,
         isAnchor;
 import 'package:goals_core/sync.dart'
     show
@@ -637,6 +638,17 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       }
     }
 
+    if (newParentId != null) {
+      final superGoals =
+          getTransitiveSuperGoals(this.widget.goalMap, newParentId);
+      for (final path in draggedGoalDetails) {
+        if (superGoals.containsKey(path.goalId)) {
+          // abort mission. one of these goals is a super goal of the new parent.
+          return [];
+        }
+      }
+    }
+
     for (final details in draggedGoalDetails) {
       final droppedGoal = this.widget.goalMap[details.goalId];
       if (newParentId != null &&
@@ -761,6 +773,13 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     List<String>? prevDropPath,
     List<String>? nextDropPath,
   }) {
+    if (dropPath?.lastOrNull != null) {
+      final superGoals =
+          getTransitiveSuperGoals(this.widget.goalMap, dropPath!.last);
+      if (superGoals.containsKey(path.goalId)) {
+        return;
+      }
+    }
     final goalDeltas = _computeDropGoalEffects(
       path,
       dropPath: dropPath,
