@@ -2,20 +2,7 @@ import 'dart:html';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart'
-    show
-        Colors,
-        Dialog,
-        Divider,
-        Drawer,
-        Icons,
-        ListTile,
-        MenuAnchor,
-        MenuController,
-        MenuItemButton,
-        Scaffold,
-        Theme,
-        Tooltip,
-        showDialog;
+    show Colors, Dialog, Divider, Drawer, ListTile, Scaffold, Theme, showDialog;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:goals_core/model.dart'
@@ -62,7 +49,6 @@ import 'package:uuid/uuid.dart' show Uuid;
 import '../common/keyboard_utils.dart';
 import '../common/time_slice.dart';
 import '../styles.dart' show lightBackground, multiSplitViewThemeData, uiUnit;
-import '../widgets/gg_icon_button.dart';
 import 'goal_actions_context.dart';
 import 'goal_search_modal.dart';
 import 'goal_viewer_constants.dart';
@@ -146,8 +132,6 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
       this._getMultiSplitViewController(ref.read(debugProvider));
   PendingGoalViewMode _pendingGoalViewMode = PendingGoalViewMode.schedule;
 
-  final _addTimeSliceMenuController = MenuController();
-
   bool _debugDebounce = false;
 
   _onSelected(List<String> goalPath) {
@@ -200,10 +184,20 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
 
     if (!isCtrlHeld()) {
       if (path?.contains("ui:breadcrumb") == true) {
+        final prevFilterGoalId = this._filter is GoalGoalFilter
+            ? (this._filter as GoalGoalFilter).goalId
+            : null;
+
         if (_filter is! GoalGoalFilter ||
             (path?.goalId != (this._filter as GoalGoalFilter).goalId)) {
           this._onSwitchFilter(GoalGoalFilter(path!.goalId, widget.goalMap));
         }
+
+        if (path?.contains("ui:list") == true && prevFilterGoalId != null) {
+          focusedGoalStream.add(prevFilterGoalId);
+          Hive.box('goals_web.ui').put('focusedGoal', path?.goalId);
+        }
+
         return;
       }
 
@@ -1076,10 +1070,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
               case GoalGoalFilter filter:
                 return GoalDetail(
                   goalMap: goalMap,
-                  hoverActionsBuilder: (goalId) {
-                    return HoverActionsWidget(
-                      goalMap: goalMap,
-                    );
+                  hoverActionsBuilder: (path) {
+                    return HoverActionsWidget(goalMap: goalMap, path: path);
                   },
                   path: GoalPath(['ui:list', filter.goalId]),
                 );
