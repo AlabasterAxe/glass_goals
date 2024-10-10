@@ -39,9 +39,6 @@ class _PendingGoalViewModePickerState extends State<PendingGoalViewModePicker> {
             child: Text('Tree'), value: PendingGoalViewMode.tree),
         DropdownMenuItem<PendingGoalViewMode>(
             child: Text('Schedule'), value: PendingGoalViewMode.schedule),
-        if (widget.showInfo)
-          DropdownMenuItem<PendingGoalViewMode>(
-              child: Text('Info'), value: PendingGoalViewMode.info),
       ],
       borderRadius: BorderRadius.circular(uiUnit(1)),
       padding: EdgeInsets.symmetric(horizontal: uiUnit(2)),
@@ -74,8 +71,6 @@ class PendingGoalViewer extends ConsumerWidget {
         ref.read(worldContextProvider).value ?? worldContextStream.value;
     return switch (this.mode) {
       PendingGoalViewMode.schedule =>
-        ScheduledGoalsV2(goalMap: this.goalMap, path: this.path),
-      PendingGoalViewMode.info =>
         ScheduledGoalsV2(goalMap: this.goalMap, path: this.path),
       PendingGoalViewMode.tree => FlattenedGoalTree(
           path: this.path,
@@ -119,8 +114,4 @@ enum PendingGoalViewMode {
 
   // tree view just shows the goals in a tree format
   tree,
-
-  // summary shows information about the history of a goal and the summary of
-  // the goal and its subgoals
-  info,
 }

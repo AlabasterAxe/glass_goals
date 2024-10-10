@@ -883,8 +883,6 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
             path: [...this.widget.path, this.widget.goal.id],
           ),
         ];
-      case PendingGoalViewMode.info:
-        throw UnimplementedError();
     }
   }
 
