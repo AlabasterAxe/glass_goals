@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
+import 'package:goals_core/model.dart';
 import 'package:goals_core/sync.dart';
 import 'package:goals_web/common/keyboard_utils.dart';
 import 'package:goals_web/goal_viewer/goal_viewer_constants.dart';
@@ -16,7 +17,7 @@ class AddNoteCard extends ConsumerStatefulWidget {
   final String goalId;
   const AddNoteCard({super.key, required this.goalId});
 
-  get path => [goalId, NEW_NOTE_PLACEHOLDER];
+  GoalPath get path => GoalPath([goalId, NEW_NOTE_PLACEHOLDER]);
 
   @override
   ConsumerState<AddNoteCard> createState() => _AddNoteCardState();

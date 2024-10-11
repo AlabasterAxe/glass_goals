@@ -39,6 +39,8 @@ final _PLATFORM_AGNOSTIC_SHORTCUTS = <ShortcutActivator, Intent>{
   SingleActivator(LogicalKeyboardKey.keyK): const PreviousIntent(),
   SingleActivator(LogicalKeyboardKey.tab): const IndentIntent(),
   SingleActivator(LogicalKeyboardKey.tab, shift: true): const OutdentIntent(),
+  SingleActivator(LogicalKeyboardKey.delete): const RemoveIntent(),
+  SingleActivator(LogicalKeyboardKey.backspace): const RemoveIntent(),
 };
 
 final SHORTCUTS = <ShortcutActivator, Intent>{

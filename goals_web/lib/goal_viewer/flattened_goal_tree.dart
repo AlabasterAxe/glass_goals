@@ -199,6 +199,10 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
         oldWidget.path != this.widget.path) {
       _updateFlattenedGoalItems();
     }
+
+    if (pathsMatch(this.widget.path, hoverEventStream.value)) {
+      this._focusNode.requestFocus();
+    }
   }
 
   @override
@@ -218,6 +222,7 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
 
     final goalItems = <Widget>[];
     final onDropGoal = GoalActionsContext.of(context).onDropGoal;
+    final onArchive = GoalActionsContext.of(context).onArchive;
 
     for (int i = 0; i < this._flattenedGoalItems.length; i++) {
       final prevGoal = i > 0 ? this._flattenedGoalItems[i - 1] : null;
@@ -348,6 +353,20 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
                 }
                 textFocusStream
                     .add(GoalPath([...this.widget.path, NEW_GOAL_PLACEHOLDER]));
+              },
+            ),
+          if (textFocusStream.value == null)
+            RemoveIntent: CallbackAction<RemoveIntent>(
+              onInvoke: (_) {
+                final index = _flattenedGoalItems.indexWhere(
+                    (item) => pathsMatch(item.path, hoverEventStream.value));
+                if (index == -1) return;
+                if (index < _flattenedGoalItems.length - 1) {
+                  hoverEventStream.add(_flattenedGoalItems[index - 1].path);
+                } else {
+                  hoverEventStream.add(null);
+                }
+                onArchive.call(_flattenedGoalItems[index].path.goalId);
               },
             ),
         },

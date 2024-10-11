@@ -4,6 +4,10 @@ class SearchIntent extends Intent {
   const SearchIntent();
 }
 
+class RemoveIntent extends Intent {
+  const RemoveIntent();
+}
+
 class UndoIntent extends Intent {
   const UndoIntent();
 }
