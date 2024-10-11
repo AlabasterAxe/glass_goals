@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart' show Icons, Theme;
+import 'package:flutter/material.dart'
+    show Icons, MenuAnchor, MenuItemButton, Theme;
 import 'package:flutter/src/widgets/basic.dart';
-import 'package:flutter/widgets.dart' show BuildContext, Container, Widget;
+import 'package:flutter/widgets.dart'
+    show BuildContext, Container, Text, Widget;
 import 'package:goals_core/model.dart'
     show
         Goal,
@@ -72,20 +74,47 @@ class GoalSummary extends ConsumerWidget {
                   style: Theme.of(context).textTheme.headlineSmall,
                   goalMap: this.goalMap,
                 ),
-                if (parentContextComment == null)
-                  GlassGoalsIconButton(
-                    icon: Icons.add,
-                    onPressed: () {
-                      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                          id: childGoal.id,
-                          logEntry: ParentContextCommentEntry(
-                            id: Uuid().v4(),
-                            creationTime: DateTime.now(),
-                            parentId: this.goal.id,
-                            text: DEFAULT_CONTEXT_COMMENT_TEXT,
-                          )));
-                    },
-                  )
+                if (parentContextComment == null || childSummary == null)
+                  MenuAnchor(
+                      menuChildren: [
+                        if (parentContextComment == null)
+                          MenuItemButton(
+                            child: Text('Context Comment'),
+                            onPressed: () {
+                              AppContext.of(context)
+                                  .syncClient
+                                  .modifyGoal(GoalDelta(
+                                      id: childGoal.id,
+                                      logEntry: ParentContextCommentEntry(
+                                        id: Uuid().v4(),
+                                        creationTime: DateTime.now(),
+                                        parentId: this.goal.id,
+                                        text: DEFAULT_CONTEXT_COMMENT_TEXT,
+                                      )));
+                            },
+                          ),
+                        if (childSummary == null)
+                          MenuItemButton(
+                            child: Text('Summary'),
+                            onPressed: () {
+                              AppContext.of(context)
+                                  .syncClient
+                                  .modifyGoal(GoalDelta(
+                                      id: childGoal.id,
+                                      logEntry: SetSummaryEntry(
+                                        id: Uuid().v4(),
+                                        creationTime: DateTime.now(),
+                                        text: DEFAULT_SUMMARY_TEXT,
+                                      )));
+                            },
+                          )
+                      ],
+                      builder: (_, controller, ___) => GlassGoalsIconButton(
+                            icon: Icons.add,
+                            onPressed: () {
+                              controller.open();
+                            },
+                          ))
               ],
             )),
       );
@@ -93,11 +122,11 @@ class GoalSummary extends ConsumerWidget {
         colChildren.add(Padding(
           padding: EdgeInsets.only(left: indent),
           child: NoteCard(
-            path: this.path,
+            path: GoalPath([...this.path, childGoal.id]),
             goalMap: this.goalMap,
             textEntry: childSummary,
             onRefresh: () => {},
-            isChildGoal: true,
+            isChildGoal: false,
             showTime: false,
           ),
         ));
