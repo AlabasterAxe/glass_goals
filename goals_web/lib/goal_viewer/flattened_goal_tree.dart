@@ -280,27 +280,29 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
     }
     return Actions(
         actions: {
-          NextIntent: CallbackAction(
-            onInvoke: (_) {
-              final hoveredIndex = _flattenedGoalItems.indexWhere(
-                  (item) => pathsMatch(item.path, hoverEventStream.value));
-              if (hoveredIndex != -1 &&
-                  hoveredIndex < _flattenedGoalItems.length - 1) {
-                hoverEventStream
-                    .add(_flattenedGoalItems[hoveredIndex + 1].path);
-              }
-            },
-          ),
-          PreviousIntent: CallbackAction(
-            onInvoke: (_) {
-              final hoveredIndex = _flattenedGoalItems.indexWhere(
-                  (item) => pathsMatch(item.path, hoverEventStream.value));
-              if (hoveredIndex != -1 && hoveredIndex > 0) {
-                hoverEventStream
-                    .add(_flattenedGoalItems[hoveredIndex - 1].path);
-              }
-            },
-          ),
+          if (textFocusStream.value == null)
+            NextIntent: CallbackAction(
+              onInvoke: (_) {
+                final hoveredIndex = _flattenedGoalItems.indexWhere(
+                    (item) => pathsMatch(item.path, hoverEventStream.value));
+                if (hoveredIndex != -1 &&
+                    hoveredIndex < _flattenedGoalItems.length - 1) {
+                  hoverEventStream
+                      .add(_flattenedGoalItems[hoveredIndex + 1].path);
+                }
+              },
+            ),
+          if (textFocusStream.value == null)
+            PreviousIntent: CallbackAction(
+              onInvoke: (_) {
+                final hoveredIndex = _flattenedGoalItems.indexWhere(
+                    (item) => pathsMatch(item.path, hoverEventStream.value));
+                if (hoveredIndex != -1 && hoveredIndex > 0) {
+                  hoverEventStream
+                      .add(_flattenedGoalItems[hoveredIndex - 1].path);
+                }
+              },
+            ),
         },
         child: Focus(
           focusNode: this._focusNode,

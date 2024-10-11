@@ -19,7 +19,13 @@ import 'package:flutter/rendering.dart' show CrossAxisAlignment, MainAxisSize;
 import 'package:flutter/widgets.dart'
     show BuildContext, Expanded, Icon, Row, StreamBuilder, Text, Widget;
 import 'package:goals_core/model.dart'
-    show Goal, getGoalStatus, getTransitiveSuperGoals, hasSummary, isAnchor;
+    show
+        Goal,
+        GoalPath,
+        getGoalStatus,
+        getTransitiveSuperGoals,
+        hasSummary,
+        isAnchor;
 import 'package:goals_core/sync.dart'
     show AddParentLogEntry, GoalDelta, GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
@@ -236,7 +242,7 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                   onPressed: () {
                     onExpanded(widget.path!, expanded: true);
                     textFocusStream
-                        .add([...widget.path!, NEW_GOAL_PLACEHOLDER]);
+                        .add(GoalPath([...widget.path!, NEW_GOAL_PLACEHOLDER]));
                   })),
         Tooltip(
           waitDuration: _TOOLTIP_DELAY,

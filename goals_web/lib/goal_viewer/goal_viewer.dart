@@ -138,7 +138,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
   _onSelected(List<String> goalPath) {
     setState(() {
       final List<GoalPath> selectedGoals =
-          isCtrlHeld() ? selectedGoalsStream.value : [];
+          isCtrlHeld() || isShiftHeld() ? selectedGoalsStream.value : [];
 
       if (!selectedGoals.contains(GoalPath(goalPath))) {
         selectedGoals.add(GoalPath(goalPath));

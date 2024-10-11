@@ -880,7 +880,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                 .where((g) => subgoalMap.containsKey(g))
                 .toList(),
             hoverActionsBuilder: widget.hoverActionsBuilder,
-            path: [...this.widget.path, this.widget.goal.id],
+            path: this.widget.path,
           ),
         ];
     }

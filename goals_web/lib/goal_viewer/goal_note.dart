@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart' show Colors, Icons, TextField;
-import 'package:flutter/painting.dart' show TextBaseline, TextScaler, TextStyle;
+import 'package:flutter/painting.dart'
+    show Alignment, TextAlign, TextBaseline, TextScaler, TextStyle;
+import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
     show
         Actions,
+        Align,
         BoxConstraints,
         BuildContext,
         CallbackAction,
@@ -216,7 +219,7 @@ class _NoteCardState extends State<NoteCard> {
                 data: _textController.text,
                 selectable: true,
                 listItemCrossAxisAlignment:
-                    MarkdownListItemCrossAxisAlignment.baseline,
+                    MarkdownListItemCrossAxisAlignment.start,
                 bulletBuilder: (params) {
                   switch (params.style) {
                     case BulletStyle.orderedList:
@@ -225,7 +228,12 @@ class _NoteCardState extends State<NoteCard> {
                               fontSize: 20,
                               textBaseline: TextBaseline.alphabetic));
                     case BulletStyle.unorderedList:
-                      return Text("⬤", style: TextStyle(fontSize: 8));
+                      return Padding(
+                        padding: EdgeInsets.only(top: uiUnit(3)),
+                        child: Text("⬤",
+                            style: TextStyle(fontSize: 6.5),
+                            textAlign: TextAlign.center),
+                      );
                   }
                 },
                 onTapText: () {

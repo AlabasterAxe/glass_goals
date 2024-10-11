@@ -101,7 +101,7 @@ final hasMouseProvider = StateNotifierProvider<_BooleanStateNotifier, bool>(
 
 final hoverEventStream = BehaviorSubject<List<String>?>.seeded(null);
 
-final textFocusStream = BehaviorSubject<List<String>?>.seeded(null);
+final textFocusStream = BehaviorSubject<GoalPath?>.seeded(null);
 final textFocusProvider = StreamProvider((_) => textFocusStream);
 
 pathsMatch(List<String>? a, List<String>? b) {

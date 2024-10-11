@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart'
-    show Colors, IconButton, Icons, TextField;
+    show Colors, IconButton, Icons, KeyEventResult, TextField;
 import 'package:flutter/painting.dart'
     show
         BorderRadius,
@@ -14,7 +14,8 @@ import 'package:flutter/painting.dart'
         TextStyle;
 import 'package:flutter/rendering.dart'
     show HitTestBehavior, MainAxisAlignment, MainAxisSize;
-import 'package:flutter/services.dart' show SystemMouseCursors, TextSelection;
+import 'package:flutter/services.dart'
+    show KeyDownEvent, LogicalKeyboardKey, SystemMouseCursors, TextSelection;
 import 'package:flutter/src/widgets/async.dart';
 import 'package:flutter/widgets.dart'
     show
@@ -146,7 +147,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
 
   _cancelEditing() {
     hoverEventStream.add(null);
-    this._focusNode.unfocus();
+    textFocusStream.add(null);
     this._textController.text = widget.goal.text;
     this.setState(() {
       this._editing = false;
@@ -165,6 +166,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     AppContext.of(context)
         .syncClient
         .modifyGoal(GoalDelta(id: widget.goal.id, text: _textController.text));
+    textFocusStream.add(null);
     setState(() {
       _editing = false;
     });
@@ -230,12 +232,15 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
 
   _startEditing() {
     this._textController.text = widget.goal.text;
-    this._focusNode.requestFocus();
     this._textController.selection =
         TextSelection(baseOffset: 0, extentOffset: _textController.text.length);
-    textFocusStream.add([...this.widget.path]);
+    textFocusStream.add(this.widget.path);
+    this._focusNode.unfocus();
     setState(() {
       _editing = true;
+      Future.delayed(Duration.zero, () {
+        this._focusNode.requestFocus();
+      });
     });
   }
 
@@ -260,8 +265,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
       height: uiUnit(hasMouse ? 8 : 12),
       child: Center(
           child: Container(
-        width: uiUnit(),
-        height: uiUnit(),
+        width: uiUnit(1.5),
+        height: uiUnit(1.5),
         decoration: BoxDecoration(
           color: darkElementColor,
           borderRadius: BorderRadius.circular(uiUnit()),
@@ -299,7 +304,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
               children: [
                 Flexible(
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    widget.dragHandle == GoalItemDragHandle.bullet
+                    widget.dragHandle == GoalItemDragHandle.bullet &&
+                            !this._editing
                         ? _dragWrapWidget(
                             child: bullet,
                             isSelected: isSelected,
@@ -392,21 +398,30 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
               });
             },
           ),
-        AcceptIntent: CallbackAction<AcceptIntent>(
-          onInvoke: (_) {
-            this._updateGoal();
-          },
-        ),
-        AcceptMultiLineTextIntent: CallbackAction<AcceptMultiLineTextIntent>(
-          onInvoke: (_) {
-            this._updateGoal();
-          },
-        ),
+        if (this._editing)
+          AcceptIntent: CallbackAction<AcceptIntent>(
+            onInvoke: (_) {
+              this._updateGoal();
+            },
+          ),
+        if (this._editing)
+          AcceptMultiLineTextIntent: CallbackAction<AcceptMultiLineTextIntent>(
+            onInvoke: (_) {
+              this._updateGoal();
+            },
+          ),
         if (!this._editing)
           ActivateIntent:
               CallbackAction<ActivateIntent>(onInvoke: (ActivateIntent intent) {
-            onFocused.call(GoalPath(widget.path));
-          })
+            onExpanded.call(GoalPath(widget.path));
+          }),
+        if (!this._editing)
+          AcceptIntent: CallbackAction<AcceptIntent>(
+            onInvoke: (_) {
+              onSelected.call(widget.path);
+              onFocused.call(GoalPath(widget.path));
+            },
+          ),
       },
       child: DragTarget<GoalDragDetails>(
         onAcceptWithDetails: (details) {
@@ -423,7 +438,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
           }
         },
         builder: (context, _, __) =>
-            widget.dragHandle == GoalItemDragHandle.item
+            widget.dragHandle == GoalItemDragHandle.item && !this._editing
                 ? _dragWrapWidget(
                     isSelected: isSelected,
                     selectedGoals: selectedGoals,

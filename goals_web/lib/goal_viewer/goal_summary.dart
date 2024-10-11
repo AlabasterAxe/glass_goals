@@ -8,6 +8,7 @@ import 'package:goals_core/model.dart'
         Goal,
         GoalPath,
         getAllParentContext,
+        getGoalStatus,
         getPriorityComparator,
         hasParentContext,
         hasSummary;
@@ -60,6 +61,8 @@ class GoalSummary extends ConsumerWidget {
     for (final childGoal in goal.subGoalIds
         .map((id) => goalMap[id])
         .whereType<Goal>()
+        .where((goal) =>
+            getGoalStatus(worldContext, goal).status != GoalStatus.archived)
         .sorted(comparator)) {
       final childSummary = hasSummary(childGoal);
       final parentContextComment = hasParentContext(childGoal, goal.id);
