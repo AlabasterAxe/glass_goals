@@ -13,7 +13,14 @@ import 'package:flutter/widgets.dart'
         KeyEventResult,
         Widget;
 import 'package:goals_core/model.dart'
-    show Goal, GoalPath, TraversalDecision, getPriorityComparator, traverseDown;
+    show
+        Goal,
+        GoalPath,
+        TraversalDecision,
+        getPriorityComparator,
+        hasParentContext,
+        hasSummary,
+        traverseDown;
 import 'package:goals_web/common/keyboard_utils.dart';
 import 'package:goals_web/goal_viewer/add_subgoal_item.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart'
@@ -40,7 +47,7 @@ class FlattenedGoalTree extends ConsumerStatefulWidget {
   final int? depthLimit;
   final bool showParentName;
   final HoverActionsBuilder hoverActionsBuilder;
-  final List<String> path;
+  final GoalPath path;
   final bool showAddGoal;
   const FlattenedGoalTree({
     super.key,
@@ -50,7 +57,7 @@ class FlattenedGoalTree extends ConsumerStatefulWidget {
     this.showParentName = false,
     required this.hoverActionsBuilder,
     this.showAddGoal = true,
-    this.path = const [],
+    this.path = const GoalPath([]),
   });
 
   @override
@@ -154,11 +161,15 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
           flattenedGoals.add((
             path: GoalPath(fullGoalPath),
             hasRenderableChildren: this
-                .widget
-                .goalMap[goalId]!
-                .subGoalIds
-                .where((gId) => this.widget.goalMap.containsKey(gId))
-                .isNotEmpty,
+                    .widget
+                    .goalMap[goalId]!
+                    .subGoalIds
+                    .where((gId) => this.widget.goalMap.containsKey(gId))
+                    .isNotEmpty ||
+                hasSummary(this.widget.goalMap[goalId]!) != null ||
+                hasParentContext(this.widget.goalMap[goalId]!,
+                        this.widget.path.parentId) !=
+                    null,
           ));
 
           if (expandedGoalPaths
@@ -246,6 +257,7 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
           }));
       goalItems.add(goalId != NEW_GOAL_PLACEHOLDER
           ? GoalItemWidget(
+              goalMap: this.widget.goalMap,
               onDropGoal: (details) {
                 onDropGoal(
                   details.path,

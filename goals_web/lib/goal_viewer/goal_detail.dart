@@ -880,7 +880,7 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                 .where((g) => subgoalMap.containsKey(g))
                 .toList(),
             hoverActionsBuilder: widget.hoverActionsBuilder,
-            path: [...this.widget.path, this.widget.goal.id],
+            path: GoalPath([...this.widget.path, this.widget.goal.id]),
           ),
         ];
     }
@@ -989,7 +989,8 @@ class _GoalDetailState extends ConsumerState<GoalDetail> {
                       SizedBox(width: uiUnit(2)),
                       GoalActionsContext.overrideWith(context,
                           child: widget.hoverActionsBuilder(
-                              ['ui:detail', widget.goal.id]), onPrint: (_) {
+                              GoalPath(['ui:detail', widget.goal.id])),
+                          onPrint: (_) {
                         this._printGoal(worldContext);
                       }),
                     ]),

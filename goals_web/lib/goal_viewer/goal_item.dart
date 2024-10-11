@@ -16,6 +16,7 @@ import 'package:flutter/rendering.dart'
     show HitTestBehavior, MainAxisAlignment, MainAxisSize;
 import 'package:flutter/services.dart' show SystemMouseCursors, TextSelection;
 import 'package:flutter/src/widgets/async.dart';
+import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
     show
         Actions,
@@ -40,8 +41,10 @@ import 'package:flutter/widgets.dart'
         TextEditingController,
         Widget,
         pointerDragAnchorStrategy;
-import 'package:goals_core/model.dart' show Goal, GoalPath;
+import 'package:goals_core/model.dart'
+    show Goal, GoalPath, hasParentContext, hasSummary;
 import 'package:goals_core/sync.dart';
+import 'package:goals_web/goal_viewer/goal_note.dart';
 import 'package:goals_web/goal_viewer/hover_actions.dart'
     show HoverActionsBuilder;
 import 'package:goals_web/goal_viewer/status_chip.dart';
@@ -83,6 +86,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
   final GoalPath path;
   final EdgeInsetsGeometry padding;
   final bool pendingShiftSelect;
+  final Map<String, Goal> goalMap;
 
   const GoalItemWidget({
     super.key,
@@ -95,6 +99,7 @@ class GoalItemWidget extends StatefulHookConsumerWidget {
     this.path = const GoalPath([]),
     this.padding = const EdgeInsets.all(0),
     this.pendingShiftSelect = false,
+    required this.goalMap,
   });
 
   @override
@@ -133,6 +138,12 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
         this._focusNode.requestFocus();
       }
     }));
+
+    this._focusNode.addListener(() {
+      if (!this._focusNode.hasPrimaryFocus) {
+        setState(() {});
+      }
+    });
   }
 
   @override
@@ -255,6 +266,10 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
     final onExpanded = GoalActionsContext.of(context).onExpanded;
     final onFocused = GoalActionsContext.of(context).onFocused;
     final onSelected = GoalActionsContext.of(context).onSelected;
+    final summary = hasSummary(widget.goal);
+    final parentComment = widget.path.parentId != null
+        ? hasParentContext(widget.goal, widget.path.parentId!)
+        : null;
     final bullet = SizedBox(
       width: uiUnit(10),
       height: uiUnit(hasMouse ? 8 : 12),
@@ -367,7 +382,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                 if (!isNarrow && !_editing && (isSelected || _hovering))
                   Padding(
                     padding: const EdgeInsets.only(right: 16.0),
-                    child: widget.hoverActionsBuilder([...this.widget.path]),
+                    child: widget
+                        .hoverActionsBuilder(GoalPath([...this.widget.path])),
                   )
               ],
             ),
@@ -392,17 +408,18 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
               });
             },
           ),
-        AcceptIntent: CallbackAction<AcceptIntent>(
-          onInvoke: (_) {
-            this._updateGoal();
-          },
-        ),
+        if (this._editing)
+          AcceptIntent: CallbackAction<AcceptIntent>(
+            onInvoke: (_) {
+              this._updateGoal();
+            },
+          ),
         AcceptMultiLineTextIntent: CallbackAction<AcceptMultiLineTextIntent>(
           onInvoke: (_) {
             this._updateGoal();
           },
         ),
-        if (!this._editing)
+        if (!this._editing && this._focusNode.hasPrimaryFocus)
           ActivateIntent:
               CallbackAction<ActivateIntent>(onInvoke: (ActivateIntent intent) {
             onFocused.call(GoalPath(widget.path));
@@ -422,7 +439,9 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
             });
           }
         },
-        builder: (context, _, __) =>
+        builder: (context, _, __) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             widget.dragHandle == GoalItemDragHandle.item
                 ? _dragWrapWidget(
                     isSelected: isSelected,
@@ -430,6 +449,54 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget> {
                     child: content,
                   )
                 : content,
+            if (summary != null && isExpanded)
+              Container(
+                color: hoverEventStream.value == widget.path
+                    ? emphasizedLightBackground
+                    : Colors.transparent,
+                padding: EdgeInsets.only(
+                    left: uiUnit(10) + widget.padding.horizontal),
+                child: NoteCard(
+                  smallText: true,
+                  goalMap: widget.goalMap,
+                  textEntry: summary,
+                  isChildGoal: false,
+                  path: widget.path,
+                  onRefresh: () {},
+                ),
+              ),
+            if (parentComment != null && isExpanded)
+              Container(
+                color: hoverEventStream.value == widget.path
+                    ? emphasizedLightBackground
+                    : Colors.transparent,
+                padding: EdgeInsets.only(
+                    left: uiUnit(10) + widget.padding.horizontal),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                      vertical: uiUnit(1), horizontal: uiUnit(2)),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(2),
+                    border: Border(
+                      left: BorderSide(
+                        width: 2,
+                        color: darkElementColor,
+                      ),
+                    ),
+                    color: palerBlueColor,
+                  ),
+                  child: NoteCard(
+                    smallText: true,
+                    goalMap: widget.goalMap,
+                    textEntry: parentComment,
+                    isChildGoal: false,
+                    path: widget.path,
+                    onRefresh: () {},
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

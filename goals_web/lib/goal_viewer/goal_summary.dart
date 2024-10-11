@@ -55,84 +55,84 @@ class GoalSummary extends ConsumerWidget {
     }
 
     final indent = uiUnit(4);
-    for (final childGoal in goal.subGoalIds
-        .map((id) => goalMap[id])
-        .whereType<Goal>()
-        .sorted(comparator)) {
-      final childSummary = hasSummary(childGoal);
-      final parentContextComment = hasParentContext(childGoal, goal.id);
-      colChildren.add(
-        Padding(
-            padding: EdgeInsets.only(left: indent),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Breadcrumb(
-                  path: GoalPath([...this.path, childGoal.id]),
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  goalMap: this.goalMap,
-                ),
-                if (parentContextComment == null)
-                  GlassGoalsIconButton(
-                    icon: Icons.add,
-                    onPressed: () {
-                      AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-                          id: childGoal.id,
-                          logEntry: ParentContextCommentEntry(
-                            id: Uuid().v4(),
-                            creationTime: DateTime.now(),
-                            parentId: this.goal.id,
-                            text: DEFAULT_CONTEXT_COMMENT_TEXT,
-                          )));
-                    },
-                  )
-              ],
-            )),
-      );
-      if (childSummary != null) {
-        colChildren.add(Padding(
-          padding: EdgeInsets.only(left: indent),
-          child: NoteCard(
-            path: this.path,
-            goalMap: this.goalMap,
-            textEntry: childSummary,
-            onRefresh: () => {},
-            isChildGoal: true,
-            showTime: false,
-          ),
-        ));
-      }
+    // for (final childGoal in goal.subGoalIds
+    //     .map((id) => goalMap[id])
+    //     .whereType<Goal>()
+    //     .sorted(comparator)) {
+    //   final childSummary = hasSummary(childGoal);
+    //   final parentContextComment = hasParentContext(childGoal, goal.id);
+    //   colChildren.add(
+    //     Padding(
+    //         padding: EdgeInsets.only(left: indent),
+    //         child: Row(
+    //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    //           children: [
+    //             Breadcrumb(
+    //               path: GoalPath([...this.path, childGoal.id]),
+    //               style: Theme.of(context).textTheme.headlineSmall,
+    //               goalMap: this.goalMap,
+    //             ),
+    //             if (parentContextComment == null)
+    //               GlassGoalsIconButton(
+    //                 icon: Icons.add,
+    //                 onPressed: () {
+    //                   AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+    //                       id: childGoal.id,
+    //                       logEntry: ParentContextCommentEntry(
+    //                         id: Uuid().v4(),
+    //                         creationTime: DateTime.now(),
+    //                         parentId: this.goal.id,
+    //                         text: DEFAULT_CONTEXT_COMMENT_TEXT,
+    //                       )));
+    //                 },
+    //               )
+    //           ],
+    //         )),
+    //   );
+    //   if (childSummary != null) {
+    //     colChildren.add(Padding(
+    //       padding: EdgeInsets.only(left: indent),
+    //       child: NoteCard(
+    //         path: this.path,
+    //         goalMap: this.goalMap,
+    //         textEntry: childSummary,
+    //         onRefresh: () => {},
+    //         isChildGoal: true,
+    //         showTime: false,
+    //       ),
+    //     ));
+    //   }
 
-      if (parentContextComment != null) {
-        colChildren.add(Padding(
-          padding: EdgeInsets.only(left: indent),
-          child: Container(
-            padding: EdgeInsets.symmetric(
-                vertical: uiUnit(1), horizontal: uiUnit(2)),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(2),
-              border: Border(
-                left: BorderSide(
-                  width: 2,
-                  color: darkElementColor,
-                ),
-              ),
-              color: palerBlueColor,
-            ),
-            child: NoteCard(
-              path: GoalPath([...this.path, childGoal.id]),
-              goalMap: this.goalMap,
-              textEntry: parentContextComment,
-              onRefresh: () {},
-              isChildGoal: false,
-              showTime: false,
-            ),
-          ),
-        ));
-      }
+    //   if (parentContextComment != null) {
+    //     colChildren.add(Padding(
+    //       padding: EdgeInsets.only(left: indent),
+    //       child: Container(
+    //         padding: EdgeInsets.symmetric(
+    //             vertical: uiUnit(1), horizontal: uiUnit(2)),
+    //         decoration: BoxDecoration(
+    //           borderRadius: BorderRadius.circular(2),
+    //           border: Border(
+    //             left: BorderSide(
+    //               width: 2,
+    //               color: darkElementColor,
+    //             ),
+    //           ),
+    //           color: palerBlueColor,
+    //         ),
+    //         child: NoteCard(
+    //           path: GoalPath([...this.path, childGoal.id]),
+    //           goalMap: this.goalMap,
+    //           textEntry: parentContextComment,
+    //           onRefresh: () {},
+    //           isChildGoal: false,
+    //           showTime: false,
+    //         ),
+    //       ),
+    //     ));
+    //   }
 
-      colChildren.add(SizedBox(height: uiUnit(2)));
-    }
+    //   colChildren.add(SizedBox(height: uiUnit(2)));
+    // }
 
     final parentContextComments = getAllParentContext(goal);
 

@@ -130,7 +130,7 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
             children: [
               SizedBox(
                 width: uiUnit(10),
-                height: uiUnit(8),
+                height: uiUnit(6),
                 child: const Center(child: Icon(Icons.add, size: 18)),
               ),
               Flexible(

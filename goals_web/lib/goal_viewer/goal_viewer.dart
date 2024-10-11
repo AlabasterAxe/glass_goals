@@ -25,6 +25,7 @@ import 'package:goals_core/sync.dart'
         GoalDelta,
         GoalStatus,
         MakeAnchorLogEntry,
+        ParentContextCommentEntry,
         PriorityLogEntry,
         RemoveParentLogEntry,
         SetParentLogEntry,
@@ -33,6 +34,7 @@ import 'package:goals_core/sync.dart'
 import 'package:goals_web/app_bar.dart';
 import 'package:goals_web/app_context.dart';
 import 'package:goals_web/common/constants.dart';
+import 'package:goals_web/common/focus.dart';
 import 'package:goals_web/common/os_utils.dart';
 import 'package:goals_web/goal_viewer/debug_panel.dart';
 import 'package:goals_web/goal_viewer/flattened_goal_tree.dart';
@@ -124,7 +126,7 @@ class GoalGoalFilter extends GoalFilter {
 class _GoalViewerState extends ConsumerState<GoalViewer> {
   GoalFilter _filter = PredefinedGoalFilter(GoalFilterType.pending_v2);
   GoalViewMode _mode = GoalViewMode.tree;
-  final FocusNode _focusNode = FocusNode();
+  final FocusNode _focusNode = appRootFocus;
 
   List<GoalGoalFilter> _goalFilters = [];
 
@@ -790,34 +792,61 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
     selectedGoalsStream.add([]);
   }
 
-  _onMakeAnchor(String goalId) {
+  _onMakeAnchor(GoalPath path) {
     AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-        id: goalId,
+        id: path.goalId,
         logEntry:
             MakeAnchorLogEntry(id: Uuid().v4(), creationTime: DateTime.now())));
   }
 
-  _onClearAnchor(String goalId) {
+  _onClearAnchor(GoalPath path) {
     AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-        id: goalId,
+        id: path.goalId,
         logEntry: ClearAnchorLogEntry(
             id: Uuid().v4(), creationTime: DateTime.now())));
   }
 
-  _onAddSummary(String goalId) {
+  _onAddSummary(GoalPath path) {
+    addPath(expandedGoalsStream, path);
     AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-        id: goalId,
+        id: path.goalId,
         logEntry: SetSummaryEntry(
             id: Uuid().v4(),
             text: DEFAULT_SUMMARY_TEXT,
             creationTime: DateTime.now())));
   }
 
-  _onClearSummary(String goalId) {
+  _onClearSummary(GoalPath path) {
     AppContext.of(context).syncClient.modifyGoal(GoalDelta(
-        id: goalId,
+        id: path.goalId,
         logEntry: SetSummaryEntry(
             id: Uuid().v4(), text: null, creationTime: DateTime.now())));
+  }
+
+  _onAddContextComment(GoalPath path) {
+    if (path.parentId == null) {
+      return;
+    }
+    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+        id: path.goalId,
+        logEntry: ParentContextCommentEntry(
+            id: Uuid().v4(),
+            creationTime: DateTime.now(),
+            parentId: path.parentId!,
+            text: DEFAULT_CONTEXT_COMMENT_TEXT)));
+  }
+
+  _onClearContextComment(GoalPath path) {
+    if (path.parentId == null) {
+      return;
+    }
+    AppContext.of(context).syncClient.modifyGoal(GoalDelta(
+        id: path.goalId,
+        logEntry: ParentContextCommentEntry(
+            id: Uuid().v4(),
+            creationTime: DateTime.now(),
+            parentId: path.parentId!,
+            text: null)));
   }
 
   @override
@@ -882,6 +911,8 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
         onMakeAnchor: this._onMakeAnchor,
         onAddSummary: this._onAddSummary,
         onClearSummary: this._onClearSummary,
+        onAddContextComment: this._onAddContextComment,
+        onClearContextComment: this._onClearContextComment,
         child: FocusableActionDetector(
           autofocus: true,
           shortcuts: isMacOS() ? MAC_SHORTCUTS : SHORTCUTS,
@@ -1074,7 +1105,7 @@ class _GoalViewerState extends ConsumerState<GoalViewer> {
                         path: path,
                         goalMap: widget.goalMap,
                       ),
-                      path: ['all-goals'],
+                      path: GoalPath(['all-goals']),
                       depthLimit: _mode == GoalViewMode.list ? 1 : null,
                     );
                   case GoalFilterType.schedule_v2:

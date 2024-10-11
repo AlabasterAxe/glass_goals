@@ -11,7 +11,10 @@ import 'package:flutter/widgets.dart'
         Container,
         CrossAxisAlignment,
         Expanded,
+        Focus,
+        FocusManager,
         FocusNode,
+        FocusScope,
         IntrinsicHeight,
         MainAxisAlignment,
         Row,
@@ -35,6 +38,7 @@ import 'package:goals_core/sync.dart'
 import 'package:goals_core/util.dart' show formatDate, formatTime;
 import 'package:goals_web/app_context.dart' show AppContext;
 import 'package:goals_web/common/constants.dart';
+import 'package:goals_web/common/focus.dart';
 import 'package:goals_web/goal_viewer/goal_breadcrumb.dart';
 import 'package:goals_web/intents.dart';
 import 'package:goals_web/styles.dart';
@@ -50,6 +54,7 @@ class NoteCard extends StatefulWidget {
   final bool isChildGoal;
   final bool showDate;
   final bool showTime;
+  final bool smallText;
   const NoteCard({
     super.key,
     required this.path,
@@ -59,6 +64,7 @@ class NoteCard extends StatefulWidget {
     required this.isChildGoal,
     this.showDate = false,
     this.showTime = true,
+    this.smallText = false,
   });
 
   @override
@@ -198,7 +204,7 @@ class _NoteCardState extends State<NoteCard> {
                     controller: _textController,
                     decoration: null,
                     maxLines: null,
-                    style: mainTextStyle,
+                    style: widget.smallText ? smallTextStyle : mainTextStyle,
                     onTapOutside: (_) {
                       if (widget.textEntry.text != null &&
                           _textController.text != widget.textEntry.text) {
@@ -255,7 +261,7 @@ class _NoteCardState extends State<NoteCard> {
                   }
                 },
                 styleSheet: MarkdownStyleSheet(
-                  textScaler: TextScaler.linear(1.05),
+                  textScaler: TextScaler.linear(widget.smallText ? 0.85 : 1.05),
                   p: _textController.text == DEFAULT_SUMMARY_TEXT ||
                           _textController.text == DEFAULT_CONTEXT_COMMENT_TEXT
                       ? mainTextStyle.copyWith(color: Colors.black54)

@@ -19,7 +19,14 @@ import 'package:flutter/rendering.dart' show CrossAxisAlignment, MainAxisSize;
 import 'package:flutter/widgets.dart'
     show BuildContext, Expanded, Icon, Row, StreamBuilder, Text, Widget;
 import 'package:goals_core/model.dart'
-    show Goal, getGoalStatus, getTransitiveSuperGoals, hasSummary, isAnchor;
+    show
+        Goal,
+        GoalPath,
+        getGoalStatus,
+        getTransitiveSuperGoals,
+        hasParentContext,
+        hasSummary,
+        isAnchor;
 import 'package:goals_core/sync.dart'
     show AddParentLogEntry, GoalDelta, GoalStatus;
 import 'package:goals_core/util.dart' show DateTimeExtension;
@@ -36,7 +43,7 @@ import 'package:uuid/uuid.dart';
 import 'goal_actions_context.dart';
 import 'providers.dart';
 
-typedef HoverActionsBuilder = Widget Function(List<String>? goalId);
+typedef HoverActionsBuilder = Widget Function(GoalPath? goalId);
 
 class HoverActionsWidget extends ConsumerStatefulWidget {
   final Map<String, Goal> goalMap;
@@ -44,7 +51,7 @@ class HoverActionsWidget extends ConsumerStatefulWidget {
 
   /// If this HoverActionsWidget is associated with a specific goal
   /// you can supply that goal's id here.
-  final List<String>? path;
+  final GoalPath? path;
 
   const HoverActionsWidget({
     super.key,
@@ -84,6 +91,10 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
     final onClearAnchor = GoalActionsContext.of(context).onClearAnchor;
     final onAddSummary = GoalActionsContext.of(context).onAddSummary;
     final onClearSummary = GoalActionsContext.of(context).onClearSummary;
+    final onAddContextComment =
+        GoalActionsContext.of(context).onAddContextComment;
+    final onClearContextComment =
+        GoalActionsContext.of(context).onClearContextComment;
 
     bool allArchived = selectedGoals.isNotEmpty;
     for (final selectedGoalPath in selectedGoals) {
@@ -99,6 +110,12 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
     final showClearAnchorOption =
         isAnchor(widget.goalMap[widget.goalId]) != null;
     final goalHasSummary = hasSummary(widget.goalMap[widget.goalId]) != null;
+
+    final goalHasContextComment = widget.path?.parentId != null
+        ? hasParentContext(
+                widget.goalMap[widget.goalId], widget.path!.parentId!) !=
+            null
+        : false;
     return Row(
       mainAxisSize: widget.mainAxisSize,
       crossAxisAlignment: widget.mainAxisSize == MainAxisSize.min
@@ -360,13 +377,26 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                   ? MenuItemButton(
                       child: Text('Remove Summary'),
                       leadingIcon: Icon(Icons.clear),
-                      onPressed: () => onClearSummary(this.widget.goalId!),
+                      onPressed: () => onClearSummary(this.widget.path!),
                     )
                   : MenuItemButton(
                       child: Text('Add Summary'),
                       leadingIcon: Icon(Icons.notes),
-                      onPressed: () => onAddSummary(this.widget.goalId!),
+                      onPressed: () => onAddSummary(this.widget.path!),
                     ),
+              if (this.widget.path?.parentId != null)
+                goalHasContextComment
+                    ? MenuItemButton(
+                        child: Text('Remove Context'),
+                        leadingIcon: Icon(Icons.clear),
+                        onPressed: () =>
+                            onClearContextComment(this.widget.path!),
+                      )
+                    : MenuItemButton(
+                        child: Text('Add Context'),
+                        leadingIcon: Icon(Icons.notes),
+                        onPressed: () => onAddContextComment(this.widget.path!),
+                      ),
               allArchived
                   ? MenuItemButton(
                       child: Text('Unarchive'),
@@ -384,18 +414,18 @@ class _HoverActionsWidgetState extends ConsumerState<HoverActionsWidget> {
                       leadingIcon: Icon(Icons.anchor),
                       onPressed: !showAnchorOption
                           ? null
-                          : () => onClearAnchor(this.widget.goalId!))
+                          : () => onClearAnchor(this.widget.path!))
                   : MenuItemButton(
                       child: Text('Make Anchor'),
                       leadingIcon: Icon(Icons.anchor),
                       onPressed: !showAnchorOption
                           ? null
-                          : () => onMakeAnchor(this.widget.goalId!)),
+                          : () => onMakeAnchor(this.widget.path!)),
               if (onPrint != null)
                 MenuItemButton(
                   child: Text('Save as PDF'),
                   leadingIcon: Icon(Icons.picture_as_pdf),
-                  onPressed: () => onPrint(this.widget.goalId),
+                  onPressed: () => onPrint(this.widget.path!),
                 ),
             ],
             child: GlassGoalsIconButton(

@@ -21,10 +21,12 @@ class GoalActionsContext extends InheritedWidget {
   final Function(String?) onArchive;
   final Function(String?, DateTime?) onDone;
   final Function(String?, DateTime?) onSnooze;
-  final Function(String) onMakeAnchor;
-  final Function(String) onClearAnchor;
-  final Function(String) onAddSummary;
-  final Function(String) onClearSummary;
+  final Function(GoalPath) onMakeAnchor;
+  final Function(GoalPath) onClearAnchor;
+  final Function(GoalPath) onAddSummary;
+  final Function(GoalPath) onClearSummary;
+  final Function(GoalPath) onAddContextComment;
+  final Function(GoalPath) onClearContextComment;
   final Function(
     GoalPath, {
     List<String>? dropPath,
@@ -32,7 +34,7 @@ class GoalActionsContext extends InheritedWidget {
     List<String>? nextDropPath,
   }) onDropGoal;
   final Function(String?, {DateTime startTime, DateTime? endTime}) onActive;
-  final Function(String? goalId)? onPrint;
+  final Function(GoalPath goalId)? onPrint;
 
   const GoalActionsContext({
     required Widget child,
@@ -50,6 +52,8 @@ class GoalActionsContext extends InheritedWidget {
     required this.onClearAnchor,
     required this.onAddSummary,
     required this.onClearSummary,
+    required this.onAddContextComment,
+    required this.onClearContextComment,
     this.onPrint,
   }) : super(child: child);
 
@@ -80,11 +84,13 @@ class GoalActionsContext extends InheritedWidget {
       List<String>? prevDropPath,
       List<String>? nextDropPath,
     })? onDropGoal,
-    Function(String? goalId)? onPrint,
-    Function(String goalId)? onClearAnchor,
-    Function(String goalId)? onMakeAnchor,
-    Function(String goalId)? onAddSummary,
-    Function(String goalId)? onClearSummary,
+    Function(GoalPath)? onPrint,
+    Function(GoalPath)? onClearAnchor,
+    Function(GoalPath)? onMakeAnchor,
+    Function(GoalPath)? onAddSummary,
+    Function(GoalPath)? onClearSummary,
+    Function(GoalPath)? onAddContextComment,
+    Function(GoalPath)? onClearContextComment,
   }) {
     return GoalActionsContext(
       child: child,
@@ -105,6 +111,10 @@ class GoalActionsContext extends InheritedWidget {
       onAddSummary: onAddSummary ?? GoalActionsContext.of(context).onAddSummary,
       onClearSummary:
           onClearSummary ?? GoalActionsContext.of(context).onClearSummary,
+      onAddContextComment: onAddContextComment ??
+          GoalActionsContext.of(context).onAddContextComment,
+      onClearContextComment: onClearContextComment ??
+          GoalActionsContext.of(context).onClearContextComment,
     );
   }
 }

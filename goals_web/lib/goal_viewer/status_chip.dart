@@ -197,7 +197,7 @@ class StatusChip extends ConsumerWidget {
                         : since
                             ? getGoalStatusStringSince(worldContext, this.entry)
                             : getGoalStatusString(worldContext, this.entry),
-                    style: smallTextStyle.copyWith(
+                    style: smallerTextStyle.copyWith(
                         color: getGoalStatusTextColor(this.entry)),
                   ),
                 )
@@ -207,7 +207,7 @@ class StatusChip extends ConsumerWidget {
                       : since
                           ? getGoalStatusStringSince(worldContext, this.entry)
                           : getGoalStatusString(worldContext, this.entry),
-                  style: smallTextStyle.copyWith(
+                  style: smallerTextStyle.copyWith(
                       color: getGoalStatusTextColor(this.entry)),
                 ),
           SizedBox(width: uiUnit() / 2),
@@ -249,6 +249,9 @@ class CurrentStatusChip extends ConsumerWidget {
     final goalStatus = getGoalStatus(worldContext, goal);
 
     return StatusChip(
-        entry: goalStatus, until: true, goalId: goal.id, showArchiveButton: true);
+        entry: goalStatus,
+        until: true,
+        goalId: goal.id,
+        showArchiveButton: true);
   }
 }

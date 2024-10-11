@@ -477,8 +477,8 @@ SetSummaryEntry? hasSummary(Goal? goal) {
   return null;
 }
 
-ParentContextCommentEntry? hasParentContext(Goal? goal, String parentId) {
-  if (goal == null) {
+ParentContextCommentEntry? hasParentContext(Goal? goal, String? parentId) {
+  if (goal == null || parentId == null) {
     return null;
   }
 

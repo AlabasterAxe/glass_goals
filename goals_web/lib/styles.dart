@@ -27,7 +27,8 @@ const darkGreyColor = Color.fromARGB(255, 50, 50, 50);
 const darkElementColor = darkBlueColor;
 
 final mainTextStyle = TextStyle(fontSize: uiUnit(5), color: darkElementColor);
-final smallTextStyle =
+final smallTextStyle = TextStyle(fontSize: uiUnit(4), color: darkElementColor);
+final smallerTextStyle =
     TextStyle(fontSize: uiUnit(3.5), color: darkElementColor);
 
 const focusedFontStyle = TextStyle(fontWeight: FontWeight.bold, inherit: true);
