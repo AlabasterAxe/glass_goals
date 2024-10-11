@@ -39,3 +39,11 @@ class PreviousIntent extends Intent {
 class ActivateIntent extends Intent {
   const ActivateIntent();
 }
+
+class IndentIntent extends Intent {
+  const IndentIntent();
+}
+
+class OutdentIntent extends Intent {
+  const OutdentIntent();
+}

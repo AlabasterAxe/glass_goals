@@ -303,6 +303,53 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
                 }
               },
             ),
+          if (textFocusStream.value?.goalId == NEW_GOAL_PLACEHOLDER)
+            IndentIntent: CallbackAction(
+              onInvoke: (_) {
+                final newGoalIndex = _flattenedGoalItems.indexWhere(
+                    (item) => pathsMatch(item.path, textFocusStream.value));
+
+                if (newGoalIndex > 0) {
+                  final parentPath = _flattenedGoalItems[newGoalIndex - 1].path;
+                  GoalActionsContext.of(context)
+                      .onExpanded(parentPath, expanded: true);
+                  final parentGoal = this.widget.goalMap[parentPath.goalId];
+                  if (parentGoal != null) {
+                    final newGoalPath =
+                        GoalPath([...parentPath, NEW_GOAL_PLACEHOLDER]);
+                    textFocusStream.add(newGoalPath);
+                  }
+                }
+              },
+            ),
+          if (textFocusStream.value?.goalId == NEW_GOAL_PLACEHOLDER)
+            OutdentIntent: CallbackAction(
+              onInvoke: (_) {
+                var newGoalIndex = _flattenedGoalItems.indexWhere(
+                    (item) => pathsMatch(item.path, textFocusStream.value));
+
+                GoalPath? parentPath;
+                while (newGoalIndex > 0) {
+                  newGoalIndex--;
+                  final parentCandidate = _flattenedGoalItems[newGoalIndex];
+                  if (textFocusStream.value!.length -
+                          parentCandidate.path.length ==
+                      2) {
+                    parentPath = _flattenedGoalItems[newGoalIndex].path;
+                    GoalActionsContext.of(context)
+                        .onExpanded(parentPath, expanded: true);
+                    final parentGoal = this.widget.goalMap[parentPath.goalId];
+                    if (parentGoal != null) {
+                      textFocusStream
+                          .add(GoalPath([...parentPath, NEW_GOAL_PLACEHOLDER]));
+                    }
+                    return;
+                  }
+                }
+                textFocusStream
+                    .add(GoalPath([...this.widget.path, NEW_GOAL_PLACEHOLDER]));
+              },
+            ),
         },
         child: Focus(
           focusNode: this._focusNode,

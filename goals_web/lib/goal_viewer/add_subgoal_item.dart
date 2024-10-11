@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart' show Colors, Icons, TextField;
 import 'package:flutter/painting.dart' show EdgeInsets, EdgeInsetsGeometry;
 import 'package:flutter/services.dart' show SystemMouseCursors, TextSelection;
@@ -46,6 +48,7 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
       TextEditingController(text: _defaultText);
   bool _editing = false;
   final FocusNode _focusNode = FocusNode();
+  late StreamSubscription _textFocusSubscription;
 
   String get _defaultText =>
       widget.path.length < 3 ? "[New Goal]" : "[New Subgoal]";
@@ -62,11 +65,34 @@ class _AddSubgoalItemWidgetState extends ConsumerState<AddSubgoalItemWidget> {
             baseOffset: 0, extentOffset: _textController.text.length);
       });
     }
+
+    this._textFocusSubscription = textFocusStream.listen((path) {
+      if (pathsMatch(path, this.widget.path) && !_editing) {
+        setState(() {
+          _editing = true;
+          _focusNode.requestFocus();
+          _textController.selection = TextSelection(
+              baseOffset: 0, extentOffset: _textController.text.length);
+        });
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(AddSubgoalItemWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (pathsMatch(textFocusStream.value, this.widget.path)) {
+      setState(() {
+        _editing = true;
+        _focusNode.requestFocus();
+      });
+    }
   }
 
   void dispose() {
     _textController.dispose();
     _focusNode.dispose();
+    this._textFocusSubscription.cancel();
     super.dispose();
   }
 
