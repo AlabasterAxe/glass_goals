@@ -419,10 +419,8 @@ getPriorityComparator(WorldContext context) {
 }
 
 double getGoalPriority(WorldContext context, Goal goal) {
-  final PriorityLogEntry? explicitPriority = goal.log
-      .whereType<PriorityLogEntry>()
-      .sorted((a, b) => b.creationTime.compareTo(a.creationTime))
-      .firstOrNull;
+  final PriorityLogEntry? explicitPriority =
+      goal.log.whereType<PriorityLogEntry>().firstOrNull;
 
   if (explicitPriority?.priority != null) {
     return explicitPriority!.priority!;

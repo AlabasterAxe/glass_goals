@@ -244,10 +244,18 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
           shiftSelectEndPath: _shiftHoverEndIndex != null
               ? this._flattenedGoalItems[_shiftHoverEndIndex!].path
               : null,
-          onDropGoal: (goalDragDetails) {
+          onDropGoal: (goalDragDetails, topDrop) {
             onDropGoal(goalDragDetails.path,
                 prevDropPath: prevGoal?.path ?? [...this.widget.path],
-                nextDropPath: flattenedGoal.path);
+                // this messy logic is for the case when a goal has been dropped
+                // on the top of a separator between the end last child goal
+                // and the next sibling of a parent goal.
+                nextDropPath: prevGoal != null &&
+                        topDrop &&
+                        prevGoal.path.length > flattenedGoal.path.length
+                    ? GoalPath(
+                        [...prevGoal.path.parentPath, NEW_GOAL_PLACEHOLDER])
+                    : flattenedGoal.path);
           }));
       goalItems.add(goalId != NEW_GOAL_PLACEHOLDER
           ? GoalItemWidget(
