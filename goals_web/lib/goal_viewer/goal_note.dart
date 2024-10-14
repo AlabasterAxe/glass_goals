@@ -72,7 +72,7 @@ class _NoteCardState extends State<NoteCard> {
   late TextEditingController _textController =
       TextEditingController(text: widget.textEntry.text);
   bool _editing = false;
-  late final _focusNode = FocusNode();
+  final _focusNode = FocusNode();
 
   @override
   void dispose() {
@@ -80,6 +80,25 @@ class _NoteCardState extends State<NoteCard> {
     _focusNode.dispose();
 
     super.dispose();
+  }
+
+  @override
+  initState() {
+    super.initState();
+    this._focusNode.addListener(this._focusListener);
+  }
+
+  _focusListener() {
+    if (this._focusNode.hasFocus) {
+      return;
+    }
+    if (widget.textEntry.text != null &&
+        _textController.text != widget.textEntry.text) {
+      _saveNote();
+    }
+    setState(() {
+      _editing = false;
+    });
   }
 
   _saveNote() {

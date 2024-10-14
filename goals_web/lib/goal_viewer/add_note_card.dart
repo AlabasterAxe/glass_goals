@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:goals_core/model.dart';
 import 'package:goals_core/sync.dart';
-import 'package:goals_web/common/keyboard_utils.dart';
 import 'package:goals_web/goal_viewer/goal_viewer_constants.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/intents.dart';
@@ -25,17 +23,7 @@ class AddNoteCard extends ConsumerStatefulWidget {
 
 class _AddNoteCardState extends ConsumerState<AddNoteCard> {
   bool _editing = false;
-  late final FocusNode _focusNode = FocusNode(onKeyEvent: (node, event) {
-    if (event.logicalKey == LogicalKeyboardKey.escape) {
-      this._textController.text = _defaultText;
-      textFocusStream.add(null);
-      return KeyEventResult.handled;
-    } else if (event.logicalKey == LogicalKeyboardKey.enter && isShiftHeld()) {
-      _createNote();
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  });
+  final FocusNode _focusNode = FocusNode();
 
   final _defaultText = "[New Note]";
   late final TextEditingController _textController =
@@ -48,6 +36,12 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
     if (pathsMatch(textFocusStream.value, this.widget.path)) {
       _startEditing();
     }
+
+    this._focusNode.addListener(() {
+      if (!_focusNode.hasFocus) {
+        _saveNoteIfNecessary();
+      }
+    });
   }
 
   @override
@@ -71,7 +65,7 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
     _stopEditing();
   }
 
-  _potentiallyDiscardNote() {
+  _saveNoteIfNecessary() {
     if (_textController.text == _defaultText) {
       _stopEditing();
     } else {
@@ -145,9 +139,8 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
                             decoration: null,
                             maxLines: null,
                             style: mainTextStyle,
-                            onTapOutside: isNarrow
-                                ? null
-                                : (_) => _potentiallyDiscardNote(),
+                            onTapOutside:
+                                isNarrow ? null : (_) => _saveNoteIfNecessary(),
                             focusNode: _focusNode,
                           ),
                         )
