@@ -2,6 +2,7 @@ import 'dart:async' show StreamSubscription, Timer;
 import 'dart:ui';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart'
@@ -25,6 +26,7 @@ import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalMaterialLocalizations;
 import 'package:goals_core/model.dart';
 import 'package:goals_core/sync.dart';
+import 'package:goals_web/common/cloudstore_service.dart';
 import 'package:goals_web/common/constants.dart';
 import 'package:goals_web/goal_viewer/providers.dart';
 import 'package:goals_web/widgets/unanimated_route.dart';
@@ -54,8 +56,13 @@ class WebGoals extends ConsumerStatefulWidget {
 
 class _WebGoalsState extends ConsumerState<WebGoals>
     with SingleTickerProviderStateMixin {
-  late SyncClient _syncClient =
+  late final SyncClient _syncClient =
       SyncClient(persistenceService: this.widget.persistenceService);
+
+  late final CloudstoreService _cloudstoreService = CloudstoreService(
+    storage: FirebaseStorage.instance,
+    userId: FirebaseAuth.instance.currentUser?.uid ?? '',
+  );
 
   // responsible for updating the world state so the UI updates according with the current time
   late Timer _refreshTimer;
@@ -115,6 +122,7 @@ class _WebGoalsState extends ConsumerState<WebGoals>
   Widget build(BuildContext context) {
     final contents = AppContext(
       syncClient: this._syncClient,
+      cloudstoreService: this._cloudstoreService,
       child: MaterialApp(
           navigatorKey: this.navigatorKey,
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
