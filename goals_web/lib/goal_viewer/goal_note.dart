@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart' show Colors, Icons, TextField;
 import 'package:flutter/painting.dart'
-    show Alignment, TextAlign, TextBaseline, TextScaler, TextStyle;
-import 'package:flutter/src/widgets/basic.dart';
+    show EdgeInsets, TextAlign, TextBaseline, TextScaler, TextStyle;
 import 'package:flutter/widgets.dart'
     show
         Actions,
-        Align,
         BoxConstraints,
         BuildContext,
         CallbackAction,
+        Center,
         Column,
         ConstrainedBox,
         Container,
         CrossAxisAlignment,
         Expanded,
         FocusNode,
+        FutureBuilder,
+        Image,
         IntrinsicHeight,
         MainAxisAlignment,
+        Padding,
         Row,
         SizedBox,
+        Stack,
         State,
         StatefulWidget,
         Text,
@@ -44,6 +47,7 @@ import 'package:goals_web/styles.dart';
 import 'package:goals_web/widgets/gg_icon_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter_dropzone/flutter_dropzone.dart';
 
 class NoteCard extends StatefulWidget {
   final GoalPath path;
@@ -73,6 +77,8 @@ class _NoteCardState extends State<NoteCard> {
       TextEditingController(text: widget.textEntry.text);
   bool _editing = false;
   final _focusNode = FocusNode();
+  late DropzoneViewController _dropzoneController;
+  bool _dropify = false;
 
   @override
   void dispose() {
@@ -206,88 +212,162 @@ class _NoteCardState extends State<NoteCard> {
               ],
             ),
           ),
-        _editing
-            ? IntrinsicHeight(
-                child: Actions(
-                  actions: {
-                    AcceptMultiLineTextIntent:
-                        CallbackAction(onInvoke: (_) => _saveNote()),
-                    CancelIntent:
-                        CallbackAction(onInvoke: (_) => _discardEdit()),
-                  },
-                  child: TextField(
-                    autocorrect: false,
-                    controller: _textController,
-                    decoration: null,
-                    maxLines: null,
-                    style: mainTextStyle,
-                    onTapOutside: (_) {
-                      if (widget.textEntry.text != null &&
-                          _textController.text != widget.textEntry.text) {
-                        _saveNote();
-                      }
-                      setState(() {
-                        _editing = false;
-                      });
-                    },
-                    focusNode: _focusNode,
-                  ),
-                ),
-              )
-            : MarkdownBody(
-                data: _textController.text,
-                selectable: true,
-                listItemCrossAxisAlignment:
-                    MarkdownListItemCrossAxisAlignment.start,
-                bulletBuilder: (params) {
-                  switch (params.style) {
-                    case BulletStyle.orderedList:
-                      return Text("${params.index + 1}.",
-                          style: TextStyle(
-                              fontSize: 20,
-                              textBaseline: TextBaseline.alphabetic));
-                    case BulletStyle.unorderedList:
-                      return Padding(
-                        padding: EdgeInsets.only(top: uiUnit(3)),
-                        child: Text("⬤",
-                            style: TextStyle(fontSize: 6.5),
-                            textAlign: TextAlign.center),
-                      );
+        IntrinsicHeight(
+          child: Stack(
+            children: [
+              DropzoneView(
+                onCreated: (controller) {
+                  this._dropzoneController = controller;
+                },
+                cursor: _dropify ? CursorType.grabbing : null,
+                onDrop: (dynamic ev) async {
+                  setState(() {
+                    this._dropify = false;
+                  });
+                  final mimeType =
+                      await this._dropzoneController.getFileMIME(ev);
+                  print(mimeType);
+                  if (mimeType.startsWith("image/")) {
+                    final data = await this._dropzoneController.getFileData(ev);
+                    final extension = mimeType.split("/")[1];
+                    final filename = "${Uuid().v4()}.$extension";
+
+                    await AppContext.of(context)
+                        .cloudstoreService
+                        .saveDataBytes(filename, data);
+                    final text = _textController.text;
+                    final newText =
+                        text + "\n\n![image](glassgoals://$filename)";
+                    _textController.text = newText;
+                    _saveNote();
                   }
                 },
-                onTapText: () {
-                  if (!widget.isChildGoal) {
+                onLeave: () => {
+                  setState(() {
+                    this._dropify = false;
+                  })
+                },
+                onHover: () {
+                  if (!this._dropify) {
                     setState(() {
-                      if (_textController.text == DEFAULT_SUMMARY_TEXT ||
-                          _textController.text ==
-                              DEFAULT_CONTEXT_COMMENT_TEXT) {
-                        _textController.selection = TextSelection(
-                            baseOffset: 0,
-                            extentOffset: _textController.text.length);
-                      }
-
-                      _editing = true;
-                      _focusNode.requestFocus();
+                      this._dropify = true;
                     });
                   }
                 },
-                onTapLink: (text, href, title) async {
-                  if (href == null) {
-                    return;
-                  }
+              ),
+              _editing
+                  ? Actions(
+                      actions: {
+                        AcceptMultiLineTextIntent:
+                            CallbackAction(onInvoke: (_) => _saveNote()),
+                        CancelIntent:
+                            CallbackAction(onInvoke: (_) => _discardEdit()),
+                      },
+                      child: TextField(
+                        autocorrect: false,
+                        controller: _textController,
+                        decoration: null,
+                        maxLines: null,
+                        style: mainTextStyle,
+                        onTapOutside: (_) {
+                          if (widget.textEntry.text != null &&
+                              _textController.text != widget.textEntry.text) {
+                            _saveNote();
+                          }
+                          setState(() {
+                            _editing = false;
+                          });
+                        },
+                        focusNode: _focusNode,
+                      ),
+                    )
+                  : MarkdownBody(
+                      data: _textController.text,
+                      selectable: true,
+                      listItemCrossAxisAlignment:
+                          MarkdownListItemCrossAxisAlignment.start,
+                      imageBuilder: (uri, title, alt) {
+                        if (uri.scheme == "glassgoals") {
+                          return FutureBuilder(
+                              future: AppContext.of(context)
+                                  .cloudstoreService
+                                  .getDownloadUrl(
+                                      uri.toString().split("://")[1]),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return Container();
+                                }
+                                return Image.network(snapshot.data.toString());
+                              });
+                        }
+                        return Image.network(uri.toString());
+                      },
+                      bulletBuilder: (params) {
+                        switch (params.style) {
+                          case BulletStyle.orderedList:
+                            return Text("${params.index + 1}.",
+                                style: TextStyle(
+                                    fontSize: 20,
+                                    textBaseline: TextBaseline.alphabetic));
+                          case BulletStyle.unorderedList:
+                            return Padding(
+                              padding: EdgeInsets.only(top: uiUnit(3)),
+                              child: Text("⬤",
+                                  style: TextStyle(fontSize: 6.5),
+                                  textAlign: TextAlign.center),
+                            );
+                        }
+                      },
+                      onTapText: () {
+                        if (!widget.isChildGoal) {
+                          setState(() {
+                            if (_textController.text == DEFAULT_SUMMARY_TEXT ||
+                                _textController.text ==
+                                    DEFAULT_CONTEXT_COMMENT_TEXT) {
+                              _textController.selection = TextSelection(
+                                  baseOffset: 0,
+                                  extentOffset: _textController.text.length);
+                            }
 
-                  final url = Uri.parse(href);
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url);
-                  }
-                },
-                styleSheet: MarkdownStyleSheet(
-                  textScaler: TextScaler.linear(1.05),
-                  p: _textController.text == DEFAULT_SUMMARY_TEXT ||
-                          _textController.text == DEFAULT_CONTEXT_COMMENT_TEXT
-                      ? mainTextStyle.copyWith(color: Colors.black54)
-                      : mainTextStyle,
-                )),
+                            _editing = true;
+                            _focusNode.requestFocus();
+                          });
+                        }
+                      },
+                      onTapLink: (text, href, title) async {
+                        if (href == null) {
+                          return;
+                        }
+
+                        final url = Uri.parse(href);
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url);
+                        }
+                      },
+                      styleSheet: MarkdownStyleSheet(
+                        textScaler: TextScaler.linear(1.05),
+                        p: _textController.text == DEFAULT_SUMMARY_TEXT ||
+                                _textController.text ==
+                                    DEFAULT_CONTEXT_COMMENT_TEXT
+                            ? mainTextStyle.copyWith(color: Colors.black54)
+                            : mainTextStyle,
+                      )),
+              if (this._dropify)
+                Container(
+                  color: Colors.black.withOpacity(0.5),
+                  child: Center(
+                    child: Text(
+                      'Drop here',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ],
     );
   }
