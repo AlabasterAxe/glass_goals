@@ -14,6 +14,7 @@ import 'package:flutter/widgets.dart'
         CrossAxisAlignment,
         Expanded,
         FocusNode,
+        FutureBuilder,
         Image,
         IntrinsicHeight,
         MainAxisAlignment,
@@ -234,11 +235,9 @@ class _NoteCardState extends State<NoteCard> {
                     await AppContext.of(context)
                         .cloudstoreService
                         .saveDataBytes(filename, data);
-                    final url = await AppContext.of(context)
-                        .cloudstoreService
-                        .getDownloadUrl(filename);
                     final text = _textController.text;
-                    final newText = text + "\n\n![image]($url)";
+                    final newText =
+                        text + "\n\n![image](glassgoals://$filename)";
                     _textController.text = newText;
                     _saveNote();
                   }
@@ -287,6 +286,22 @@ class _NoteCardState extends State<NoteCard> {
                       selectable: true,
                       listItemCrossAxisAlignment:
                           MarkdownListItemCrossAxisAlignment.start,
+                      imageBuilder: (uri, title, alt) {
+                        if (uri.scheme == "glassgoals") {
+                          return FutureBuilder(
+                              future: AppContext.of(context)
+                                  .cloudstoreService
+                                  .getDownloadUrl(
+                                      uri.toString().split("://")[1]),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return Container();
+                                }
+                                return Image.network(snapshot.data.toString());
+                              });
+                        }
+                        return Image.network(uri.toString());
+                      },
                       bulletBuilder: (params) {
                         switch (params.style) {
                           case BulletStyle.orderedList:
@@ -353,8 +368,6 @@ class _NoteCardState extends State<NoteCard> {
             ],
           ),
         ),
-        Image.network(
-            "https://firebasestorage.googleapis.com/v0/b/glassgoals.appspot.com/o/user%2FtRY2de5dWWdjbFICOhMuSdFi8sN2%2Fimg%2Fccd45557-38fa-458a-9cb2-8d0ae2402fa6.png?alt=media&token=46e0a653-e821-4688-8089-b4fb9d8cd262"),
       ],
     );
   }
