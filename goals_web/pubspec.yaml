@@ -65,6 +65,8 @@ dependencies:
   universal_html: ^2.2.4
   firebase_storage: ^12.3.3
   flutter_dropzone: ^4.0.3
+  video_player: ^2.9.2
+  audioplayers: ^6.1.0
 
 dev_dependencies:
   flutter_test:
