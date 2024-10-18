@@ -40,6 +40,9 @@ class _AddNoteCardState extends ConsumerState<AddNoteCard> {
     this._focusNode.addListener(() {
       if (!_focusNode.hasFocus) {
         _saveNoteIfNecessary();
+      } else if (_textController.text == _defaultText) {
+        _textController.selection = TextSelection(
+            baseOffset: 0, extentOffset: _textController.text.length);
       }
     });
   }
