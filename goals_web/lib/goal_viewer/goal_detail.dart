@@ -604,12 +604,14 @@ class GoalHistoryWidget extends StatelessWidget {
                 if (!(item.entry is NoteLogEntry) ||
                     (item.path.goalId == this.path.goalId))
                   ConstrainedBox(
+                      key: ValueKey(item.entry is StatusLogEntry
+                          ? "${item.entry.id}${item.archived ? '-archive' : (item.entry as StatusLogEntry).endTime == item.time ? '-end' : '-creation'}"
+                          : item.entry.id),
                       constraints: BoxConstraints(minHeight: uiUnit(8)),
                       child: switch (item.entry) {
                         NoteLogEntry entry => Padding(
                             padding: EdgeInsets.only(bottom: uiUnit(4)),
                             child: NoteCard(
-                              key: ValueKey(entry.id),
                               path: item.path,
                               goalMap: goalMap,
                               textEntry: entry,
@@ -618,8 +620,6 @@ class GoalHistoryWidget extends StatelessWidget {
                             ),
                           ),
                         StatusLogEntry entry => StatusCard(
-                            key: ValueKey(
-                                "${entry.id}${item.archived ? '-archive' : entry.endTime == item.time ? '-end' : '-creation'}"),
                             path: item.path,
                             entry: entry,
                             isChildGoal: item.path.goalId != this.path.goalId,

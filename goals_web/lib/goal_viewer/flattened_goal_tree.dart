@@ -8,9 +8,15 @@ import 'package:flutter/widgets.dart'
         BuildContext,
         CallbackAction,
         Column,
+        DragEndDetails,
+        DragStartDetails,
+        DragUpdateDetails,
         Focus,
         FocusNode,
+        GestureDetector,
         KeyEventResult,
+        MediaQuery,
+        SingleTickerProviderStateMixin,
         Widget;
 import 'package:goals_core/model.dart'
     show Goal, GoalPath, TraversalDecision, getPriorityComparator, traverseDown;
@@ -33,6 +39,8 @@ typedef FlattenedGoalItem = ({
   GoalPath path,
   bool hasRenderableChildren,
 });
+
+_ACTION_THRESHOLD_RATIO = 0.2;
 
 class FlattenedGoalTree extends ConsumerStatefulWidget {
   final Map<String, Goal> goalMap;
@@ -57,13 +65,17 @@ class FlattenedGoalTree extends ConsumerStatefulWidget {
   ConsumerState<FlattenedGoalTree> createState() => _FlattenedGoalTreeState();
 }
 
-class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
+class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree>
+    with SingleTickerProviderStateMixin {
   List<FlattenedGoalItem> _flattenedGoalItems = [];
 
   late StreamSubscription _hoverEventSubscription;
 
   int? _shiftHoverStartIndex;
   int? _shiftHoverEndIndex;
+
+  int? _swipeIndex;
+  AnimationController? _swipeController;
 
   late final FocusNode _focusNode = FocusNode(
     onKeyEvent: (node, event) {
@@ -118,6 +130,40 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
           });
         }
       }
+    }
+  }
+
+  void _animateDragEnd() {
+    double screenWidth = MediaQuery.sizeOf(context).width;
+
+    if (this._swipeController == null) {
+      return;
+    }
+
+    final sc = _swipeController!;
+
+    if (sc!.value.abs() < screenWidth * actionThresholdRatio) {
+      sc!.animateTo(
+        0,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+      sc!.addStatusListener(_clearDragIndices);
+    } else {
+      if (sc!.value > 0) {
+        sc.animateTo(
+          screenWidth,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        sc.animateTo(
+          -screenWidth,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+      sc.addStatusListener(_removeItems);
     }
   }
 
@@ -210,6 +256,30 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree> {
     this._hoverEventSubscription.cancel();
     this._focusNode.dispose();
     super.dispose();
+  }
+
+  Widget _swipeWrap({required Widget child, required int itemIndex}) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragStart: (DragStartDetails deets) {
+        this._swipeIndex = itemIndex;
+      },
+      onHorizontalDragUpdate: (DragUpdateDetails deets) {
+        if (deets.primaryDelta != null) {
+          _swipeController = AnimationController(
+            vsync: this,
+            duration: Duration(milliseconds: 200),
+          );
+        }
+        setState(() {
+          dragOffset = (deets.localPosition.dy / LIST_ITEM_HEIGHT).floor();
+        });
+      },
+      onHorizontalDragEnd: (DragEndDetails deets) {
+        _animateDragEnd();
+      },
+      child: child,
+    );
   }
 
   @override
