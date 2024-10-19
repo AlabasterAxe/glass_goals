@@ -5,6 +5,7 @@ import 'package:flutter/src/widgets/basic.dart';
 import 'package:flutter/widgets.dart'
     show
         Actions,
+        AnimatedBuilder,
         BuildContext,
         CallbackAction,
         Column,
@@ -17,6 +18,7 @@ import 'package:flutter/widgets.dart'
         KeyEventResult,
         MediaQuery,
         SingleTickerProviderStateMixin,
+        ValueKey,
         Widget;
 import 'package:goals_core/model.dart'
     show Goal, GoalPath, TraversalDecision, getPriorityComparator, traverseDown;
@@ -40,7 +42,7 @@ typedef FlattenedGoalItem = ({
   bool hasRenderableChildren,
 });
 
-_ACTION_THRESHOLD_RATIO = 0.2;
+const _ACTION_THRESHOLD_RATIO = 0.2;
 
 class FlattenedGoalTree extends ConsumerStatefulWidget {
   final Map<String, Goal> goalMap;
@@ -75,7 +77,11 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree>
   int? _shiftHoverEndIndex;
 
   int? _swipeIndex;
-  AnimationController? _swipeController;
+  late final AnimationController _swipeController =
+      AnimationController.unbounded(
+          vsync: this, duration: Duration(milliseconds: 200));
+  double? _dragStartLoc;
+  int dragOffset = 0;
 
   late final FocusNode _focusNode = FocusNode(
     onKeyEvent: (node, event) {
@@ -136,34 +142,52 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree>
   void _animateDragEnd() {
     double screenWidth = MediaQuery.sizeOf(context).width;
 
-    if (this._swipeController == null) {
-      return;
-    }
-
-    final sc = _swipeController!;
-
-    if (sc!.value.abs() < screenWidth * actionThresholdRatio) {
-      sc!.animateTo(
-        0,
-        duration: Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-      sc!.addStatusListener(_clearDragIndices);
+    if (this._swipeController.value.abs() <
+        screenWidth * _ACTION_THRESHOLD_RATIO) {
+      this._swipeController.animateTo(
+            0,
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+      this._swipeController.addStatusListener(this._resetSwipeState);
     } else {
-      if (sc!.value > 0) {
-        sc.animateTo(
-          screenWidth,
-          duration: Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
+      if (this._swipeController.value > 0) {
+        this._swipeController.animateTo(
+              screenWidth,
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
       } else {
-        sc.animateTo(
-          -screenWidth,
-          duration: Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
+        this._swipeController.animateTo(
+              -screenWidth,
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
       }
-      sc.addStatusListener(_removeItems);
+      this._swipeController.addStatusListener(this._doneSwipe);
+    }
+  }
+
+  void _resetSwipeState(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      setState(() {
+        this._swipeController.value = 0;
+        this._swipeIndex = null;
+      });
+      this._swipeController.removeStatusListener(this._resetSwipeState);
+    }
+  }
+
+  void _doneSwipe(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      GoalActionsContext.of(context)
+          .onDone(_flattenedGoalItems[this._swipeIndex!].path.goalId, null);
+      hoverEventStream.add(null);
+      setState(() {
+        this._swipeController.value = 0;
+        this._swipeIndex = null;
+      });
+      this._swipeController.removeStatusListener(this._doneSwipe);
     }
   }
 
@@ -259,26 +283,35 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree>
   }
 
   Widget _swipeWrap({required Widget child, required int itemIndex}) {
-    return GestureDetector(
+    final contents = GestureDetector(
       behavior: HitTestBehavior.translucent,
       onHorizontalDragStart: (DragStartDetails deets) {
-        this._swipeIndex = itemIndex;
+        setState(() {
+          this._swipeIndex = itemIndex;
+          this._dragStartLoc = deets.globalPosition.dx;
+        });
       },
       onHorizontalDragUpdate: (DragUpdateDetails deets) {
-        if (deets.primaryDelta != null) {
-          _swipeController = AnimationController(
-            vsync: this,
-            duration: Duration(milliseconds: 200),
-          );
-        }
-        setState(() {
-          dragOffset = (deets.localPosition.dy / LIST_ITEM_HEIGHT).floor();
-        });
+        this._swipeController.value =
+            deets.globalPosition.dx - this._dragStartLoc!;
       },
       onHorizontalDragEnd: (DragEndDetails deets) {
         _animateDragEnd();
       },
       child: child,
+    );
+    return AnimatedBuilder(
+      key: ValueKey(itemIndex),
+      animation: itemIndex == this._swipeIndex
+          ? this._swipeController
+          : AlwaysStoppedAnimation(0),
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(this._swipeController.value, 0),
+          child: child,
+        );
+      },
+      child: contents,
     );
   }
 
@@ -328,31 +361,33 @@ class _FlattenedGoalTreeState extends ConsumerState<FlattenedGoalTree>
                     : flattenedGoal.path);
           }));
       goalItems.add(goalId != NEW_GOAL_PLACEHOLDER
-          ? GoalItemWidget(
-              onDropGoal: (details) {
-                onDropGoal(
-                  details.path,
-                  dropPath: flattenedGoal.path,
-                );
-              },
-              padding: EdgeInsets.only(
-                  left: uiUnit(4) *
-                      (flattenedGoal.path.length -
-                          (1 + this.widget.path.length))),
-              goal: this.widget.goalMap[goalId]!,
-              pendingShiftSelect: _shiftHoverStartIndex != null &&
-                  _shiftHoverEndIndex != null &&
-                  i >= _shiftHoverStartIndex! &&
-                  i <= _shiftHoverEndIndex!,
-              hoverActionsBuilder: this.widget.hoverActionsBuilder,
-              hasRenderableChildren: flattenedGoal.hasRenderableChildren,
-              showExpansionArrow:
-                  flattenedGoal.hasRenderableChildren || widget.showAddGoal,
-              dragHandle: !hasMouse
-                  ? GoalItemDragHandle.bullet
-                  : GoalItemDragHandle.item,
-              path: flattenedGoal.path,
-            )
+          ? _swipeWrap(
+              child: GoalItemWidget(
+                onDropGoal: (details) {
+                  onDropGoal(
+                    details.path,
+                    dropPath: flattenedGoal.path,
+                  );
+                },
+                padding: EdgeInsets.only(
+                    left: uiUnit(4) *
+                        (flattenedGoal.path.length -
+                            (1 + this.widget.path.length))),
+                goal: this.widget.goalMap[goalId]!,
+                pendingShiftSelect: _shiftHoverStartIndex != null &&
+                    _shiftHoverEndIndex != null &&
+                    i >= _shiftHoverStartIndex! &&
+                    i <= _shiftHoverEndIndex!,
+                hoverActionsBuilder: this.widget.hoverActionsBuilder,
+                hasRenderableChildren: flattenedGoal.hasRenderableChildren,
+                showExpansionArrow:
+                    flattenedGoal.hasRenderableChildren || widget.showAddGoal,
+                dragHandle: !hasMouse
+                    ? GoalItemDragHandle.bullet
+                    : GoalItemDragHandle.item,
+                path: flattenedGoal.path,
+              ),
+              itemIndex: i)
           : AddSubgoalItemWidget(
               path: flattenedGoal.path,
               padding: EdgeInsets.only(
