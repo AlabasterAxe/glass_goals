@@ -2,7 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:goals_core/model.dart' show Goal;
+import 'package:goals_core/model.dart'
+    show Goal, GoalPath, TraversalDecision, traverseDown;
+import 'package:goals_web/goal_viewer/goal_breadcrumb.dart';
 import 'package:goals_web/goal_viewer/status_chip.dart';
 
 import '../styles.dart';
@@ -11,6 +13,9 @@ enum GoalSelectedResult {
   close,
   keepOpen,
 }
+
+// this might make it impossible to search for a goal with ">>" in the text.
+const _ARROW_SEPARATOR = '>>';
 
 class GoalSearchModal extends StatefulWidget {
   final Map<String, Goal> goalMap;
@@ -28,12 +33,16 @@ class GoalSearchModal extends StatefulWidget {
 
 class KeyboardFocusableListTile extends StatefulWidget {
   final Goal goal;
+  final GoalPath path;
   final bool isFocused;
   final Function()? onTap;
+  final Map<String, Goal> goalMap;
   const KeyboardFocusableListTile({
     super.key,
-    required this.goal,
+    required this.path,
     required this.isFocused,
+    required this.goal,
+    required this.goalMap,
     this.onTap,
   });
 
@@ -51,7 +60,8 @@ class _KeyboardFocusableListTileState extends State<KeyboardFocusableListTile> {
         selected: this.widget.isFocused,
         title: Row(
           children: [
-            Text(this.widget.goal.text),
+            PathBreadcrumb(
+                path: this.widget.path, goalMap: this.widget.goalMap),
             SizedBox(width: uiUnit()),
             CurrentStatusChip(goal: this.widget.goal),
           ],
@@ -114,18 +124,66 @@ class _GoalSearchModalState extends State<GoalSearchModal> {
     }
   }
 
+  List<GoalPath> _goalPathSearch(String text) {
+    final searchPath = GoalPath(
+        text.split(_ARROW_SEPARATOR).map((part) => part.trim()).toList());
+
+    if (searchPath.length == 1) {
+      return [];
+    }
+
+    final results = <GoalPath>[];
+    final roots = this
+        .widget
+        .goalMap
+        .values
+        .where((goal) => goal.text.toLowerCase().contains(searchPath[0]))
+        .toList();
+
+    for (final root in roots) {
+      traverseDown(this.widget.goalMap, root.id,
+          onVisit: (String goalId, GoalPath path) {
+        final fullGoalPath = GoalPath([...path, goalId]);
+        if (fullGoalPath.length > searchPath.length) {
+          return TraversalDecision.dontRecurse;
+        }
+        final visitedGoal = this.widget.goalMap[goalId];
+
+        if (visitedGoal == null) {
+          return TraversalDecision.dontRecurse;
+        }
+        for (final (i, part) in fullGoalPath.indexed) {
+          final goalText = this.widget.goalMap[part]!.text.toLowerCase();
+          if (!goalText.contains(searchPath[i])) {
+            return TraversalDecision.dontRecurse;
+          }
+        }
+        if (fullGoalPath.length == searchPath.length) {
+          results.add(fullGoalPath);
+          return TraversalDecision.dontRecurse;
+        }
+        return TraversalDecision.continueTraversal;
+      });
+    }
+    return results;
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (this._textController.text.length == 0) {}
     final results = _textController.text.length == 0
-        ? []
-        : this
-            .widget
-            .goalMap
-            .values
-            .where((goal) => goal.text
-                .toLowerCase()
-                .contains(_textController.text.toLowerCase()))
-            .toList();
+        ? <GoalPath>[]
+        : [
+            ...this
+                .widget
+                .goalMap
+                .values
+                .where((goal) => goal.text
+                    .toLowerCase()
+                    .contains(_textController.text.toLowerCase()))
+                .map((g) => GoalPath([g.id])),
+            ...this._goalPathSearch(this._textController.text)
+          ];
     final modalWidth = min(MediaQuery.of(context).size.width * .8, 600);
     final wrappedSelectedIndex = this._selectedIndex % results.length;
     return SizedBox(
@@ -151,7 +209,7 @@ class _GoalSearchModalState extends State<GoalSearchModal> {
                 ),
                 onSubmitted: (_) {
                   if (results.isNotEmpty) {
-                    _selectGoal(results[wrappedSelectedIndex].id);
+                    _selectGoal(results[wrappedSelectedIndex].goalId);
                   }
                 },
                 focusNode: this._textFocusNode,
@@ -161,13 +219,15 @@ class _GoalSearchModalState extends State<GoalSearchModal> {
           SizedBox(
             height: 400,
             child: ListView(primary: true, children: [
-              for (final (i, goal) in results.indexed)
+              for (final (i, path) in results.indexed)
                 KeyboardFocusableListTile(
+                  goalMap: this.widget.goalMap,
+                  path: path,
                   isFocused: wrappedSelectedIndex == i,
                   onTap: () {
-                    _selectGoal(goal.id);
+                    _selectGoal(path.goalId);
                   },
-                  goal: goal,
+                  goal: this.widget.goalMap[path.goalId]!,
                 ),
             ]),
           )
