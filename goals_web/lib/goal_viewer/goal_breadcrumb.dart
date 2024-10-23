@@ -55,12 +55,14 @@ class Breadcrumb extends ConsumerWidget {
 }
 
 class PathBreadcrumb extends StatefulWidget {
-  final GoalPath path;
+  final GoalPath renderedPath;
+  final GoalPath contextPath;
   final Map<String, Goal> goalMap;
   const PathBreadcrumb({
     super.key,
-    required this.path,
+    required this.renderedPath,
     required this.goalMap,
+    this.contextPath = const GoalPath([]),
   });
 
   @override
@@ -72,9 +74,12 @@ class _PathBreadcrumbState extends State<PathBreadcrumb> {
   Widget build(BuildContext context) {
     final widgets = <Widget>[];
 
-    for (final (i, _) in this.widget.path.indexed) {
+    for (final (i, _) in this.widget.renderedPath.indexed) {
       widgets.add(Breadcrumb(
-          path: GoalPath(this.widget.path.sublist(0, i + 1)),
+          path: GoalPath([
+            ...this.widget.contextPath,
+            ...this.widget.renderedPath.sublist(0, i + 1)
+          ]),
           goalMap: this.widget.goalMap));
       widgets.add(const Icon(Icons.chevron_right));
     }
@@ -122,7 +127,8 @@ class _ParentBreadcrumbState extends State<ParentBreadcrumb> {
       onExit: (_) => setState(() => _hovered = false),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         PathBreadcrumb(
-            path: GoalPath(path.reversed.toList()),
+            renderedPath: GoalPath(path.reversed.toList()),
+            contextPath: parentPath,
             goalMap: this.widget.goalMap),
         if (this.widget.onRemove != null) ...[
           SizedBox(width: uiUnit(2)),

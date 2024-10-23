@@ -61,7 +61,7 @@ class _KeyboardFocusableListTileState extends State<KeyboardFocusableListTile> {
         title: Row(
           children: [
             PathBreadcrumb(
-                path: this.widget.path, goalMap: this.widget.goalMap),
+                renderedPath: this.widget.path, goalMap: this.widget.goalMap),
             SizedBox(width: uiUnit()),
             CurrentStatusChip(goal: this.widget.goal),
           ],
